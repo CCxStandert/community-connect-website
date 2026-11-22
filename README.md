@@ -12,8 +12,8 @@ WordPress code for community-connect.cc.
 ## Releasing an update
 
 1. Raise the version: `Version:` in `cc-fleet/cc-fleet.php` (and `CC_FLEET_VERSION`) and/or `Version:` in `community-connect/style.css`.
-2. Commit, then push a tag: `git tag v2026.11.22 && git push --tags`.
-3. The **Release** workflow builds `cc-fleet-<version>.zip` and `community-connect-<version>.zip` and publishes a release.
+2. Commit and push to `main`.
+3. The **Release** workflow sees the new version, builds `cc-fleet-<version>.zip` and `community-connect-<version>.zip` and publishes a release (it can also be run by hand under Actions → Release → Run workflow).
 4. The site checks every 12 hours (or immediately via Fleet Manager → Updates → *Save and check now*) and shows the update under Plugins / Themes.
 
 Never commit rider data, exports or passwords. Test data uses `example.org` addresses and `082 555 …` numbers.
