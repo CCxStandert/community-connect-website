@@ -46,9 +46,9 @@ def IMGB(src, alt, cls=''):
     if cls: a['className'] = cls
     c = ' '.join(x for x in ['wp-block-image', 'size-large', cls] if x)
     return f'<!-- wp:image {j(a)} -->\n<figure class="{c}"><img src="{src}" alt="{alt}"/></figure>\n<!-- /wp:image -->'
-def COVER(img, inner, cls='', href=''):
+def COVER(img, inner, cls='', href='', pos='50% 50%'):
     """A photo panel: a group with a background image (change it in the block's Background panel)."""
-    a = {'className': 'cc-cover ' + cls, 'style': {'background': {'backgroundImage': {'url': '__URL__', 'source': 'file', 'title': ''}, 'backgroundSize': 'cover', 'backgroundPosition': '50% 50%'}, 'spacing': {'blockGap': '0'}}, 'layout': {'type': 'default'}}
+    a = {'className': 'cc-cover ' + cls, 'style': {'background': {'backgroundImage': {'url': '__URL__', 'source': 'file', 'title': ''}, 'backgroundSize': 'cover', 'backgroundPosition': pos}, 'spacing': {'blockGap': '0'}}, 'layout': {'type': 'default'}}
     att = j(a).replace('"__URL__"', '"' + img + '"')
     return f'<!-- wp:group {att} -->\n<div class="wp-block-group cc-cover {cls}">{inner}</div>\n<!-- /wp:group -->'
 def BTN(text, href, style=''):
@@ -148,8 +148,8 @@ pattern('agreement', 'Home: the agreement', G(
     G(H('The agreement', 2, 'h', 'agreement') + P('Not legal small print. How friends share something they love.', 'sub'), 'in max') +
     G(ag, 'agree max'), 'sect', align='full'), 'The borrowing agreement as fold-out sections. Riders accept this text with every request.')
 
-pattern('after-ride', 'Home: after the ride', G(COVER(IMG('journal.webp'),
-    H('After the ride', 2, 'cc-photo-title') + P('Tell us what the bike let you do.', 'cc-l2') + P('<a href="https://www.instagram.com/cc_x_standert/">@cc_x_standert</a>', 'is-style-hand-note'), 'cc-photo'), 'cc-after', align='full'),
+pattern('after-ride', 'Home: after the ride', G(COVER(IMG('after-ride.webp'),
+    H('After the ride', 2, 'cc-photo-title') + P('Tell us what the bike let you do.', 'cc-l2') + P('<a href="https://www.instagram.com/cc_x_standert/">@cc_x_standert</a>', 'is-style-hand-note'), 'cc-photo', pos='62% 60%'), 'cc-after', align='full'),
     'Photo link to Instagram.')
 
 # ---------- parts ----------

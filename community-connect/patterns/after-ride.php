@@ -7,7 +7,7 @@
  */
 ?>
 <!-- wp:group {"className":"cc-after","align":"full","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
-<div class="wp-block-group alignfull cc-after"><!-- wp:group {"className":"cc-cover cc-photo","style":{"background":{"backgroundImage":{"url":"<?php echo esc_url( get_theme_file_uri( 'assets/images/journal.webp' ) ); ?>","source":"file","title":""},"backgroundSize":"cover","backgroundPosition":"50% 50%"},"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+<div class="wp-block-group alignfull cc-after"><!-- wp:group {"className":"cc-cover cc-photo","style":{"background":{"backgroundImage":{"url":"<?php echo esc_url( get_theme_file_uri( 'assets/images/after-ride.webp' ) ); ?>","source":"file","title":""},"backgroundSize":"cover","backgroundPosition":"62% 60%"},"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group cc-cover cc-photo"><!-- wp:heading {"className":"cc-photo-title"} -->
 <h2 class="wp-block-heading cc-photo-title">After the ride</h2>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-l2"} -->
