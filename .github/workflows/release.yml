@@ -1,17 +1,26 @@
 name: Release
 
-# Push a tag like v2026.11.22 (or run it by hand) and this builds
+# Publishes a GitHub release with
 #   cc-fleet-<plugin version>.zip and community-connect-<theme version>.zip
-# from the versions inside the files, and publishes them as a GitHub release.
-# The website's updater (Fleet Manager → Updates) picks them up.
+# whenever a push to main raises the plugin or theme version (or when run by hand
+# under Actions → Release → Run workflow). The website's updater
+# (Fleet Manager → Updates) picks them up.
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths:
+      - 'cc-fleet/cc-fleet.php'
+      - 'community-connect/style.css'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -26,12 +35,22 @@ jobs:
           TV=$(grep -m1 -E "^Version:" community-connect/style.css | sed -E 's/Version:\s*//; s/\s+$//')
           echo "plugin=$PV" >> "$GITHUB_OUTPUT"
           echo "theme=$TV" >> "$GITHUB_OUTPUT"
-          TAG="${GITHUB_REF_NAME}"
-          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then TAG="v$(date -u +%Y.%m.%d-%H%M)"; fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Plugin $PV, theme $TV, tag $TAG"
+          echo "tag=v${PV}-theme-${TV}" >> "$GITHUB_OUTPUT"
+          echo "Plugin $PV, theme $TV"
+
+      - name: Skip if this pair of versions is already released
+        id: exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.v.outputs.tag }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Already released."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build zips
+        if: steps.exists.outputs.skip == 'false'
         run: |
           mkdir -p dist
           zip -qr "dist/cc-fleet-${{ steps.v.outputs.plugin }}.zip" cc-fleet -x "cc-fleet/tests/*" "*.DS_Store"
@@ -39,8 +58,12 @@ jobs:
           ls -la dist
 
       - name: Publish release
+        if: steps.exists.outputs.skip == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES="CC Fleet plugin ${{ steps.v.outputs.plugin }} · Community Connect theme ${{ steps.v.outputs.theme }}"
-          gh release create "${{ steps.v.outputs.tag }}" dist/*.zip --title "${{ steps.v.outputs.tag }}" --notes "$NOTES" --generate-notes --latest
+          gh release create "${{ steps.v.outputs.tag }}" dist/*.zip \
+            --target "${{ github.sha }}" \
+            --title "Plugin ${{ steps.v.outputs.plugin }} · Theme ${{ steps.v.outputs.theme }}" \
+            --notes "CC Fleet plugin ${{ steps.v.outputs.plugin }} and Community Connect theme ${{ steps.v.outputs.theme }}. See cc-fleet/README.md for what changed." \
+            --latest
