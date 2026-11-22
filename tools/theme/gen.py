@@ -171,11 +171,11 @@ open(T + 'parts/header.html', 'w').write(notice + '\n' + header + '\n')
 
 footer = G(G(
     P('Community Connect NPC<br>Woodstock, Cape Town, ZA') +
-    P('Group rides: weekly, on Strava<br>Questions: <a href="mailto:contact@community-connect.cc">contact@community-connect.cc</a>') +
+    P('Group rides: weekly, on <a href="https://www.strava.com/clubs/cc_x_standert">Strava</a><br>Questions: <a href="mailto:contact@community-connect.cc">contact@community-connect.cc</a>') +
     DET('The collective', P('<a href="/#how">How it works</a>') + P('<a href="/#deal">The deal</a>') + P('<a href="/#agreement">Borrowing agreement</a>')) +
-    DET('Happenings', P('<a href="/#events">Events 2027</a>') + P('<a href="https://www.instagram.com/cc_x_standert/">Instagram</a>')) +
+    DET('Happenings', P('<a href="/#events">Events 2027</a>') + P('<a href="https://www.instagram.com/cc_x_standert/">Instagram</a>') + P('<a href="https://www.strava.com/clubs/cc_x_standert">Strava club</a>')) +
     DET('Bikes &amp; support', P('<a href="/#fleet">The fleet</a>') + P('<a href="/#ask">Ask for any bike</a>') + P('<a href="mailto:contact@community-connect.cc">Email the crew</a>')) +
-    '<!-- wp:social-links {"iconColor":"paper","iconColorValue":"#F4EEE4","className":"is-style-logos-only soc","layout":{"type":"flex","justifyContent":"center"}} -->\n<ul class="wp-block-social-links has-icon-color is-style-logos-only soc"><!-- wp:social-link {"url":"https://www.instagram.com/cc_x_standert/","service":"instagram"} /--><!-- wp:social-link {"url":"mailto:contact@community-connect.cc","service":"mail"} /--></ul>\n<!-- /wp:social-links -->' +
+    '<!-- wp:social-links {"iconColor":"paper","iconColorValue":"#F4EEE4","className":"is-style-logos-only soc","layout":{"type":"flex","justifyContent":"center"}} -->\n<ul class="wp-block-social-links has-icon-color is-style-logos-only soc"><!-- wp:social-link {"url":"https://www.instagram.com/cc_x_standert/","service":"instagram"} /--><!-- wp:social-link {"url":"https://www.strava.com/clubs/cc_x_standert","service":"strava","label":"Strava club"} /--><!-- wp:social-link {"url":"mailto:contact@community-connect.cc","service":"mail"} /--></ul>\n<!-- /wp:social-links -->' +
     P('<a href="/#agreement">Borrowing agreement</a> · bikes maintained with Woodstock Cycleworks', 'fine') +
     P('© 2026 Community Connect NPC · Reg. 2025/713989/08', 'fine'),
     'max'), 'foot', tag='footer', align='full')
