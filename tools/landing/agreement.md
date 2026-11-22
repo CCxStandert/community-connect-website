@@ -1,6 +1,6 @@
 # The deal (our borrowing agreement)
 
-*Community Connect × Standert · version 2 · November 2026*
+*Community Connect × Standert · version 3 · November 2026*
 
 Hey, nice to have you here. Before you roll off on one of our bikes, here's how this works. It's not legal small print, just how friends share something they love.
 
@@ -13,6 +13,7 @@ The whole idea is simple: **share the joy of riding a really good bike, and meet
 ## Before you ride
 
 - **Request the bike on our website.** You can ask for any dates up to the end of next year (right now: 31 December 2027). We check the calendar and confirm by email, usually within a couple of days.
+- **Loans are usually up to 7 days.** That keeps the bikes moving, so more people get to ride them. Need one longer, for a multi-day race, a bikepacking trip or a project? Tell us why in your request: we make exceptions when there's a need.
 - **We always keep one day free between loans.** That's our day to check the bike and pass it on calmly, so please don't ask us to squeeze bookings back to back.
 - **Handoffs happen on WhatsApp.** We'll put you in a chat with the rider before or after you, or with the crew, to agree a time and place.
 

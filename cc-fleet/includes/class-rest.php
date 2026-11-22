@@ -240,6 +240,7 @@ class CC_Fleet_Rest {
 			'status' => 'requested', 'plan' => ( $event ? '[' . $event->name . '] ' : ( -1 === $event_id ? '[Race] ' : '' ) ) . $plan, 'source' => 'web',
 			'event_id' => max( 0, $event_id ), 'race' => $event_id ? 1 : 0,
 			'requested_size' => $bike_id ? CC_Fleet_Bikes::get( $bike_id, 'size' ) : $size,
+			'notes'          => CC_Fleet_Loans::days_between( $start, $end ) + 1 > CC_Fleet_Frontend::usual_days() ? sprintf( 'Longer than the usual %d days (%d days): check the reason in the plan.', CC_Fleet_Frontend::usual_days(), CC_Fleet_Loans::days_between( $start, $end ) + 1 ) : '',
 		) );
 		if ( is_wp_error( $loan_id ) ) {
 			$loan_id->add_data( array( 'status' => 409 ) );

@@ -82,6 +82,10 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page → Website box → **Long-term rider** + **Since**. From that date the bike is blocked on every calendar with no end date (fleet calendar shows an ochre bar, the public calendar shows it booked, booking it is refused with a clear reason unless you save anyway). Set it back to None to free the bike.
 - Re-importing the parts list records each changed part in the bike's History ("Updated from the parts list"). Bundled copy updated to the 20 Nov 2026 16:55 sheet (CC-01 tyres, CC-02 size/groupset/brakes/chainring, CC-03 full spec).
 
+## 0.11.0: Usual loan length
+- New setting “Usual loan (days)”, 7. Shown on the request form, the bike page and the fleet heading; the borrowing agreement (now version 3) says loans are usually up to 7 days and exceptions are made when there's a need.
+- Picking a longer range shows a friendly note asking for the reason in the plan (not blocked; the hard limit stays “Longest loan”), and the request is marked for the crew.
+
 ## 0.10.2: Fleet grid spacing
 - The bike cards line up with the size finder and filters (inset on phone and desktop), rows have equal heights and the box is closed at the bottom. Theme 1.0.2: the finder, filters and date boxes keep their spacing.
 

@@ -37,7 +37,17 @@ class CC_Fleet_Frontend {
 
 	/** Config travels on the markup too, so it survives any theme or cache plugin. */
 	private static function data_attrs() {
-		return sprintf( ' data-cc-api="%s" data-cc-today="%s" data-cc-latest="%s"', esc_url( rest_url( CC_Fleet_Rest::NS ) ), esc_attr( CC_Fleet_Settings::today() ), esc_attr( CC_Fleet_Loans::horizon() ) );
+		return sprintf( ' data-cc-api="%s" data-cc-today="%s" data-cc-latest="%s" data-cc-usual="%d"', esc_url( rest_url( CC_Fleet_Rest::NS ) ), esc_attr( CC_Fleet_Settings::today() ), esc_attr( CC_Fleet_Loans::horizon() ), self::usual_days() );
+	}
+
+	/** Usual loan length in days (what riders are told is normal). */
+	public static function usual_days() {
+		return max( 1, (int) CC_Fleet_Settings::get( 'usual_loan_days' ) ?: 7 );
+	}
+
+	/** One sentence for the forms and pages. */
+	public static function usual_note() {
+		return sprintf( 'Loans are usually up to %d days. Need it longer, for a race, a trip or a project? Tell us why in your plan: we make exceptions when there’s a need.', self::usual_days() );
 	}
 
 	public static function register_assets() {
@@ -138,6 +148,8 @@ class CC_Fleet_Frontend {
 				<label class="cc-field"><span>Until</span><input type="date" name="end" required data-cc-end></label>
 			</div>
 			<p class="cc-error" data-cc-error="dates" hidden></p>
+			<p class="cc-hint cc-usual"><?php echo esc_html( self::usual_note() ); ?></p>
+			<p class="cc-long" data-cc-long hidden></p>
 			<p class="cc-required-note"><span class="cc-req" aria-hidden="true">*</span> Everything is needed so we can reach you and hand the bike over.</p>
 			<label class="cc-field"><span>Your name <span class="cc-req" aria-hidden="true">*</span></span><input type="text" name="name" autocomplete="name" required aria-required="true"></label>
 			<p class="cc-error" data-cc-error="name" hidden></p>
@@ -314,7 +326,7 @@ class CC_Fleet_Frontend {
 			<?php endif; ?>
 			<div class="cc-free">
 				<p class="cc-free__t">Free to borrow</p>
-				<p class="cc-free__s">No fees, no deposit · <a href="<?php echo esc_url( CC_Fleet_Landing::agreement_url() ?: home_url( '/#agreement' ) ); ?>">borrowing agreement</a> applies</p>
+				<p class="cc-free__s">No fees, no deposit · usually up to <?php echo (int) self::usual_days(); ?> days · <a href="<?php echo esc_url( CC_Fleet_Landing::agreement_url() ?: home_url( '/#agreement' ) ); ?>">borrowing agreement</a> applies</p>
 				<?php if ( $open ) : ?><a class="cc-free__btn" href="#request">Check dates</a><?php endif; ?>
 			</div>
 			<div class="cc-bike__hrow"><h2 class="cc-bike__h">Size <span><?php echo esc_html( $b['size'] ); ?></span></h2><a class="cc-bike__fit" href="<?php echo esc_url( home_url( '/#fleet' ) ); ?>">What’s my size?</a></div>
@@ -339,7 +351,7 @@ class CC_Fleet_Frontend {
 			<?php endif; ?>
 			<?php if ( $open ) : ?>
 				<h2 class="cc-bike__h" id="request">Availability</h2>
-				<p class="cc-bike__note">Tap your first day, then your last. Pink days are taken; we keep one free day between loans.</p>
+				<p class="cc-bike__note">Tap your first day, then your last. Pink days are taken; we keep one free day between loans. Loans are usually up to <?php echo (int) self::usual_days(); ?> days; ask in your plan if you need longer.</p>
 				<?php echo self::sc_request( array( 'bike' => $b['cc_id'] ) ); // phpcs:ignore ?>
 				<div class="cc-stickybar" data-cc-sticky><?php echo $thumb; // phpcs:ignore ?><span><b>Free · <?php echo esc_html( $b['cc_id'] ); ?></b><small><?php echo esc_html( $b['model'] . ' ' . $b['size'] ); ?></small></span><a href="#request">Request bike</a></div>
 			<?php else : ?>

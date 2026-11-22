@@ -44,7 +44,7 @@ defined( 'ABSPATH' ) || exit;
 <section class="sect" id="fleet" aria-labelledby="fleetT">
   <div class="in max">
     <h2 class="h" id="fleetT">Explore the fleet</h2>
-    <p class="sub"><span id="nBikes">10</span> Standerts · free to borrow · book up to <span id="horizon">31 Dec 2027</span></p>
+    <p class="sub"><span id="nBikes">10</span> Standerts · free to borrow · usually up to 7 days · book up to <span id="horizon">31 Dec 2027</span></p>
   </div>
 <!--cc:fleet-->
   <div class="in max">

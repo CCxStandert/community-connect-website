@@ -110,6 +110,7 @@
 		if (this.form) {
 			var s = this.form.querySelector('[data-cc-start]'), e = this.form.querySelector('[data-cc-end]');
 			if (s) s.value = this.start || ''; if (e) e.value = this.end || '';
+			this.form.dispatchEvent(new CustomEvent('cc:dates'));
 		}
 		this.render();
 	};
@@ -121,6 +122,17 @@
 	/* ---------- Request form ---------- */
 	function RequestForm(form) {
 		var t = form.querySelector('[data-cc-t]'); if (t) t.value = Math.floor(Date.now() / 1000);
+		// Longer than the usual loan: allowed, but ask for a reason in the plan.
+		var usual = parseInt(form.getAttribute('data-cc-usual') || '7', 10), long = form.querySelector('[data-cc-long]');
+		var checkLong = function () {
+			var s = form.querySelector('[data-cc-start]'), e = form.querySelector('[data-cc-end]');
+			if (!long || !s || !e || !s.value || !e.value) { if (long) long.hidden = true; return; }
+			var n = Math.round((parse(e.value) - parse(s.value)) / 864e5) + 1;
+			long.hidden = !(n > usual);
+			if (n > usual) long.textContent = 'That’s ' + n + ' days, longer than our usual ' + usual + '. That can work: tell us why in your plan below, so we can keep the bike moving for others too.';
+		};
+		['[data-cc-start]', '[data-cc-end]'].forEach(function (q) { var i = form.querySelector(q); if (i) { i.addEventListener('change', checkLong); i.addEventListener('input', checkLong); } });
+		form.addEventListener('cc:dates', checkLong);
 		var min = C.today; ['[data-cc-start]', '[data-cc-end]'].forEach(function (s) { var i = form.querySelector(s); if (i) { i.min = min; if (C.latest) i.max = C.latest; } });
 		// Riding an event: show the racing terms, and suggest dates around the event if none are picked yet.
 		var ev = form.querySelector('[data-cc-event]'), race = form.querySelector('[data-cc-race]');

@@ -15,7 +15,7 @@
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --><!-- wp:group {"className":"agree max","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group agree max"><!-- wp:paragraph {"className":"is-style-mono-label"} -->
-<p class="is-style-mono-label">Community Connect × Standert · version 2 · November 2026</p>
+<p class="is-style-mono-label">Community Connect × Standert · version 3 · November 2026</p>
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"is-style-story intro"} -->
 <p class="is-style-story intro">Hey, nice to have you here. Before you roll off on one of our bikes, here's how this works. It's not legal small print, just how friends share something they love.</p>
 <!-- /wp:paragraph --><!-- wp:details {"anchor":"ag-why-we-do-this"} -->
@@ -28,6 +28,8 @@
 <details class="wp-block-details" id="ag-before-you-ride"><summary>Before you ride</summary><!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
 <li><strong>Request the bike on our website.</strong> You can ask for any dates up to the end of next year (right now: 31 December 2027). We check the calendar and confirm by email, usually within a couple of days.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Loans are usually up to 7 days.</strong> That keeps the bikes moving, so more people get to ride them. Need one longer, for a multi-day race, a bikepacking trip or a project? Tell us why in your request: we make exceptions when there's a need.</li>
 <!-- /wp:list-item --><!-- wp:list-item -->
 <li><strong>We always keep one day free between loans.</strong> That's our day to check the bike and pass it on calmly, so please don't ask us to squeeze bookings back to back.</li>
 <!-- /wp:list-item --><!-- wp:list-item -->

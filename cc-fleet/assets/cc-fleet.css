@@ -165,3 +165,6 @@
 .cc-bike--27 .cc-free__btn, .cc-bike--27 .cc-bike__fit, .cc-bike--27 .cc-sizes a { text-decoration: none; color: inherit; }
 .cc-bike--27 .cc-sizes a.is-this { color: var(--cc-paper, #F4EDE4); }
 .cc-opt { font-weight: 400; opacity: .7; font-size: 12px; margin-left: 4px; }
+
+.cc-long{margin:6px 0 10px;padding:10px 12px;background:#FFE3F6;border:1.5px solid #141217;font-size:14px;line-height:1.4}
+.cc-usual{margin:4px 0 12px}

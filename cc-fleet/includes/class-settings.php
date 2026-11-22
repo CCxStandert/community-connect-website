@@ -15,6 +15,7 @@ class CC_Fleet_Settings {
 			'buffer_days'          => 1,       // Free days after each loan (washing, small fixes, late returns).
 			'same_day_handoff'     => 0,       // Only used with 0 buffer days: a loan may start on the day the previous one ends.
 			'min_notice_days'      => 1,       // Requests must start at least this many days from today.
+			'usual_loan_days'      => 7,       // What riders are told is normal; longer requests need a reason (not enforced).
 			'max_loan_days'        => 45,
 			'max_advance_days'     => 365,     // Not used since 0.6: see book_until.
 			'book_until'           => '',      // Last bookable day (Y-m-d). Empty: 31 Dec of next year.
