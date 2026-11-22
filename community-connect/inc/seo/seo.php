@@ -313,3 +313,14 @@ add_filter( 'wp_sitemaps_posts_query_args', function ( $args, $type ) {
 	}
 	return $args;
 }, 10, 2 );
+
+/* ---------- One main heading on the home page ---------- */
+// The first hero headline is the page's <h1>, also when the hero was edited in the Site Editor.
+add_filter( 'render_block_core/heading', function ( $html ) {
+	static $done = false;
+	if ( $done || ! is_front_page() || false === strpos( $html, 'cc-hero-title' ) ) {
+		return $html;
+	}
+	$done = true;
+	return preg_replace( array( '/<h2(\s|>)/', '/<\/h2>/' ), array( '<h1$1', '</h1>' ), $html, 1 );
+} );
