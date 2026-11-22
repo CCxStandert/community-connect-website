@@ -281,3 +281,4 @@ footer.foot .fine { text-align: center; font-size: 14px; margin: 0 0 12px; }
 	.cc-nl__ints { grid-template-columns: 1fr 1fr 1fr; }
 	.cc-landing .cc-nl-sect .cc-nl-lede { font-size: 34px; }
 }
+.cc-shop-main .cc-nl-sect { padding-top: 40px; padding-bottom: 48px; }
