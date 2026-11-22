@@ -112,7 +112,7 @@ function cc_shop_setup( $with_images = true ) {
 	$terms = get_page_by_path( 'terms' );
 	if ( ! $terms ) {
 		$content = str_replace( '{{privacy}}', esc_url( get_privacy_policy_url() ?: home_url( '/privacy-policy/' ) ), (string) file_get_contents( CC_SHOP_DIR . 'terms-draft.html' ) ); // phpcs:ignore
-		$tid     = wp_insert_post( array( 'post_type' => 'page', 'post_status' => 'draft', 'post_title' => 'Shop terms & returns', 'post_name' => 'terms', 'post_content' => $content ) );
+		$tid     = wp_insert_post( array( 'post_type' => 'page', 'post_status' => 'draft', 'post_title' => 'Shop terms & returns', 'post_name' => 'terms', 'post_content' => $content, 'page_template' => 'page-legal' ) );
 		$log[]   = 'Draft page “Shop terms & returns” created (Pages → Drafts): fill in the [brackets] and publish it.';
 	} elseif ( 'publish' === $terms->post_status ) {
 		update_option( 'woocommerce_terms_page_id', $terms->ID );
