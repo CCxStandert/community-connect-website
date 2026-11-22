@@ -27,6 +27,7 @@ et( 'File stored privately', $e->file && file_exists( CC_Fleet_Expenses::dir() .
 et( 'File URL needs the admin handler', false !== strpos( CC_Fleet_Expenses::file_url( $e ), 'admin-post.php?action=cc_fleet_expense_file' ) );
 $new = array_values( array_filter( CC_Fleet_Expenses::query(), function ( $x ) { return 'INV9999' === $x->invoice_no; } ) );
 et( 'New expense keeps the number', 1 === count( $new ) && $new[0]->file );
+foreach ( array( 'R 2 210,00' => 2210.0, '1,529.30' => 1529.3, '1.234,56' => 1234.56, '2378.30' => 2378.3, '-R 1 020,00' => -1020.0 ) as $in => $want ) { et( "Money: $in", $want === CC_Fleet_Expenses::parse_money( $in ), (string) CC_Fleet_Expenses::parse_money( $in ) ); }
 // Empty save refused
 et( 'Empty expense refused', is_wp_error( CC_Fleet_Expenses::save( array() ) ) );
 // Page renders

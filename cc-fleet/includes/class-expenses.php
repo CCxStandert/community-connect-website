@@ -106,6 +106,17 @@ class CC_Fleet_Expenses {
 		return 'R ' . number_format( (float) $v, 2, '.', ' ' );
 	}
 
+	/** "R 2 210,00", "1,529.30", "1.234,56", "2210" → a number. */
+	public static function parse_money( $v ) {
+		$v = preg_replace( '/[^0-9,.\-]/', '', str_replace( "\xc2\xa0", '', (string) $v ) );
+		if ( false !== strpos( $v, ',' ) && false !== strpos( $v, '.' ) ) {
+			$v = strrpos( $v, ',' ) > strrpos( $v, '.' ) ? str_replace( array( '.', ',' ), array( '', '.' ), $v ) : str_replace( ',', '', $v );
+		} elseif ( false !== strpos( $v, ',' ) ) {
+			$v = preg_match( '/,\d{1,2}$/', $v ) ? str_replace( ',', '.', $v ) : str_replace( ',', '', $v );
+		}
+		return round( (float) $v, 2 );
+	}
+
 	/** Invoice numbers compared loosely: "WCW0000414", "wcw0000414", "INV1594-2" → "wcw0000414", "inv1594". */
 	public static function norm_invoice( $s ) {
 		$s = strtolower( (string) $s );
@@ -123,8 +134,7 @@ class CC_Fleet_Expenses {
 		$old = $id ? self::get( $id ) : null;
 		$num = function ( $k ) use ( $in, $old ) {
 			$v = array_key_exists( $k, $in ) ? (string) $in[ $k ] : (string) ( $old->$k ?? '0' );
-			$v = str_replace( array( ' ', 'R', 'r', ',' ), array( '', '', '', '.' ), $v );
-			return round( (float) $v, 2 );
+			return self::parse_money( $v );
 		};
 		$bikes = $in['bikes'] ?? ( $old ? self::bike_ids( $old ) : array() );
 		$bikes = is_array( $bikes ) ? $bikes : explode( ',', (string) $bikes );
