@@ -174,7 +174,7 @@ footer = G(G(
     P('Community Connect NPC<br>Woodstock, Cape Town, ZA') +
     P('Group rides: every Friday and more, on <a href="https://www.strava.com/clubs/cc_x_standert">Strava</a><br>Questions: <a href="mailto:contact@community-connect.cc">contact@community-connect.cc</a>') +
     DET('The collective', P('<a href="/#how">How it works</a>') + P('<a href="/#deal">The deal</a>') + P('<a href="/#agreement">Borrowing agreement</a>')) +
-    DET('Happenings', P('<a href="/#rides">Our rides</a>') + P('<a href="/#events">Events 2027</a>') + P('<a href="https://www.instagram.com/cc_x_standert/">Instagram</a>') + P('<a href="https://www.strava.com/clubs/cc_x_standert">Strava club</a>')) +
+    DET('Happenings', P('<a href="/#rides">Our rides</a>') + P('<a href="/#events">Events 2027</a>') + P('<a href="/#newsletter">Newsletter</a>') + P('<a href="https://www.instagram.com/cc_x_standert/">Instagram</a>') + P('<a href="https://www.strava.com/clubs/cc_x_standert">Strava club</a>')) +
     DET('Bikes &amp; support', P('<a href="/#fleet">The fleet</a>') + P('<a href="/#ask">Ask for any bike</a>') + P('<a href="mailto:contact@community-connect.cc">Email the crew</a>')) +
     '<!-- wp:html -->\n<ul class="cc-soc"><li><a href="https://www.instagram.com/cc_x_standert/" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".6" fill="currentColor"/></svg></a></li><li><a href="https://www.strava.com/clubs/cc_x_standert" aria-label="Strava club"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.4 1.8 15.9 12.6h-3.1l-2.4-4.7-2.4 4.7H4.9z"/><path d="M11.6 14.2h2.3l2.1 4.1 2.1-4.1h2.3L16 22.4z"/></svg></a></li><li><a href="mailto:contact@community-connect.cc" aria-label="Email the crew"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.2" width="18" height="13.6" rx="2.2"/><path d="M3.6 6.6 12 13l8.4-6.4"/></svg></a></li></ul>\n<!-- /wp:html -->' +
     P('<a href="/#agreement">Borrowing agreement</a> · bikes maintained with Woodstock Cycleworks', 'fine') +
@@ -186,7 +186,7 @@ open(T + 'parts/footer.html', 'w').write(footer + '\n')
 def tpl(body):
     return ('<!-- wp:template-part {"slug":"header","area":"header","tagName":"div"} /-->\n' + body +
             '\n<!-- wp:template-part {"slug":"footer","area":"footer","tagName":"div"} /-->\n')
-front = ''.join(f'<!-- wp:pattern {{"slug":"community-connect/{s}"}} /-->\n' for s in ['hero', 'welcome', 'fleet', 'fleet-banner', 'how-it-works', 'rides', 'events', 'numbers', 'deal', 'ask', 'drawings', 'agreement', 'after-ride'])
+front = ''.join(f'<!-- wp:pattern {{"slug":"community-connect/{s}"}} /-->\n' for s in ['hero', 'welcome', 'fleet', 'fleet-banner', 'how-it-works', 'rides', 'events', 'numbers', 'deal', 'ask', 'drawings', 'agreement', 'newsletter', 'after-ride'])
 open(T + 'templates/front-page.html', 'w').write(tpl(G(front, 'cc-main', tag='main', align='full', anchor='top')))
 page = G(G('<!-- wp:post-title {"level":1,"className":"h big"} /-->' + '<!-- wp:post-content {"layout":{"type":"default"},"className":"cc-content"} /-->', 'in max cc-page', gap0=False), 'cc-main', tag='main', align='full')
 open(T + 'templates/page.html', 'w').write(tpl(page))

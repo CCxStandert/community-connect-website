@@ -99,6 +99,9 @@ class CC_Fleet_Install {
 		global $wpdb;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		$c = $wpdb->get_charset_collate();
+		if ( class_exists( 'CC_Fleet_Newsletter' ) ) {
+			CC_Fleet_Newsletter::create_table( $c );
+		}
 
 		$riders = self::table( 'riders' );
 		$loans  = self::table( 'loans' );

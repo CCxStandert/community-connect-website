@@ -77,6 +77,12 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page: "Changing parts?" box (date, kind of work, by, cost, note). Saving compares every part field and logs what changed from what to what, with that date; it also goes into the workshop log and updates "Last upgraded". The new **History** box lists all of it, newest first. Untick "Add to the workshop log" for typo fixes.
 - Loan page: **Change the dates** (+1 day, +3 days, +1 week, ends today, or any dates), with a note on what was agreed, a clash check and an optional "new dates" email to the rider. Overdue loans extend from today.
 
+## 0.17.0: Newsletter (theme 1.5.0)
+
+- A newsletter sign-up on the home page (and `[cc_newsletter]` anywhere): email, name, interests and a consent tick. A confirmation email makes it a double opt-in; every email has an unsubscribe link.
+- Fleet Manager → Newsletter (admins): the list, CSV export, delete a subscriber, and an optional Brevo API key + list ID: confirmed subscribers are copied into that Brevo list and unsubscribes passed on.
+- GA4 (after consent): `sign_up` with method newsletter.
+
 ## 0.16.2: Rides from Strava
 
 - FAR Inverted counts as a race: borrowing a bike for it needs the racing terms.

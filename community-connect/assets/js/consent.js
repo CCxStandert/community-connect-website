@@ -86,6 +86,9 @@
 	});
 
 	// Bike requests and the waiting list (CC Fleet plugin's request form).
+	document.addEventListener('cc:newsletter', function () {
+		track('sign_up', { method: 'newsletter' });
+	});
 	document.addEventListener('cc:bike_request', function (e) {
 		var d = e.detail || {};
 		track(d.waitlist ? 'waitlist_join' : 'bike_request', { bike: d.bike || 'any', event_related: !!d.event });
