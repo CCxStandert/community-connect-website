@@ -14,6 +14,7 @@ define( 'CC_THEME_VERSION', wp_get_theme( 'community-connect' )->get( 'Version' 
 // Legal pages (imprint, privacy policy), the cookie notice and Google Analytics 4 (see inc/legal/).
 require_once get_theme_file_path( 'inc/legal/legal.php' );
 require_once get_theme_file_path( 'inc/legal/consent.php' );
+require_once get_theme_file_path( 'inc/seo/seo.php' );
 
 // The shop: only when WooCommerce is active, so the site never depends on it (see inc/shop/shop.php).
 if ( class_exists( 'WooCommerce' ) ) {
