@@ -164,3 +164,4 @@
 .cc-bike--27 .cc-stickybar a { color: var(--cc-paper, #F4EDE4); text-decoration: none; padding: 0 18px; white-space: nowrap; }
 .cc-bike--27 .cc-free__btn, .cc-bike--27 .cc-bike__fit, .cc-bike--27 .cc-sizes a { text-decoration: none; color: inherit; }
 .cc-bike--27 .cc-sizes a.is-this { color: var(--cc-paper, #F4EDE4); }
+.cc-opt { font-weight: 400; opacity: .7; font-size: 12px; margin-left: 4px; }

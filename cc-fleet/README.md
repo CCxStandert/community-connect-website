@@ -82,6 +82,12 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page → Website box → **Long-term rider** + **Since**. From that date the bike is blocked on every calendar with no end date (fleet calendar shows an ochre bar, the public calendar shows it booked, booking it is refused with a clear reason unless you save anyway). Set it back to None to free the bike.
 - Re-importing the parts list records each changed part in the bike's History ("Updated from the parts list"). Bundled copy updated to the 20 Nov 2026 16:55 sheet (CC-01 tyres, CC-02 size/groupset/brakes/chainring, CC-03 full spec).
 
+## 0.9.0: Wheels & tyres, drivetrain care, tyre pressure
+- Fleet Manager → Wheels & tyres: every wheelset (WS-xx) and set of tyres (TY-xx) is a part with its place (a bike or spare), a Damaged tick with a note, and its own history. Created automatically from the bikes on update.
+- Bike editor: Wheelset and Tyres are drop-downs. A part can only be on one bike: taking it from another bike puts that bike “In the workshop” with a job to fit a replacement, and both bikes get a history entry.
+- Drivetrain care box per bike: cleaned, lubed/waxed, checked, chain-wear reading; a check is due after every returned loan and every 30 days, lube every 21; replacing a chain takes it out of Stock. Dashboard: “Drivetrain due” and “Wheels & tyres”.
+- Tyre pressure: optional weight on the request form and the rider; the confirmation email, the loan page and the crew handoff check show a starting front/rear pressure for that rider on that bike's tyres.
+
 ## 0.8.2: Updates from GitHub
 - Fleet Manager → Updates: point the site at the GitHub repository (plus a read-only token if it's private). New releases of the plugin and the Community Connect theme then show under Plugins and Themes with an Update button, and work with auto-updates.
 

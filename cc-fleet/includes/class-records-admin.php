@@ -568,7 +568,12 @@ class CC_Fleet_Records_Admin {
 		} else {
 			echo '<p class="cc-empty">All good.</p>';
 		}
-		echo '</section></div>';
+		echo '</section>';
+		if ( class_exists( 'CC_Fleet_Care' ) ) {
+			CC_Fleet_Care::dashboard_card();
+			CC_Fleet_Parts::dashboard_card();
+		}
+		echo '</div>';
 	}
 
 	/** One row above the bikes on the fleet calendar. */

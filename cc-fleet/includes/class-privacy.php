@@ -32,6 +32,7 @@ class CC_Fleet_Privacy {
 			array( 'name' => 'Name', 'value' => $r->name ), array( 'name' => 'Email', 'value' => $r->email ),
 			array( 'name' => 'Phone', 'value' => $r->phone ), array( 'name' => 'Instagram', 'value' => $r->instagram ),
 			array( 'name' => 'Height (cm)', 'value' => (string) $r->height_cm ),
+			array( 'name' => 'Weight (kg)', 'value' => (string) ( $r->weight_kg ?? '' ) ),
 		) );
 		foreach ( CC_Fleet_Loans::query( array( 'rider_id' => $r->id, 'limit' => 1000 ) ) as $l ) {
 			$items[] = array( 'group_id' => 'cc-loans', 'group_label' => 'Bike loans', 'item_id' => 'cc-loan-' . $l->id, 'data' => array(
@@ -51,7 +52,7 @@ class CC_Fleet_Privacy {
 		}
 		global $wpdb;
 		$wpdb->update( CC_Fleet_Riders::table(), array(
-			'name' => 'Deleted rider', 'email' => '', 'phone' => '', 'instagram' => '', 'height_cm' => null, 'notes' => '', 'updated_at' => current_time( 'mysql' ),
+			'name' => 'Deleted rider', 'email' => '', 'phone' => '', 'instagram' => '', 'height_cm' => null, 'weight_kg' => null, 'notes' => '', 'updated_at' => current_time( 'mysql' ),
 		), array( 'id' => $r->id ) );
 		$wpdb->query( $wpdb->prepare( 'UPDATE ' . CC_Fleet_Loans::table() . " SET plan = '', notes = '' WHERE rider_id = %d", $r->id ) );
 		return array( 'items_removed' => true, 'items_retained' => false, 'messages' => array( 'Rider anonymised; loan dates kept for fleet history.' ), 'done' => true );

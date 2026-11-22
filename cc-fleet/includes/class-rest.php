@@ -170,6 +170,10 @@ class CC_Fleet_Rest {
 		} elseif ( ! preg_match( '/^@?[A-Za-z0-9._]{1,30}$/', $insta ) ) {
 			$errors['instagram'] = 'Just the handle please, e.g. @yourname.';
 		}
+		$weight = (int) ( $p['weight'] ?? 0 );
+		if ( $weight && ( $weight < 30 || $weight > 200 ) ) {
+			$errors['weight'] = 'Weight in kg, between 30 and 200 (or leave it empty).';
+		}
 		$height = (int) ( $p['height'] ?? 0 );
 		if ( $height < 120 || $height > 220 ) {
 			$errors['height'] = 'Your height in cm helps us pick the right size (120–220).';
@@ -229,7 +233,7 @@ class CC_Fleet_Rest {
 		$rider_id = CC_Fleet_Riders::upsert( array(
 			'name' => $name, 'email' => $email,
 			'phone' => $phone, 'instagram' => $insta,
-			'height_cm' => $height, 'consent' => true,
+			'height_cm' => $height, 'weight_kg' => $weight ?: null, 'consent' => true,
 		) );
 		$loan_id = CC_Fleet_Loans::create( array(
 			'bike_id' => $bike_id, 'rider_id' => $rider_id, 'start_date' => $start, 'end_date' => $end,

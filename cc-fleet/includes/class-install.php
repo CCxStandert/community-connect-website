@@ -69,6 +69,10 @@ class CC_Fleet_Install {
 				// this runs on plugins_loaded, so only leave a note and do it on init.
 				update_option( 'cc_fleet_install_landing', 1, false );
 			}
+			if ( $from < 6 ) {
+				// Wheelsets and tyres become parts: done on init, when bikes can be queried.
+				update_option( 'cc_fleet_migrate_parts', 1, false );
+			}
 			update_option( 'cc_fleet_db_version', CC_FLEET_DB_VERSION, false );
 		}
 	}
@@ -100,6 +104,7 @@ class CC_Fleet_Install {
 			phone varchar(60) NOT NULL DEFAULT '',
 			instagram varchar(120) NOT NULL DEFAULT '',
 			height_cm smallint(5) unsigned DEFAULT NULL,
+			weight_kg smallint(5) unsigned DEFAULT NULL,
 			rating tinyint(3) unsigned DEFAULT NULL,
 			whatsapp varchar(12) NOT NULL DEFAULT '',
 			notes text NULL,
@@ -152,6 +157,7 @@ class CC_Fleet_Install {
 		) $c;" );
 
 		CC_Fleet_Records::create_tables( $c );
+		CC_Fleet_Parts::create_table( $c );
 		CC_Fleet_Outbox::create_table();
 	}
 

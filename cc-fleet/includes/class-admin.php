@@ -368,6 +368,7 @@ class CC_Fleet_Admin {
 		}
 		if ( $loan && in_array( $loan->status, array( 'approved', 'out' ), true ) ) {
 			self::handoff_panel( $loan );
+			self::pressure_panel( $loan );
 		}
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="cc-form">';
 		wp_nonce_field( 'cc_fleet_loan_save' );
@@ -485,6 +486,24 @@ class CC_Fleet_Admin {
 	}
 
 	/** Where and when this rider hands the bike on (or collects it). Used in the reminder and the crew check. */
+	/** Tyre pressure to set at handoff, from the rider's weight and the bike's tyres. */
+	private static function pressure_panel( $loan ) {
+		if ( ! class_exists( 'CC_Fleet_Pressure' ) || ! $loan->bike_id ) {
+			return;
+		}
+		$r    = CC_Fleet_Riders::get( $loan->rider_id );
+		$line = CC_Fleet_Pressure::line_for_loan( $loan );
+		echo '<div class="cc-card" id="pressure"><h2>Tyre pressure at handoff</h2>';
+		if ( $line ) {
+			echo '<p><strong>' . esc_html( $line ) . '</strong></p><p class="cc-muted">' . esc_html( CC_Fleet_Pressure::advice( $loan ) ) . '</p>';
+		} elseif ( $r && empty( $r->weight_kg ) ) {
+			printf( '<p class="cc-muted">No weight for %s yet. Add it on the <a href="%s">rider</a> (optional, only for this) to get a pressure here and in the confirmation email.</p>', esc_html( $r->name ), esc_url( self::url( 'cc-fleet-riders', array( 'edit' => $r->id ) ) ) );
+		} else {
+			echo '<p class="cc-muted">No tyre width on this bike yet: set its tyres under Wheels &amp; tyres.</p>';
+		}
+		echo '</div>';
+	}
+
 	private static function handoff_panel( $loan ) {
 		$next  = $loan->bike_id ? CC_Fleet_Loans::next_loan( $loan ) : null;
 		$nr    = $next ? CC_Fleet_Riders::get( $next->rider_id ) : null;
@@ -605,7 +624,7 @@ class CC_Fleet_Admin {
 		$edit = sanitize_key( $_GET['edit'] ?? '' );
 		echo '<div class="wrap cc-wrap"><h1 class="wp-heading-inline">Riders <span class="cc-muted">(Community Connectors)</span></h1> <a class="page-title-action" href="' . esc_url( self::url( 'cc-fleet-riders', array( 'edit' => 'new' ) ) ) . '">+ Add rider</a><hr class="wp-header-end">';
 		self::notices();
-		$r = 'new' === $edit ? (object) array( 'id' => 0, 'name' => '', 'email' => '', 'phone' => '', 'instagram' => '', 'height_cm' => '', 'rating' => '', 'notes' => '', 'whatsapp' => '' ) : ( (int) $edit ? CC_Fleet_Riders::get( (int) $edit ) : null );
+		$r = 'new' === $edit ? (object) array( 'id' => 0, 'name' => '', 'email' => '', 'phone' => '', 'instagram' => '', 'height_cm' => '', 'weight_kg' => '', 'rating' => '', 'notes' => '', 'whatsapp' => '' ) : ( (int) $edit ? CC_Fleet_Riders::get( (int) $edit ) : null );
 		if ( $r ) {
 			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="cc-form">';
 			wp_nonce_field( 'cc_fleet_rider_save' );
@@ -622,6 +641,7 @@ class CC_Fleet_Admin {
 			echo '</select><p class="description">Set to “Yes” once they’ve messaged the crew WhatsApp or you’ve chatted with them there.</p></td></tr>';
 			printf( '<tr><th><label for="cc-r-ig">Instagram</label></th><td><input type="text" id="cc-r-ig" name="instagram" value="%s"></td></tr>', esc_attr( $r->instagram ) );
 			printf( '<tr><th><label for="cc-r-h">Height (cm)</label></th><td><input type="number" id="cc-r-h" name="height_cm" value="%s" style="width:110px"></td></tr>', esc_attr( (string) $r->height_cm ) );
+			printf( '<tr><th><label for="cc-r-w">Weight (kg)</label></th><td><input type="number" id="cc-r-w" name="weight_kg" value="%s" style="width:110px" min="30" max="200"> <span class="description">Optional, only for the tyre pressure at handoff.</span></td></tr>', esc_attr( (string) ( $r->weight_kg ?? '' ) ) );
 			printf( '<tr><th><label for="cc-r-rating">Rating (1–5)</label></th><td><input type="number" min="1" max="5" id="cc-r-rating" name="rating" value="%s" style="width:80px"></td></tr>', esc_attr( (string) $r->rating ) );
 			printf( '<tr><th><label for="cc-r-notes">Notes</label></th><td><textarea id="cc-r-notes" name="notes" rows="3" class="large-text">%s</textarea></td></tr></tbody></table>', esc_textarea( (string) $r->notes ) );
 			submit_button( $r->id ? 'Save rider' : 'Add rider' );
@@ -656,7 +676,7 @@ class CC_Fleet_Admin {
 			'name' => sanitize_text_field( $in['name'] ?? '' ), 'email' => sanitize_email( $in['email'] ?? '' ),
 			'phone' => sanitize_text_field( $in['phone'] ?? '' ), 'phone_cc' => sanitize_text_field( $in['phone_cc'] ?? '27' ),
 			'instagram' => ltrim( sanitize_text_field( $in['instagram'] ?? '' ), '@' ),
-			'height_cm' => absint( $in['height_cm'] ?? 0 ) ?: null, 'rating' => min( 5, absint( $in['rating'] ?? 0 ) ) ?: null,
+			'height_cm' => absint( $in['height_cm'] ?? 0 ) ?: null, 'weight_kg' => ( absint( $in['weight_kg'] ?? 0 ) >= 30 && absint( $in['weight_kg'] ?? 0 ) <= 200 ) ? absint( $in['weight_kg'] ) : null, 'rating' => min( 5, absint( $in['rating'] ?? 0 ) ) ?: null,
 			'notes' => sanitize_textarea_field( $in['notes'] ?? '' ), 'whatsapp' => sanitize_key( $in['whatsapp'] ?? '' ),
 		);
 		if ( '' !== $data['phone'] ) {

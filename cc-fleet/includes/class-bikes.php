@@ -238,8 +238,8 @@ class CC_Fleet_Bikes {
 		}
 		wp_enqueue_media();
 		wp_enqueue_script( 'jquery-ui-sortable' );
-		wp_add_inline_script( 'jquery-ui-sortable', self::photo_js() );
-		wp_add_inline_style( 'wp-admin', '.cc-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px;padding:0;list-style:none}.cc-photos li{position:relative;margin:0;cursor:move}.cc-photos img{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:3px}.cc-photos li:first-child img{outline:2px solid #2271b1}.cc-photos button{position:absolute;top:2px;right:2px;width:20px;height:20px;padding:0;line-height:18px;border:0;border-radius:50%;background:#000a;color:#fff;cursor:pointer}' );
+		wp_add_inline_script( 'jquery-ui-sortable', self::photo_js() . ( class_exists( 'CC_Fleet_Parts' ) ? CC_Fleet_Parts::editor_js() : '' ) );
+		wp_add_inline_style( 'wp-admin', '.cc-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px;padding:0;list-style:none}.cc-photos li{position:relative;margin:0;cursor:move}.cc-photos img{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:3px}.cc-photos li:first-child img{outline:2px solid #2271b1}.cc-photos button{position:absolute;top:2px;right:2px;width:20px;height:20px;padding:0;line-height:18px;border:0;border-radius:50%;background:#000a;color:#fff;cursor:pointer}.cc-part-damage{display:block;margin-top:4px;color:#b32d2e;font-weight:600}.cc-part-warn{display:block;margin-top:4px;color:#996800}.cc-derived{background:#f6f7f7}.cc-care__due{color:#b32d2e;font-weight:600}.cc-care fieldset{display:inline-block;border:0;margin:0;padding:0}.cc-care legend{padding:0}' );
 	}
 
 	private static function photo_js() {
@@ -281,6 +281,9 @@ JS;
 		add_meta_box( 'cc_bike_photos', 'Photos', array( __CLASS__, 'box_photos' ), self::CPT, 'side', 'high' );
 		add_meta_box( 'cc_bike_site', 'Website', array( __CLASS__, 'box_site' ), self::CPT, 'side', 'high' );
 		add_meta_box( 'cc_bike_spec', 'Spec & parts', array( __CLASS__, 'box_spec' ), self::CPT, 'normal', 'high' );
+		if ( class_exists( 'CC_Fleet_Care' ) ) {
+			add_meta_box( 'cc_bike_care', 'Drivetrain care', array( 'CC_Fleet_Care', 'box' ), self::CPT, 'normal', 'high' );
+		}
 		add_meta_box( 'cc_bike_loans', 'Loans', array( __CLASS__, 'box_loans' ), self::CPT, 'normal', 'default' );
 		add_meta_box( 'cc_bike_history', 'History: what was done to this bike', array( __CLASS__, 'box_history' ), self::CPT, 'normal', 'default' );
 	}
@@ -334,7 +337,13 @@ JS;
 				}
 				$long = in_array( $key, array( 'notes', 'frame_notes' ), true );
 				printf( '<p><label>%s%s<br>', esc_html( $f[0] ), $f[2] ? '' : ' <span class="cc-private" title="Internal">●</span>' );
-				if ( $long ) {
+				$part_type = array( 'wheelset' => 'wheelset', 'tyres' => 'tyres' )[ $key ] ?? '';
+				$derived   = in_array( $key, array( 'wheel_size', 'freehub', 'tyre_size' ), true ) && class_exists( 'CC_Fleet_Parts' );
+				if ( $part_type && class_exists( 'CC_Fleet_Parts' ) ) {
+					echo CC_Fleet_Parts::select( $post->ID, $part_type ); // phpcs:ignore -- escaped inside.
+				} elseif ( $derived ) {
+					printf( '<input type="text" class="widefat cc-derived" value="%s" readonly title="Comes from the %s part">', esc_attr( self::get( $post->ID, $key ) ), 'tyre_size' === $key ? 'tyres' : 'wheelset' );
+				} elseif ( $long ) {
 					printf( '<textarea class="widefat" rows="2" name="cc[%s]">%s</textarea>', esc_attr( $key ), esc_textarea( self::get( $post->ID, $key ) ) );
 				} else {
 					printf( '<input type="text" class="widefat" name="cc[%s]" value="%s">', esc_attr( $key ), esc_attr( self::get( $post->ID, $key ) ) );
@@ -382,6 +391,9 @@ JS;
 				$items[] = array( 'date' => $m->work_date, 'sort' => $m->created_at, 'kind' => 'job', 'm' => $m );
 			}
 		}
+		if ( class_exists( 'CC_Fleet_Care' ) ) {
+			$items = array_merge( $items, CC_Fleet_Care::history_items( $post->ID ) );
+		}
 		usort( $items, function ( $a, $b ) { return strcmp( $b['date'] . $b['sort'], $a['date'] . $a['sort'] ); } );
 		printf( '<p><a class="button" href="%s">+ Workshop job for this bike</a></p>', esc_url( admin_url( 'admin.php?page=cc-fleet-record&kind=maintenance&bike_id=' . $post->ID ) ) );
 		if ( ! $items ) {
@@ -399,10 +411,14 @@ JS;
 					$lines .= sprintf( '<li><strong>%s:</strong> <del>%s</del> → %s</li>', esc_html( $labels[ $c[0] ][0] ?? $c[0] ), esc_html( '' === (string) $c[1] ? '(empty)' : $c[1] ), esc_html( '' === (string) $c[2] ? '(empty)' : $c[2] ) );
 				}
 				$u    = $it['user'] ? get_userdata( $it['user'] ) : null;
-				$type = $d['workshop'] ? ( class_exists( 'CC_Fleet_Records' ) ? ( CC_Fleet_Records::MAINT_TYPES[ $d['type'] ] ?? $d['type'] ) : $d['type'] ) : 'Spec corrected';
+				$type = $d['workshop'] ? ( class_exists( 'CC_Fleet_Records' ) ? ( CC_Fleet_Records::MAINT_TYPES[ $d['type'] ] ?? $d['type'] ) : $d['type'] ) : ( 'moved' === ( $d['type'] ?? '' ) ? 'Part moved' : 'Spec corrected' );
 				printf( '<tr><td>%s</td><td><span class="cc-badge">%s</span> %s%s%s</td><td>%s</td></tr>', $date, esc_html( $type ), esc_html( $d['note'] ?? '' ),
 					! empty( $d['cost'] ) ? ' <span class="cc-muted">· R' . esc_html( number_format_i18n( (float) $d['cost'] ) ) . '</span>' : '', $lines ? '<ul class="cc-changes">' . $lines . '</ul>' : '',
 					esc_html( trim( ( $d['by'] ?? '' ) . ( $u ? ' (' . $u->display_name . ')' : '' ) ) ) );
+			} elseif ( 'care' === $it['kind'] ) {
+				$d = $it['d'];
+				$u = $it['user'] ? get_userdata( $it['user'] ) : null;
+				printf( '<tr><td>%s</td><td><span class="cc-badge">Drivetrain</span> %s%s</td><td>%s</td></tr>', $date, esc_html( $d['text'] ?? '' ), ! empty( $d['note'] ) ? ' <span class="cc-muted">· ' . esc_html( $d['note'] ) . '</span>' : '', esc_html( $u ? $u->display_name : '' ) );
 			} else {
 				$m = $it['m'];
 				printf( '<tr><td>%s</td><td><span class="cc-badge">%s</span> <a href="%s">%s</a>%s%s</td><td>%s</td></tr>', $date, esc_html( CC_Fleet_Records::MAINT_TYPES[ $m->type ] ?? $m->type ),
@@ -457,6 +473,18 @@ JS;
 			return;
 		}
 		$in      = isset( $_POST['cc'] ) && is_array( $_POST['cc'] ) ? wp_unslash( $_POST['cc'] ) : array();
+		// Wheelset and tyres come from the parts drop-downs: fill the spec fields from the chosen part,
+		// so the change is recorded like any other, then move the parts afterwards.
+		$parts = array();
+		if ( class_exists( 'CC_Fleet_Parts' ) && isset( $_POST['cc_part'] ) && is_array( $_POST['cc_part'] ) ) {
+			foreach ( CC_Fleet_Parts::TYPES as $ptype => $pdef ) {
+				if ( isset( $_POST['cc_part'][ $ptype ] ) ) {
+					$pid             = absint( $_POST['cc_part'][ $ptype ] );
+					$parts[ $ptype ] = $pid;
+					$in              = array_merge( $in, CC_Fleet_Parts::bike_values( $pid, $ptype ) );
+				}
+			}
+		}
 		$tracked = self::tracked_fields();
 		$changes = array();
 		foreach ( array_keys( self::fields() ) as $key ) {
@@ -474,6 +502,17 @@ JS;
 		}
 		$change = isset( $_POST['cc_change'] ) && is_array( $_POST['cc_change'] ) ? wp_unslash( $_POST['cc_change'] ) : array();
 		self::record_change( $post_id, $changes, $change );
+		foreach ( $parts as $ptype => $pid ) {
+			$cur = CC_Fleet_Parts::on_bike( $post_id, $ptype );
+			if ( $pid && ( ! $cur || (int) $cur->id !== $pid ) ) {
+				CC_Fleet_Parts::assign( $pid, $post_id, array( 'date' => $change['date'] ?? '', 'by' => $change['by'] ?? '', 'note' => 'Fitted to ' . self::get( $post_id, 'cc_id' ) ) );
+			} elseif ( ! $pid && $cur ) {
+				CC_Fleet_Parts::assign( $cur->id, 0, array( 'note' => 'Taken off ' . self::get( $post_id, 'cc_id' ) ) );
+			}
+		}
+		if ( class_exists( 'CC_Fleet_Care' ) && isset( $_POST['cc_care'] ) && is_array( $_POST['cc_care'] ) ) {
+			CC_Fleet_Care::save( $post_id, wp_unslash( $_POST['cc_care'] ) );
+		}
 		self::set( $post_id, 'state', in_array( $in['state'] ?? '', array( 'active', 'workshop', 'retired' ), true ) ? $in['state'] : 'active' );
 		self::set( $post_id, 'show_on_site', empty( $in['show_on_site'] ) ? '0' : '1' );
 		self::set( $post_id, 'public_name', sanitize_text_field( $in['public_name'] ?? '' ) );

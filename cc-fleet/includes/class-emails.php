@@ -213,6 +213,7 @@ class CC_Fleet_Emails {
 					'agreement' => CC_Fleet_Landing::agreement_url(), 'handoff_notes' => CC_Fleet_Settings::get( 'handoff_notes' ),
 					'place' => $loan->handoff_place ?? '', 'time' => $loan->handoff_time ?? '', 'hnote' => $loan->handoff_note ?? '',
 					'race' => ! empty( $loan->race ) ? CC_Fleet_Settings::get( 'race_terms' ) : '', 'event' => self::event_name( $loan ),
+					'pressure' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::line_for_loan( $loan ) : '', 'pressure_note' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::advice( $loan ) : '',
 				) ), array( 'type' => 'approved', 'loan' => $loan ) );
 				break;
 			case 'declined':
@@ -350,6 +351,7 @@ class CC_Fleet_Emails {
 				'place'     => trim( (string) ( $l->handoff_place ?? '' ) ),
 				'time'      => trim( (string) ( $l->handoff_time ?? '' ) ),
 				'note'      => trim( (string) ( $l->handoff_note ?? '' ) ),
+				'pressure'  => $next && class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::line_for_loan( $next ) : '',
 				'dropoff'   => CC_Fleet_Settings::get( 'dropoff_place' ),
 				'edited'    => class_exists( 'CC_Fleet_Outbox' ) && CC_Fleet_Outbox::scheduled( $l->id ),
 				'edit'      => admin_url( 'admin.php?page=cc-fleet-loan&id=' . $l->id . '#handoff' ),
@@ -371,6 +373,9 @@ class CC_Fleet_Emails {
 			);
 			if ( $it['note'] ) {
 				$rows[] = array( 'Note', $it['note'] );
+			}
+			if ( ! empty( $it['pressure'] ) ) {
+				$rows[] = array( 'Tyres for ' . strtok( $it['next'], ' ' ), $it['pressure'] );
 			}
 			$rows[]   = array( 'Reminder', $it['edited'] ? 'Your edited version' : 'Standard text' );
 			$blocks[] = array( 'details', $it['bike'], $rows );
@@ -478,6 +483,9 @@ class CC_Fleet_Emails {
 		}
 		if ( ! empty( $f['hnote'] ) ) {
 			$blocks[ count( $blocks ) - 1 ][2][] = array( 'Note', $f['hnote'] );
+		}
+		if ( ! empty( $f['pressure'] ) ) {
+			$blocks[] = array( 'details', 'Tyre pressure for you', array( array( 'Start with', $f['pressure'] ), array( 'Why', $f['pressure_note'] ?? '' ) ) );
 		}
 		$blocks[] = array( 'steps', 'Before you ride', $handoff );
 		if ( ! empty( $f['race'] ) ) {
@@ -712,7 +720,7 @@ class CC_Fleet_Emails {
 		$cal = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
 		return array(
 			'Rider · request received' => array( 'We got your bike request', self::msg_received( array( 'name' => 'Naledi', 'bike' => 'Any bike in size 58', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'plan' => 'Overnighter to Greyton', 'whatsapp' => CC_Fleet_Settings::get( 'whatsapp_number' ) ? CC_Fleet_Phone::wa_link( CC_Fleet_Settings::get( 'whatsapp_number' ), 'Hi' ) : '' ) ) ),
-			'Rider · confirmed'        => array( "You're on — bike confirmed", self::msg_confirmed( array( 'name' => 'Naledi', 'bike' => 'CC-08 Erdgeschoss 58', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'from' => 'Thandi, Fri 4 Dec', 'from_first' => 'Thandi', 'return' => 'Mon 7 Dec 2026', 'photo' => '', 'calendar' => $cal, 'bike_url' => self::fleet_url(), 'agreement' => CC_Fleet_Landing::agreement_url() ?: home_url( '/' ), 'handoff_notes' => CC_Fleet_Settings::get( 'handoff_notes' ) ?: '[Handoff note from Settings, e.g. “Pedals: bring your own.”]' ) ) ),
+			'Rider · confirmed'        => array( "You're on — bike confirmed", self::msg_confirmed( array( 'name' => 'Naledi', 'bike' => 'CC-08 Erdgeschoss 58', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'from' => 'Thandi, Fri 4 Dec', 'from_first' => 'Thandi', 'return' => 'Mon 7 Dec 2026', 'photo' => '', 'calendar' => $cal, 'bike_url' => self::fleet_url(), 'agreement' => CC_Fleet_Landing::agreement_url() ?: home_url( '/' ), 'handoff_notes' => CC_Fleet_Settings::get( 'handoff_notes' ) ?: '[Handoff note from Settings, e.g. “Pedals: bring your own.”]', 'pressure' => 'Front 32 psi (2.2 bar) · Rear 34 psi (2.3 bar)', 'pressure_note' => 'Starting point for 68 kg on 45 mm tubeless tyres, mixed gravel. Loose or rough: 2–3 psi lower. Mostly tar: 3–5 psi higher. Check before every ride.' ) ) ),
 			'Rider · return reminder'  => array( 'Bike due back Mon 7 Dec 2026', self::msg_reminder( array( 'name' => 'Naledi', 'bike' => 'CC-08 Erdgeschoss 58', 'cc' => 'CC-08', 'due' => 'Mon 7 Dec 2026', 'when' => 'tomorrow', 'next' => 'Sipho', 'dropoff' => CC_Fleet_Settings::get( 'dropoff_place' ), 'report' => self::crew_mailto( 'Problem' ), 'extend' => self::crew_mailto( 'One more day' ) ) ) ),
 			'Rider · not this time'    => array( 'About your bike request', self::msg_declined( array( 'name' => 'Naledi', 'bike' => 'CC-12 Kettensäge 56', 'cc' => 'CC-12', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'free' => array( array( 'CC-07 Erdgeschoss 56', self::fleet_url() ), array( 'CC-11 Kettensäge 54', self::fleet_url() ) ), 'busy' => true, 'later' => 'Thu 10 Dec', 'later_url' => self::fleet_url() ) ) ),
 			'Crew · new request'       => array( 'New bike request: size 58', self::msg_crew_request( array( 'name' => 'Naledi Khumalo', 'height' => 176, 'email' => 'naledi@example.org', 'phone' => '+27 82 000 0000', 'instagram' => 'naledi.rides', 'wa' => 'https://wa.me/27820000000', 'wa_status' => '', 'bike' => 'Any bike in size 58', 'any' => true, 'size' => '58', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'plan' => 'Overnighter to Greyton', 'history' => '3 loans before', 'free' => array( 'CC-08 Erdgeschoss 58', 'CC-13 Kettensäge 58' ), 'clashes' => 0, 'link' => admin_url( 'admin.php?page=cc-fleet' ) ) ) ),

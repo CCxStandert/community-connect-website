@@ -68,6 +68,9 @@ class CC_Fleet_Riders {
 		if ( ! empty( $data['height_cm'] ) ) {
 			$clean['height_cm'] = max( 100, min( 230, (int) $data['height_cm'] ) );
 		}
+		if ( ! empty( $data['weight_kg'] ) && (int) $data['weight_kg'] >= 30 && (int) $data['weight_kg'] <= 200 ) {
+			$clean['weight_kg'] = (int) $data['weight_kg'];
+		}
 		if ( ! empty( $data['consent'] ) ) {
 			$clean['consent_at'] = $now;
 		}
@@ -110,6 +113,7 @@ class CC_Fleet_Riders {
 			'name' => $name, 'email' => $email, 'instagram' => ltrim( sanitize_text_field( $data['instagram'] ?? '' ), '@' ),
 			'phone' => '' === trim( (string) ( $data['phone'] ?? '' ) ) ? '' : CC_Fleet_Phone::clean( sanitize_text_field( $data['phone'] ), $data['phone_cc'] ?? '27' ),
 			'height_cm' => absint( $data['height_cm'] ?? 0 ) ? max( 100, min( 230, absint( $data['height_cm'] ) ) ) : null,
+			'weight_kg' => absint( $data['weight_kg'] ?? 0 ) ? max( 30, min( 200, absint( $data['weight_kg'] ) ) ) : null,
 			'notes' => sanitize_textarea_field( $data['notes'] ?? '' ), 'created_at' => $now, 'updated_at' => $now,
 		) );
 		$id = (int) $wpdb->insert_id;
@@ -119,7 +123,7 @@ class CC_Fleet_Riders {
 
 	public static function update( $id, array $data ) {
 		global $wpdb;
-		$allowed = array( 'name', 'email', 'phone', 'instagram', 'height_cm', 'rating', 'notes', 'whatsapp' );
+		$allowed = array( 'name', 'email', 'phone', 'instagram', 'height_cm', 'weight_kg', 'rating', 'notes', 'whatsapp' );
 		$update  = array_intersect_key( $data, array_flip( $allowed ) );
 		if ( isset( $update['phone'] ) && '' !== $update['phone'] ) {
 			$update['phone'] = CC_Fleet_Phone::clean( $update['phone'], $data['phone_cc'] ?? '27' );
