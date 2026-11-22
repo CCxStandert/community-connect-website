@@ -56,20 +56,20 @@
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --><!-- wp:group {"className":"cc-ride cc-ride--ink","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group cc-ride cc-ride--ink"><!-- wp:paragraph {"className":"cc-ride__n"} -->
-<p class="cc-ride__n">03 · Six rides to the Cycle Tour</p>
+<p class="cc-ride__n">03 · Eight Tuesdays to the Cycle Tour</p>
 <!-- /wp:paragraph --><!-- wp:heading {"level":3,"className":"cc-ride__name"} -->
 <h3 class="wp-block-heading cc-ride__name">FAR Inverted</h3>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-ride__when"} -->
-<p class="cc-ride__when">Every second Tuesday · 29 Dec 2026 → 9 Mar 2027</p>
+<p class="cc-ride__when">Every Tuesday · 19 Jan → 9 Mar 2027</p>
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"cc-ride__tags"} -->
 <p class="cc-ride__tags"><span>Advanced road</span><span>Drop ride</span><span>Segments</span></p>
 <!-- /wp:paragraph --><!-- wp:paragraph -->
-<p>Cape Town’s fastest group ride. Six editions, two weeks apart, building up to the Cape Town Cycle Tour on 14 March 2027. The last one is on the Tuesday morning of race week. We race the segments up and down some of the city’s most contested climbs: it gets you in shape for the Tour, and maybe a PB or two along the way. It’s not a race. But it is.</p>
+<p>Cape Town’s fastest group ride. Every Tuesday from 19 January, building up to the Cape Town Cycle Tour on 14 March 2027. The last one is on the Tuesday morning of race week. We race the segments up and down some of the city’s most contested climbs: it gets you in shape for the Tour, and maybe a PB or two along the way. It’s not a race. But it is.</p>
 <!-- /wp:paragraph --><!-- wp:list {"className":"cc-ride__facts"} -->
 <ul class="wp-block-list cc-ride__facts"><!-- wp:list-item -->
 <li><strong>Who</strong> Advanced road riders only. It’s a drop ride: nobody waits.</li>
 <!-- /wp:list-item --><!-- wp:list-item -->
-<li><strong>Dates</strong> 29 Dec · 12 Jan · 26 Jan · 9 Feb · 23 Feb · 9 Mar</li>
+<li><strong>Dates</strong> 19 Jan → 9 Mar, every Tuesday</li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list --><!-- wp:paragraph {"className":"cc-ride__more"} -->
 <p class="cc-ride__more"><a href="https://www.instagram.com/p/DTf0fqLiLVq/" target="_blank" rel="noreferrer noopener">Last season on Instagram ↗</a></p>

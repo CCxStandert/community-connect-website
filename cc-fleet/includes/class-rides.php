@@ -12,8 +12,61 @@ class CC_Fleet_Rides {
 
 	const OPTION = 'cc_fleet_rides_seeded';
 
+	/** FAR Inverted: weekly on Tuesdays from 19 Jan 2027, the last one in Cycle Tour week (changed in 0.16.1). */
+	const FAR_DATES = array( '2027-01-19', '2027-01-26', '2027-02-02', '2027-02-09', '2027-02-16', '2027-02-23', '2027-03-02', '2027-03-09' );
+	const FAR_OLD   = array( '2026-12-29', '2027-01-12' );
+
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'maybe_seed' ), 30 );
+		add_action( 'init', array( __CLASS__, 'maybe_far_weekly' ), 31 );
+	}
+
+	/**
+	 * 0.16.1: FAR Inverted goes weekly. Cancels the 29 Dec and 12 Jan rides, renumbers the rest by date
+	 * and adds the missing Tuesdays. Runs once.
+	 */
+	public static function maybe_far_weekly() {
+		if ( get_option( 'cc_fleet_far_weekly' ) || ! get_option( self::OPTION ) ) {
+			return;
+		}
+		update_option( 'cc_fleet_far_weekly', current_time( 'mysql' ), false );
+		self::far_weekly();
+	}
+
+	public static function far_weekly() {
+		global $wpdb;
+		$t    = CC_Fleet_Records::table( 'events' );
+		$rows = $wpdb->get_results( "SELECT * FROM $t WHERE name LIKE 'FAR Inverted%'" ); // phpcs:ignore
+		$by   = array();
+		foreach ( $rows as $r ) {
+			if ( in_array( $r->start_date, self::FAR_OLD, true ) ) {
+				if ( ! (int) $r->cancelled ) {
+					CC_Fleet_Records::save( 'events', array( 'cancelled' => 1, 'show_on_site' => (int) $r->show_on_site ), (int) $r->id );
+				}
+				continue;
+			}
+			$by[ $r->start_date ] = $r;
+		}
+				$n     = count( self::FAR_DATES );
+		foreach ( self::FAR_DATES as $i => $d ) {
+			$last = $n - 1 === $i;
+			$name = 'FAR Inverted #' . ( $i + 1 ) . ( $last ? ' · Cycle Tour week' : '' );
+			$row  = array(
+				'name' => $name, 'type' => array( 'group', 'road' ), 'start_date' => $d, 'location' => 'Cape Town', 'show_on_site' => 1,
+				'description' => self::far_about() . ( $last ? ' The last one, on the Tuesday morning of Cycle Tour week.' : '' ),
+				'link' => 'https://www.instagram.com/p/DTf0fqLiLVq/',
+			);
+			if ( isset( $by[ $d ] ) ) {
+				CC_Fleet_Records::save( 'events', array( 'name' => $name, 'show_on_site' => (int) $by[ $d ]->show_on_site ), (int) $by[ $d ]->id );
+			} else {
+				CC_Fleet_Records::save( 'events', $row );
+			}
+		}
+		CC_Fleet_Install::log( 'event', 0, 'far_weekly', 'FAR Inverted is weekly from 19 Jan 2027: 29 Dec and 12 Jan cancelled.' );
+	}
+
+	public static function far_about() {
+		return 'Cape Town’s fastest group ride: segment-based racing up and down some of the city’s most contested segments, weekly on Tuesdays building up to the Cape Town Cycle Tour. It’s not a race. But it is. Advanced road riders only, drop ride.';
 	}
 
 	public static function maybe_seed() {
@@ -26,7 +79,7 @@ class CC_Fleet_Rides {
 
 	/** The rides, as event rows. Dates for FAR Inverted count back from the Cycle Tour (Sun 14 Mar 2027). */
 	public static function rides() {
-		$far_about = 'Cape Town’s fastest group ride: segment-based racing up and down some of the city’s most contested segments, building up to the Cape Town Cycle Tour. It’s not a race. But it is. Advanced road riders only, drop ride.';
+		$far_about = self::far_about();
 		$rows      = array(
 			array(
 				'name' => 'Gravel group ride', 'type' => array( 'group', 'social', 'gravel' ), 'start_date' => '2026-12-01',
@@ -47,7 +100,7 @@ class CC_Fleet_Rides {
 				'link' => 'https://www.instagram.com/cc_x_standert/',
 			),
 		);
-		$far = array( '2026-12-29', '2027-01-12', '2027-01-26', '2027-02-09', '2027-02-23', '2027-03-09' );
+		$far = self::FAR_DATES;
 		foreach ( $far as $i => $d ) {
 			$last   = count( $far ) - 1 === $i;
 			$rows[] = array(
