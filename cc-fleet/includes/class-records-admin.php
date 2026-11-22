@@ -182,7 +182,7 @@ class CC_Fleet_Records_Admin {
 		foreach ( $rows as $e ) {
 			$st = CC_Fleet_Records::event_status( $e );
 			printf( '<tr><td>%s%s</td><td><strong>%s</strong><br><small class="cc-muted">%s</small></td><td>%s</td><td>%d</td><td><span class="cc-badge cc-badge--ev-%s">%s</span></td><td>%s</td><td><a class="button" href="%s">Open</a></td></tr>',
-				esc_html( self::nice( $e->start_date ) ), $e->end_date ? ' → ' . esc_html( self::nice( $e->end_date ) ) : '', esc_html( $e->name ), esc_html( $e->type . ( $e->link ? ' · ' : '' ) ) . ( $e->link ? '<a href="' . esc_url( $e->link ) . '" target="_blank" rel="noopener">link</a>' : '' ),
+				esc_html( self::nice( $e->start_date ) ), $e->end_date ? ' → ' . esc_html( self::nice( $e->end_date ) ) : '', esc_html( $e->name ), esc_html( implode( ' · ', CC_Fleet_Records::event_cat_labels( $e ) ) . ( $e->link ? ' · ' : '' ) ) . ( $e->link ? '<a href="' . esc_url( $e->link ) . '" target="_blank" rel="noopener">link</a>' : '' ),
 				esc_html( $e->location ), CC_Fleet_Records::bikes_at( $e ), esc_attr( $st ), esc_html( array( 'upcoming' => 'Upcoming', 'ongoing' => 'On now', 'completed' => 'Done', 'cancelled' => 'Cancelled' )[ $st ] ),
 				(int) $e->show_on_site ? '✓' : '—', esc_url( self::url( 'cc-fleet-record', array( 'kind' => 'events', 'id' => $e->id ) ) ) ); // phpcs:ignore
 		}
@@ -306,6 +306,14 @@ class CC_Fleet_Records_Admin {
 					printf( '<option value="%s"%s>%s</option>', esc_attr( $k ), selected( (string) $v, (string) $k, false ), esc_html( $l ) );
 				}
 				echo '</select>';
+				break;
+			case 'multi':
+				$on = 'type' === $key ? CC_Fleet_Records::event_cats( (string) $v ) : array_filter( explode( ',', (string) $v ) );
+				echo '<fieldset id="' . esc_attr( $id ) . '" class="cc-multi"><input type="hidden" name="' . esc_attr( $key ) . '[]" value="">';
+				foreach ( $f[2] as $k => $l ) {
+					printf( '<label style="display:inline-block;margin:0 14px 6px 0"><input type="checkbox" name="%s[]" value="%s"%s> %s</label>', esc_attr( $key ), esc_attr( $k ), checked( in_array( $k, $on, true ), true, false ), esc_html( $l ) );
+				}
+				echo '<p class="description">Tick all that fit. <strong>Race</strong> adds the racing terms to requests for this event.</p></fieldset>';
 				break;
 			case 'textarea':
 				printf( '<textarea id="%s" name="%s" rows="6" class="large-text">%s</textarea>', esc_attr( $id ), esc_attr( $key ), esc_textarea( (string) $v ) );

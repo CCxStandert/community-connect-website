@@ -175,15 +175,16 @@ class CC_Fleet_Frontend {
 			<label class="cc-field cc-field--wide"><span>Riding an event?</span>
 				<select name="event_id" data-cc-event>
 					<option value="">No, just riding</option>
-					<?php foreach ( $events as $ev ) : ?><option value="<?php echo (int) $ev->id; ?>" data-start="<?php echo esc_attr( $ev->start_date ); ?>" data-end="<?php echo esc_attr( $ev->end_date ?: $ev->start_date ); ?>"><?php echo esc_html( $ev->name . ' · ' . self::event_dates( $ev ) ); ?></option><?php endforeach; ?>
-					<option value="other">Another race or event</option>
+					<?php foreach ( $events as $ev ) : ?><option value="<?php echo (int) $ev->id; ?>" data-race="<?php echo CC_Fleet_Records::is_race( $ev ) ? 1 : 0; ?>" data-start="<?php echo esc_attr( $ev->start_date ); ?>" data-end="<?php echo esc_attr( $ev->end_date ?: $ev->start_date ); ?>"><?php echo esc_html( $ev->name . ' · ' . self::event_dates( $ev ) ); ?></option><?php endforeach; ?>
+					<option value="other" data-race="1">Another race</option>
+					<option value="other-ride" data-race="0">Another ride or event (not a race)</option>
 				</select>
 				<small class="cc-hint">Raffle bikes for events are handed out by the organisers and aren’t on this list.</small>
 			</label>
 			<p class="cc-error" data-cc-error="event_id" hidden></p>
 			<div class="cc-race" data-cc-race hidden>
 				<p class="cc-race__terms"><b>Racing terms.</b> <?php echo esc_html( $s['race_terms'] ); ?></p>
-				<label class="cc-check"><input type="checkbox" name="race_agree" value="1"> <span>I’m taking the bike to an event and accept the racing terms. <span class="cc-req" aria-hidden="true">*</span></span></label>
+				<label class="cc-check"><input type="checkbox" name="race_agree" value="1"> <span>I’m racing on the bike and accept the racing terms. <span class="cc-req" aria-hidden="true">*</span></span></label>
 				<p class="cc-error" data-cc-error="race_agree" hidden></p>
 			</div>
 			<label class="cc-field cc-field--wide"><span>The plan <span class="cc-req" aria-hidden="true">*</span></span><textarea name="plan" rows="3" placeholder="Gravel ride, bikepacking trip, a Tuesday loop…" required aria-required="true"></textarea></label>

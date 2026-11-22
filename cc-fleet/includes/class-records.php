@@ -10,7 +10,76 @@ defined( 'ABSPATH' ) || exit;
 class CC_Fleet_Records {
 
 	const MAINT_TYPES  = array( 'inspection' => 'Inspection', 'repair' => 'Repair', 'service' => 'Service', 'cleaning' => 'Cleaning', 'upgrade' => 'Upgrade' );
-	const EVENT_TYPES  = array( 'Gravel', 'Gravel Adventure', 'Group ride', 'Getaway', 'Road', 'Bikepacking', 'Other' );
+	const EVENT_TYPES  = array( 'Gravel', 'Gravel Adventure', 'Group ride', 'Getaway', 'Road', 'Bikepacking', 'Other' ); // Before 0.12 (single type).
+	/** Event categories: an event can have several. "race" brings the racing terms. */
+	const EVENT_CATS   = array(
+		'race'        => 'Race',
+		'social'      => 'Social ride',
+		'overnight'   => 'Overnight bikepacking',
+		'bikepacking' => 'Bikepacking trip',
+		'gravel'      => 'Gravel',
+		'road'        => 'Road',
+		'getaway'     => 'Getaway',
+		'other'       => 'Other',
+	);
+
+	/**
+	 * An event's categories as keys. Reads the stored list ("race,gravel") and, for events saved
+	 * before 0.12, the old single type ("Gravel" → race + gravel, "Group ride" → social + gravel).
+	 */
+	public static function event_cats( $e_or_type, $name = '' ) {
+		$type = is_object( $e_or_type ) ? (string) $e_or_type->type : (string) $e_or_type;
+		$name = is_object( $e_or_type ) ? (string) $e_or_type->name : (string) $name;
+		// New values are lists of lowercase keys ("race,gravel"). Anything else is an old single type
+		// ("Gravel", "Group ride", "Gravel race" from a CSV): read it word by word.
+		$tokens = array_filter( array_map( 'trim', explode( ',', $type ) ) );
+		if ( $tokens && ! array_diff( $tokens, array_keys( self::EVENT_CATS ) ) ) {
+			return array_values( array_unique( $tokens ) );
+		}
+		$legacy = array(
+			'gravel' => array( 'race', 'gravel' ), 'gravel adventure' => array( 'race', 'gravel' ), 'group ride' => array( 'social', 'gravel' ),
+			'getaway' => array( 'getaway' ), 'road' => array( 'race', 'road' ), 'bikepacking' => array( 'bikepacking' ), 'other' => array( 'other' ),
+		);
+		$t    = strtolower( trim( $type ) );
+		$keys = $legacy[ $t ] ?? array();
+		if ( ! $keys ) {
+			foreach ( array( 'race' => '/race|fondo|classic|100|miler/', 'social' => '/social|group ride|coffee|community ride/', 'overnight' => '/overnight/', 'bikepacking' => '/bikepack|bike-pack/', 'getaway' => '/getaway/', 'gravel' => '/gravel/', 'road' => '/road/' ) as $k => $re ) {
+				if ( preg_match( $re, $t ) ) {
+					$keys[] = $k;
+				}
+			}
+		}
+		if ( ! $keys ) {
+			$keys = array( 'other' );
+		}
+		if ( in_array( 'race', $keys, true ) && preg_match( '/group ride|social|women.?s .*(ride|adventure)|coffee/i', $name ) ) {
+			$keys = array_values( array_diff( $keys, array( 'race' ) ) );
+			array_unshift( $keys, 'social' );
+		}
+		if ( preg_match( '/overnight/i', $name ) ) {
+			$keys[] = 'overnight';
+		}
+		return array_values( array_unique( $keys ) );
+	}
+
+	public static function event_cat_labels( $e ) {
+		return array_map( function ( $k ) { return self::EVENT_CATS[ $k ]; }, self::event_cats( $e ) );
+	}
+
+	public static function is_race( $e ) {
+		return $e && in_array( 'race', self::event_cats( $e ), true );
+	}
+
+	/** v0.12: store every event's categories as keys. */
+	public static function migrate_event_cats() {
+		global $wpdb;
+		foreach ( $wpdb->get_results( 'SELECT id, type, name FROM ' . self::table( 'events' ) ) as $e ) { // phpcs:ignore
+			$keys = implode( ',', self::event_cats( $e ) );
+			if ( $keys !== $e->type ) {
+				$wpdb->update( self::table( 'events' ), array( 'type' => $keys ), array( 'id' => $e->id ) );
+			}
+		}
+	}
 	const NOTE_STATUS  = array( 'active' => 'Active', 'archived' => 'Archived' );
 
 	/** Field definitions: key => [label, type, options/extra]. */
@@ -39,7 +108,7 @@ class CC_Fleet_Records {
 			case 'events':
 				return array(
 					'name'         => array( 'Event', 'text' ),
-					'type'         => array( 'Type', 'select', array_combine( self::EVENT_TYPES, self::EVENT_TYPES ) ),
+					'type'         => array( 'Categories', 'multi', self::EVENT_CATS ),
 					'start_date'   => array( 'Date', 'date' ),
 					'end_date'     => array( 'Until (multi-day)', 'date', 'Leave empty for a one-day event' ),
 					'location'     => array( 'Location', 'text' ),
@@ -90,7 +159,7 @@ class CC_Fleet_Records {
 			$img   = preg_match( '/\.(jpe?g|png|webp|gif)(\?|$)/i', $e->image_url ) ? '<img src="' . esc_url( $e->image_url ) . '" alt="" loading="lazy">' : '';
 			$when  = wp_date( 'j M', strtotime( $e->start_date . ' 12:00' ) ) . ( $e->end_date ? '–' . wp_date( 'j M', strtotime( $e->end_date . ' 12:00' ) ) : '' );
 			$html .= sprintf( '<li class="cc-event">%s<div class="cc-event__body"><p class="cc-event__meta">%s · %s · %s</p><h3 class="cc-event__name">%s</h3><p>%s</p>%s</div></li>',
-				$img, esc_html( $when ), esc_html( $e->location ), esc_html( $e->type ), esc_html( $e->name ), esc_html( wp_trim_words( (string) $e->description, 28 ) ),
+				$img, esc_html( $when ), esc_html( $e->location ), esc_html( implode( ' · ', self::event_cat_labels( $e ) ) ), esc_html( $e->name ), esc_html( wp_trim_words( (string) $e->description, 28 ) ),
 				$e->link ? '<a class="cc-event__link" href="' . esc_url( $e->link ) . '" target="_blank" rel="noopener">More →</a>' : '' );
 		}
 		return $html . '</ul>';
@@ -143,7 +212,7 @@ class CC_Fleet_Records {
 		dbDelta( "CREATE TABLE $e (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			name varchar(190) NOT NULL DEFAULT '',
-			type varchar(60) NOT NULL DEFAULT 'Gravel',
+			type varchar(120) NOT NULL DEFAULT 'race,gravel',
 			start_date date NOT NULL,
 			end_date date DEFAULT NULL,
 			location varchar(190) NOT NULL DEFAULT '',
@@ -249,6 +318,7 @@ class CC_Fleet_Records {
 				case 'bike':     $v = (int) $v; break;
 				case 'color':    $v = preg_match( '/^#[0-9a-f]{3,8}$/i', (string) $v ) ? $v : ''; break;
 				case 'select':   $v = isset( $f[2][ $v ] ) ? $v : array_key_first( $f[2] ); break;
+				case 'multi':    $v = implode( ',', is_array( $v ) ? array_values( array_intersect( array_map( 'sanitize_key', $v ), array_keys( $f[2] ) ) ) : self::event_cats( (string) $v, (string) ( $in['name'] ?? '' ) ) ); break;
 				default:         $v = sanitize_text_field( $v );
 			}
 			$row[ $key ] = $v;

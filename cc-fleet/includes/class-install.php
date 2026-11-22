@@ -69,6 +69,9 @@ class CC_Fleet_Install {
 				// this runs on plugins_loaded, so only leave a note and do it on init.
 				update_option( 'cc_fleet_install_landing', 1, false );
 			}
+			if ( $from && $from < 8 ) {
+				CC_Fleet_Records::migrate_event_cats(); // Events: one type → several categories.
+			}
 			if ( $from < 6 ) {
 				// Wheelsets and tyres become parts: done on init, when bikes can be queried.
 				update_option( 'cc_fleet_migrate_parts', 1, false );

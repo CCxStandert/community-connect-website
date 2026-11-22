@@ -135,3 +135,21 @@ footer.foot .fine { text-align: center; font-size: 14px; margin: 0 0 12px; }
 .cc-landing .cc-part--fleet .when { margin-top: 14px; }
 /* block themes don't ship this helper class: hide labels meant for screen readers only */
 .screen-reader-text { border: 0; clip: rect(1px, 1px, 1px, 1px); clip-path: inset(50%); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute !important; width: 1px; word-wrap: normal !important; }
+
+/* --- the deal: who pays in two columns, then the agreement fold-outs --- */
+.cc-landing .deal .covers { display: grid; grid-template-columns: 1fr; border-top: var(--cc-line); }
+.cc-landing .deal .cover { padding: 14px 16px 6px; }
+.cc-landing .deal .cover + .cover { border-top: var(--cc-line); }
+.cc-landing .deal .cover h3 { margin: 0 0 8px; font-size: 19px; letter-spacing: -.02em; }
+.cc-landing .deal .cover ul { margin: 0 0 8px; padding: 0 0 0 18px; font-size: 15px; line-height: 1.45; }
+.cc-landing .deal .cover li { margin: 0 0 8px; }
+.cc-landing .deal .cover-note { margin: 0; padding: 12px 16px; border-top: var(--cc-line); font-size: 14px; background: var(--wp--preset--color--cream, #EDE3E8); }
+.cc-landing .in.max > .is-style-mono-label { margin-top: 10px; }
+.cc-landing .deal + .agree { margin-top: 0; border-top: 0; }
+@media (min-width: 760px) {
+	.cc-landing .deal .covers { grid-template-columns: 1fr 1fr; }
+	.cc-landing .deal .cover + .cover { border-top: 0; border-left: var(--cc-line); }
+}
+@media (min-width: 980px) {
+	.cc-landing .deal .cover, .cc-landing .deal .cover-note { padding-left: 40px; padding-right: 40px; }
+}

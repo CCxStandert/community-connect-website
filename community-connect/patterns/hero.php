@@ -31,11 +31,11 @@
 <div class="wp-block-group cc-cover cc-slide"><!-- wp:paragraph {"className":"is-style-pill-tag"} -->
 <p class="is-style-pill-tag">Events 2027</p>
 <!-- /wp:paragraph --><!-- wp:heading {"className":"cc-hero-title"} -->
-<h2 class="wp-block-heading cc-hero-title"><a href="#events">Race it on a fleet bike</a></h2>
+<h2 class="wp-block-heading cc-hero-title"><a href="#events">Ride it on a fleet bike</a></h2>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-l2"} -->
-<p class="cc-l2">Gravel races, dates out.</p>
+<p class="cc-l2">Races, social rides, overnights.</p>
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"is-style-hand-note"} -->
-<p class="is-style-hand-note">racing terms apply x</p>
+<p class="is-style-hand-note">racing terms for races x</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group -->

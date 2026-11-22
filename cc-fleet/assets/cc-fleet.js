@@ -138,11 +138,12 @@
 		var ev = form.querySelector('[data-cc-event]'), race = form.querySelector('[data-cc-race]');
 		if (ev && race) {
 			var sync = function () {
-				var on = !!ev.value; race.hidden = !on;
+				var sel = ev.options[ev.selectedIndex];
+				var on = !!ev.value && !!sel && sel.getAttribute('data-race') !== '0'; race.hidden = !on;
 				var box = race.querySelector('input[name=race_agree]'); if (box) box.required = on;
 				var o = ev.options[ev.selectedIndex];
 				var s = form.querySelector('[data-cc-start]'), e = form.querySelector('[data-cc-end]');
-				if (on && o && o.dataset.start && s && e && !s.value && !e.value) {
+				if (ev.value && o && o.dataset.start && s && e && !s.value && !e.value) {
 					var a = parse(o.dataset.start); a.setDate(a.getDate() - 2);
 					var b = parse(o.dataset.end); b.setDate(b.getDate() + 1);
 					s.value = iso(a) < (s.min || '') ? s.min : iso(a); e.value = iso(b);

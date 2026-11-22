@@ -82,6 +82,12 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page → Website box → **Long-term rider** + **Since**. From that date the bike is blocked on every calendar with no end date (fleet calendar shows an ochre bar, the public calendar shows it booked, booking it is refused with a clear reason unless you save anyway). Set it back to None to free the bike.
 - Re-importing the parts list records each changed part in the bike's History ("Updated from the parts list"). Bundled copy updated to the 20 Nov 2026 16:55 sheet (CC-01 tyres, CC-02 size/groupset/brakes/chainring, CC-03 full spec).
 
+## 0.12.0: Event categories (theme 1.1.0: the deal and the agreement in one)
+- Events have several categories: Race, Social ride, Overnight bikepacking, Bikepacking trip, Gravel, Road, Getaway, Other (checkboxes in Fleet Manager → Events). Existing events are converted on update (Gravel → Race + Gravel, Group ride → Social ride + Gravel).
+- Racing terms only for events marked Race (and “Another race”); “Another ride or event (not a race)” on the request form.
+- The website's events list shows every public event with its categories and filter buttons (Races, Social rides, Overnight bikepacking…).
+- Theme 1.1.0: “The deal” and the borrowing agreement are one section (who pays, then the agreement fold-outs, version 4); the menu has one link.
+
 ## 0.11.0: Usual loan length
 - New setting “Usual loan (days)”, 7. Shown on the request form, the bike page and the fleet heading; the borrowing agreement (now version 3) says loans are usually up to 7 days and exceptions are made when there's a need.
 - Picking a longer range shows a friendly note asking for the reason in the plan (not blocked; the hard limit stays “Longest loan”), and the request is marked for the crew.

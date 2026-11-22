@@ -1,6 +1,6 @@
 # The deal (our borrowing agreement)
 
-*Community Connect × Standert · version 3 · November 2026*
+*Community Connect × Standert · version 4 · November 2026*
 
 Hey, nice to have you here. Before you roll off on one of our bikes, here's how this works. It's not legal small print, just how friends share something they love.
 

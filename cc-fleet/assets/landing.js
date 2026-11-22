@@ -195,8 +195,35 @@ const span = (e) => {
   const sm = MON[+e.start.slice(5, 7) - 1], em = MON[+e.end.slice(5, 7) - 1];
   return sm === em ? `${Number(e.start.slice(8))}–${Number(e.end.slice(8))} ${sm} ${y}` : `${Number(e.start.slice(8))} ${sm}–${Number(e.end.slice(8))} ${em} ${y}`;
 };
-const kind = (e) => /ride|getaway/i.test(e.type) ? 'Ride' : 'Race';
-if ($('evList')) $('evList').innerHTML = EVENTS.map((e) => `<li class="ev"><time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time><div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="st">${kind(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">Event page ↗</a>` : ''}</li>`).join('');
+// Categories: an event can be a race, a social ride, an overnight bikepacking trip… (several at once).
+const MAIN = ['race', 'social', 'overnight', 'bikepacking', 'getaway'];
+const labelsOf = (e) => e.labels || (e.type ? [/ride|getaway/i.test(e.type) ? 'Ride' : 'Race'] : []);
+const catsOf = (e) => e.cats || [];
+const pills = (e) => {
+  const l = labelsOf(e), c = catsOf(e);
+  let idx = c.map((k, i) => (MAIN.includes(k) ? i : -1)).filter((i) => i >= 0);
+  if (!idx.length) idx = l.length ? [0] : [];
+  return idx.slice(0, 2).map((i) => `<span class="st${c[i] === 'race' ? ' race' : ''}">${esc(l[i])}</span>`).join('');
+};
+const evRow = (e) => `<li class="ev" data-cats="${esc(catsOf(e).join(' '))}"><time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time><div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">Event page ↗</a>` : ''}</li>`;
+if ($('evList')) {
+  const list = $('evList');
+  list.innerHTML = EVENTS.length ? EVENTS.map(evRow).join('') : '<li class="ev"><div><b>Nothing on the calendar right now.</b><small>Follow along on Instagram.</small></div></li>';
+  // Filter buttons for the categories that actually occur.
+  const FILTERS = [['all', 'All'], ['race', 'Races'], ['social', 'Social rides'], ['overnight', 'Overnight bikepacking'], ['bikepacking', 'Bikepacking trips'], ['getaway', 'Getaways']]
+    .filter(([k]) => k === 'all' || EVENTS.some((e) => catsOf(e).includes(k)));
+  if (FILTERS.length > 2) {
+    const bar = document.createElement('div');
+    bar.className = 'chips evchips max'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Filter events');
+    bar.innerHTML = FILTERS.map(([k, l], i) => `<button type="button" class="chip${i ? '' : ' on'}" data-k="${k}" aria-pressed="${i ? 'false' : 'true'}">${esc(l)}</button>`).join('');
+    list.before(bar);
+    bar.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button'); if (!b) return;
+      bar.querySelectorAll('button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      list.querySelectorAll('.ev').forEach((li) => { li.hidden = b.dataset.k !== 'all' && !(li.dataset.cats || '').split(' ').includes(b.dataset.k); });
+    });
+  }
+}
 
 /* ---- numbers ---- */
 if (STATS) { setText('sLoans', STATS.loans); setText('sYear', STATS.year); setText('sRiders', STATS.riders); setText('sEvents', STATS.events); }

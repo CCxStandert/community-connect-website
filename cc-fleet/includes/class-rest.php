@@ -192,6 +192,7 @@ class CC_Fleet_Rest {
 		$event_ref = sanitize_text_field( (string) ( $p['event_id'] ?? '' ) );
 		$event_id  = 0;
 		$event     = null;
+		$other_ride = 'other-ride' === $event_ref;
 		if ( 'other' === $event_ref ) {
 			$event_id = -1;
 		} elseif ( (int) $event_ref > 0 && class_exists( 'CC_Fleet_Records' ) ) {
@@ -202,8 +203,10 @@ class CC_Fleet_Rest {
 				$errors['event_id'] = 'That event isn’t on our calendar any more. Pick another, or “Another race”.';
 			}
 		}
-		if ( $event_id && empty( $p['race_agree'] ) ) {
-			$errors['race_agree'] = 'For an event or race, please accept the racing terms.';
+		// Racing terms only for races: an event marked Race, or "another race".
+		$is_race = -1 === $event_id || ( $event && CC_Fleet_Records::is_race( $event ) );
+		if ( $is_race && empty( $p['race_agree'] ) ) {
+			$errors['race_agree'] = 'For a race, please accept the racing terms.';
 		}
 		$range = CC_Fleet_Loans::validate_range( $start, $end, true );
 		if ( is_wp_error( $range ) ) {
@@ -237,8 +240,8 @@ class CC_Fleet_Rest {
 		) );
 		$loan_id = CC_Fleet_Loans::create( array(
 			'bike_id' => $bike_id, 'rider_id' => $rider_id, 'start_date' => $start, 'end_date' => $end,
-			'status' => 'requested', 'plan' => ( $event ? '[' . $event->name . '] ' : ( -1 === $event_id ? '[Race] ' : '' ) ) . $plan, 'source' => 'web',
-			'event_id' => max( 0, $event_id ), 'race' => $event_id ? 1 : 0,
+			'status' => 'requested', 'plan' => ( $event ? '[' . $event->name . '] ' : ( -1 === $event_id ? '[Race] ' : ( $other_ride ? '[Event] ' : '' ) ) ) . $plan, 'source' => 'web',
+			'event_id' => max( 0, $event_id ), 'race' => $is_race ? 1 : 0,
 			'requested_size' => $bike_id ? CC_Fleet_Bikes::get( $bike_id, 'size' ) : $size,
 			'notes'          => CC_Fleet_Loans::days_between( $start, $end ) + 1 > CC_Fleet_Frontend::usual_days() ? sprintf( 'Longer than the usual %d days (%d days): check the reason in the plan.', CC_Fleet_Frontend::usual_days(), CC_Fleet_Loans::days_between( $start, $end ) + 1 ) : '',
 		) );

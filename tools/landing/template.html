@@ -258,6 +258,7 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 @media(min-width:1281px){.grid.max,.row.max,.evs.max,.terms.max,.deal.max,.ask.max,.agree.max,.drawings.max,.stats.max{border-left:var(--line);border-right:var(--line)}.evs.max,.stats.max{border-top:var(--line)}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.say b,.say span,.say i{transition:none}}
 /* fleet grid: inset like the content above it, closed box with hairlines */.grid.max{margin-inline:16px;border-left:var(--line);border-right:var(--line)}@media(min-width:980px){.grid.max{margin-inline:40px}}@media(min-width:1360px){.grid.max{max-width:1200px;margin-inline:auto}}.grid>li{display:flex}.grid>li>.card{flex:1 1 auto;min-width:0}.grid.max{border-bottom:var(--line);margin-bottom:28px}.grid>li{margin-bottom:-1.5px}
+.evchips{margin-top:14px;padding-inline:16px}@media(min-width:980px){.evchips{padding-inline:40px}}.evchips+.evs{margin-top:12px}.ev .sts{grid-row:1;grid-column:3;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.st.race{background:var(--ink);color:var(--paper)}.ev[hidden]{display:none}
 </style>
 </head>
 <body class="cc-landing">
@@ -284,7 +285,7 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
   <div class="slides" id="slides">
     <a class="slide" href="#fleet" aria-label="Borrow a bike: free, then pass it on"><img src="__IMG__/hero-ghc.webp" alt="A pink Standert gravel bike hanging in a sunlit workshop"><span class="ov"><span class="tag">Free to borrow</span><b>Borrow a premium bike</b><span class="l2">Pass it on.</span><span class="hand">10 standerts, 0 fees x</span></span></a>
     <a class="slide" href="#fleet" aria-label="Gravel Hearts Club: two bikes repainted"><img src="__IMG__/repaint.webp" alt="A frame being repainted pink by hand"><span class="ov"><span class="tag">New project</span><b>Gravel Hearts Club</b><span class="l2">Cute and Dirty</span><span class="hand">2 bikes, repainted x</span></span></a>
-    <a class="slide" href="#events" aria-label="Events 2027: race it on a fleet bike"><img src="__IMG__/desolation.webp" alt="A rider carrying a frame, motion blurred"><span class="ov"><span class="tag">Events 2027</span><b>Race it on a fleet bike</b><span class="l2">Gravel races, dates out.</span><span class="hand">racing terms apply x</span></span></a>
+    <a class="slide" href="#events" aria-label="Events 2027: ride it on a fleet bike"><img src="__IMG__/desolation.webp" alt="A rider carrying a frame, motion blurred"><span class="ov"><span class="tag">Events 2027</span><b>Ride it on a fleet bike</b><span class="l2">Races, social rides, overnights.</span><span class="hand">racing terms for races x</span></span></a>
   </div>
   <div class="dots" id="dots" role="group" aria-label="Choose a highlight"></div>
 </section>
@@ -588,8 +589,35 @@ const span = (e) => {
   const sm = MON[+e.start.slice(5, 7) - 1], em = MON[+e.end.slice(5, 7) - 1];
   return sm === em ? `${Number(e.start.slice(8))}–${Number(e.end.slice(8))} ${sm} ${y}` : `${Number(e.start.slice(8))} ${sm}–${Number(e.end.slice(8))} ${em} ${y}`;
 };
-const kind = (e) => /ride|getaway/i.test(e.type) ? 'Ride' : 'Race';
-if ($('evList')) $('evList').innerHTML = EVENTS.map((e) => `<li class="ev"><time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time><div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="st">${kind(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">Event page ↗</a>` : ''}</li>`).join('');
+// Categories: an event can be a race, a social ride, an overnight bikepacking trip… (several at once).
+const MAIN = ['race', 'social', 'overnight', 'bikepacking', 'getaway'];
+const labelsOf = (e) => e.labels || (e.type ? [/ride|getaway/i.test(e.type) ? 'Ride' : 'Race'] : []);
+const catsOf = (e) => e.cats || [];
+const pills = (e) => {
+  const l = labelsOf(e), c = catsOf(e);
+  let idx = c.map((k, i) => (MAIN.includes(k) ? i : -1)).filter((i) => i >= 0);
+  if (!idx.length) idx = l.length ? [0] : [];
+  return idx.slice(0, 2).map((i) => `<span class="st${c[i] === 'race' ? ' race' : ''}">${esc(l[i])}</span>`).join('');
+};
+const evRow = (e) => `<li class="ev" data-cats="${esc(catsOf(e).join(' '))}"><time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time><div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">Event page ↗</a>` : ''}</li>`;
+if ($('evList')) {
+  const list = $('evList');
+  list.innerHTML = EVENTS.length ? EVENTS.map(evRow).join('') : '<li class="ev"><div><b>Nothing on the calendar right now.</b><small>Follow along on Instagram.</small></div></li>';
+  // Filter buttons for the categories that actually occur.
+  const FILTERS = [['all', 'All'], ['race', 'Races'], ['social', 'Social rides'], ['overnight', 'Overnight bikepacking'], ['bikepacking', 'Bikepacking trips'], ['getaway', 'Getaways']]
+    .filter(([k]) => k === 'all' || EVENTS.some((e) => catsOf(e).includes(k)));
+  if (FILTERS.length > 2) {
+    const bar = document.createElement('div');
+    bar.className = 'chips evchips max'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Filter events');
+    bar.innerHTML = FILTERS.map(([k, l], i) => `<button type="button" class="chip${i ? '' : ' on'}" data-k="${k}" aria-pressed="${i ? 'false' : 'true'}">${esc(l)}</button>`).join('');
+    list.before(bar);
+    bar.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button'); if (!b) return;
+      bar.querySelectorAll('button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      list.querySelectorAll('.ev').forEach((li) => { li.hidden = b.dataset.k !== 'all' && !(li.dataset.cats || '').split(' ').includes(b.dataset.k); });
+    });
+  }
+}
 
 /* ---- numbers ---- */
 if (STATS) { setText('sLoans', STATS.loans); setText('sYear', STATS.year); setText('sRiders', STATS.riders); setText('sEvents', STATS.events); }

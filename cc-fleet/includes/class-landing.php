@@ -127,11 +127,9 @@ class CC_Fleet_Landing {
 		$events = array();
 		if ( class_exists( 'CC_Fleet_Frontend' ) ) {
 			foreach ( CC_Fleet_Frontend::upcoming_events() as $e ) {
-				// Races and big rides only: the crew's own getaways and weekly rides live elsewhere.
-				if ( preg_match( '/getaway|social|coffee|group ride|weekly/i', $e->type . ' ' . $e->name ) ) {
-					continue;
-				}
-				$events[] = array( 'name' => $e->name, 'start' => $e->start_date, 'end' => $e->end_date ?: $e->start_date, 'where' => (string) $e->location, 'type' => (string) $e->type, 'link' => (string) $e->link );
+				// Every event ticked "Show on the website": races, social rides, bikepacking…
+				$cats     = CC_Fleet_Records::event_cats( $e );
+				$events[] = array( 'name' => $e->name, 'start' => $e->start_date, 'end' => $e->end_date ?: $e->start_date, 'where' => (string) $e->location, 'cats' => $cats, 'labels' => array_map( function ( $k ) { return CC_Fleet_Records::EVENT_CATS[ $k ]; }, $cats ), 'link' => (string) $e->link );
 			}
 		}
 		return array(
