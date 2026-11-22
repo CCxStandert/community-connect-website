@@ -420,7 +420,7 @@ class CC_Fleet_Feeds {
 		$profile = 'https://www.instagram.com/' . rawurlencode( ltrim( $handle, '@' ) ) . '/';
 		$h  = '<section class="sect cc-part cc-part--ig" aria-labelledby="instagram"><div class="in max igh"><div><h2 class="h" id="instagram">' . esc_html( $a['title'] ) . '</h2>';
 		$h .= '<p class="sub">What the bikes have been up to lately.</p></div>';
-		$h .= '<a class="pillbtn line" href="' . esc_url( $profile ) . '" target="_blank" rel="noopener">@' . esc_html( ltrim( $handle, '@' ) ) . ' ↗</a></div>';
+		$h .= '<a class="pillbtn line" href="' . esc_url( $profile ) . '" target="_blank" rel="noopener">@' . esc_html( ltrim( $handle, '@' ) ) . ' <svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a></div>';
 		$h .= '<ul class="iggrid max">';
 		foreach ( $posts as $i => $p ) {
 			$when = $p['time'] ? wp_date( 'j M Y', strtotime( $p['time'] ) ) : '';
@@ -428,7 +428,7 @@ class CC_Fleet_Feeds {
 			$h   .= sprintf(
 				'<li><a class="igpost" href="%s" target="_blank" rel="noopener"><span class="igimg"><img src="%s" alt="%s" loading="%s" decoding="async" width="640" height="640">%s</span><span class="igmeta"><time class="mono" datetime="%s">[%s]</time><span class="igcap">%s</span></span></a></li>',
 				esc_url( $p['permalink'] ), esc_url( $p['img'] ), esc_attr( wp_trim_words( $p['caption'], 14, '' ) ?: 'Instagram post by @' . $handle ), $i < 2 ? 'eager' : 'lazy',
-				'VIDEO' === $p['type'] ? '<span class="igbadge" aria-label="Video">▶</span>' : ( 'CAROUSEL_ALBUM' === $p['type'] ? '<span class="igbadge" aria-label="Several photos">⧉</span>' : '' ),
+				'VIDEO' === $p['type'] ? '<span class="igbadge" aria-label="Video"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2.5v7l6-3.5z" fill="currentColor"/></svg></span>' : ( 'CAROUSEL_ALBUM' === $p['type'] ? '<span class="igbadge" aria-label="Several photos"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 1.75h6.25V8M1.75 4h6.25v6.25H1.75z" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>' : '' ),
 				esc_attr( $p['time'] ), esc_html( $when ), esc_html( $cap )
 			);
 		}

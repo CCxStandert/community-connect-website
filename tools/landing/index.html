@@ -635,7 +635,7 @@ const span = (e) => {
   return sm === em ? `${Number(e.start.slice(8))}–${Number(e.end.slice(8))} ${sm} ${y}` : `${Number(e.start.slice(8))} ${sm}–${Number(e.end.slice(8))} ${em} ${y}`;
 };
 const kind = (e) => /ride|getaway/i.test(e.type) ? 'Ride' : 'Race';
-if ($('evList')) $('evList').innerHTML = EVENTS.map((e) => `<li class="ev"><time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time><div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="st">${kind(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">Event page ↗</a>` : ''}</li>`).join('');
+if ($('evList')) $('evList').innerHTML = EVENTS.map((e) => `<li class="ev"><time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time><div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="st">${kind(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">Event page <svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>` : ''}</li>`).join('');
 
 /* ---- numbers ---- */
 if (STATS) { setText('sLoans', STATS.loans); setText('sYear', STATS.year); setText('sRiders', STATS.riders); setText('sEvents', STATS.events); }

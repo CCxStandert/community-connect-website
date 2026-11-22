@@ -205,7 +205,7 @@ const pills = (e) => {
   if (!idx.length) idx = l.length ? [0] : [];
   return idx.slice(0, 2).map((i) => `<span class="st${c[i] === 'race' ? ' race' : ''}">${esc(l[i])}</span>`).join('');
 };
-const evRow = (e) => `<li class="ev" data-cats="${esc(catsOf(e).join(' '))}"><time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time><div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">Event page ↗</a>` : ''}</li>`;
+const evRow = (e) => `<li class="ev" data-cats="${esc(catsOf(e).join(' '))}"><time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time><div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">Event page <svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>` : ''}</li>`;
 if ($('evList')) {
   const list = $('evList');
   list.innerHTML = EVENTS.length ? EVENTS.map(evRow).join('') : '<li class="ev"><div><b>Nothing on the calendar right now.</b><small>Follow along on Instagram.</small></div></li>';
