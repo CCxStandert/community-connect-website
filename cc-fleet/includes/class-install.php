@@ -158,6 +158,7 @@ class CC_Fleet_Install {
 
 		CC_Fleet_Records::create_tables( $c );
 		CC_Fleet_Parts::create_table( $c );
+		CC_Fleet_Expenses::create_table( $c );
 		CC_Fleet_Outbox::create_table();
 	}
 

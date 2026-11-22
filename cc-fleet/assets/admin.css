@@ -121,3 +121,11 @@
 .cc-raffle-bikes{display:flex;flex-wrap:wrap;gap:6px 18px}
 .cc-raffle fieldset{border:0;padding:0;margin:0}
 .cc-raffle legend{font-weight:600;margin-bottom:4px}
+
+/* Expenses (0.10) */
+.cc-big { font-size: 26px; font-weight: 700; margin: 4px 0; }
+.cc-big.cc-warn { color: #b32d2e; }
+.cc-drop { margin: 16px 0; border: 2px dashed #c3c4c7; }
+.cc-filters { margin: 12px 0; }
+.cc-bike-ticks label { display: inline-block; min-width: 76px; margin: 0 6px 6px 0; }
+.cc-expenses td { vertical-align: top; }

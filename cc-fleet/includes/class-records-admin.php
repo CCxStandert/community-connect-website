@@ -573,6 +573,9 @@ class CC_Fleet_Records_Admin {
 			CC_Fleet_Care::dashboard_card();
 			CC_Fleet_Parts::dashboard_card();
 		}
+		if ( class_exists( 'CC_Fleet_Expenses' ) ) {
+			CC_Fleet_Expenses::dashboard_card();
+		}
 		echo '</div>';
 	}
 

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       CC Fleet
  * Description:       Community Connect fleet backend: bikes, riders, loans, availability calendar, request form, workshop log, stock, events calendar, notes, emails and calendar feeds.
- * Version:           0.9.1
+ * Version:           0.10.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Community Connect NPC
@@ -12,8 +12,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CC_FLEET_VERSION', '0.9.1' );
-define( 'CC_FLEET_DB_VERSION', '6' );
+define( 'CC_FLEET_VERSION', '0.10.0' );
+define( 'CC_FLEET_DB_VERSION', '7' );
 define( 'CC_FLEET_FILE', __FILE__ );
 define( 'CC_FLEET_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CC_FLEET_URL', plugin_dir_url( __FILE__ ) );
@@ -36,6 +36,7 @@ require_once CC_FLEET_DIR . 'includes/class-frontend.php';
 require_once CC_FLEET_DIR . 'includes/class-privacy.php';
 require_once CC_FLEET_DIR . 'includes/class-updater.php';
 require_once CC_FLEET_DIR . 'includes/class-parts.php';
+require_once CC_FLEET_DIR . 'includes/class-expenses.php';
 if ( is_admin() ) {
 	require_once CC_FLEET_DIR . 'includes/class-admin.php';
 	require_once CC_FLEET_DIR . 'includes/class-records-admin.php';
@@ -57,6 +58,7 @@ add_action( 'plugins_loaded', function () {
 	CC_Fleet_Updater::init();
 	CC_Fleet_Parts::init();
 	CC_Fleet_Care::init();
+	CC_Fleet_Expenses::init();
 	if ( is_admin() ) {
 		CC_Fleet_Admin::init();
 		CC_Fleet_Records_Admin::init();

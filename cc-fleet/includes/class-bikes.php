@@ -394,6 +394,9 @@ JS;
 		if ( class_exists( 'CC_Fleet_Care' ) ) {
 			$items = array_merge( $items, CC_Fleet_Care::history_items( $post->ID ) );
 		}
+		if ( class_exists( 'CC_Fleet_Expenses' ) ) {
+			$items = array_merge( $items, CC_Fleet_Expenses::history_items( $post->ID ) );
+		}
 		usort( $items, function ( $a, $b ) { return strcmp( $b['date'] . $b['sort'], $a['date'] . $a['sort'] ); } );
 		printf( '<p><a class="button" href="%s">+ Workshop job for this bike</a></p>', esc_url( admin_url( 'admin.php?page=cc-fleet-record&kind=maintenance&bike_id=' . $post->ID ) ) );
 		if ( ! $items ) {
@@ -415,6 +418,8 @@ JS;
 				printf( '<tr><td>%s</td><td><span class="cc-badge">%s</span> %s%s%s</td><td>%s</td></tr>', $date, esc_html( $type ), esc_html( $d['note'] ?? '' ),
 					! empty( $d['cost'] ) ? ' <span class="cc-muted">· R' . esc_html( number_format_i18n( (float) $d['cost'] ) ) . '</span>' : '', $lines ? '<ul class="cc-changes">' . $lines . '</ul>' : '',
 					esc_html( trim( ( $d['by'] ?? '' ) . ( $u ? ' (' . $u->display_name . ')' : '' ) ) ) );
+			} elseif ( 'expense' === $it['kind'] ) {
+				CC_Fleet_Expenses::history_row( $it['e'], $date ); // phpcs:ignore -- escaped inside.
 			} elseif ( 'care' === $it['kind'] ) {
 				$d = $it['d'];
 				$u = $it['user'] ? get_userdata( $it['user'] ) : null;
