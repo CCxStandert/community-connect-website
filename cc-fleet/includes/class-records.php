@@ -243,7 +243,8 @@ class CC_Fleet_Records {
 			switch ( $f[1] ) {
 				case 'textarea': $v = sanitize_textarea_field( $v ); break;
 				case 'url':      $v = esc_url_raw( $v ); break;
-				case 'number':   $v = '' === $v ? null : ( 'cost' === $key ? round( (float) str_replace( ',', '.', (string) $v ), 2 ) : (int) $v ); break;
+				// Cost, quantity and minimum are NOT NULL columns: an empty field is 0 (MySQL strict mode refuses NULL there).
+				case 'number':   $v = '' === $v || null === $v ? ( in_array( $key, array( 'cost', 'quantity', 'min_qty' ), true ) ? 0 : null ) : ( 'cost' === $key ? round( (float) str_replace( ',', '.', (string) $v ), 2 ) : (int) $v ); break;
 				case 'date':     $v = CC_Fleet_Import::date( (string) $v ) ?: null; break;
 				case 'bike':     $v = (int) $v; break;
 				case 'color':    $v = preg_match( '/^#[0-9a-f]{3,8}$/i', (string) $v ) ? $v : ''; break;
@@ -276,7 +277,9 @@ class CC_Fleet_Records {
 			$wpdb->update( self::table( $kind ), $row, array( 'id' => (int) $id ) );
 		} else {
 			$row['created_at'] = $row['updated_at'];
-			$wpdb->insert( self::table( $kind ), $row );
+			if ( false === $wpdb->insert( self::table( $kind ), $row ) || ! $wpdb->insert_id ) {
+				return new WP_Error( 'cc_db', 'Could not save: ' . ( $wpdb->last_error ?: 'database error' ) );
+			}
 			$id = (int) $wpdb->insert_id;
 		}
 		CC_Fleet_Install::log( $kind, $id, 'saved' );

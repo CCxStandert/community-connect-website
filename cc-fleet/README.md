@@ -82,6 +82,9 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page → Website box → **Long-term rider** + **Since**. From that date the bike is blocked on every calendar with no end date (fleet calendar shows an ochre bar, the public calendar shows it booked, booking it is refused with a clear reason unless you save anyway). Set it back to None to free the bike.
 - Re-importing the parts list records each changed part in the bike's History ("Updated from the parts list"). Bundled copy updated to the 20 Nov 2026 16:55 sheet (CC-01 tyres, CC-02 size/groupset/brakes/chainring, CC-03 full spec).
 
+## 0.9.1: Fix
+- Workshop jobs and stock items saved with an empty Cost / Quantity field were silently dropped on MySQL (strict mode). Empty now means 0, and a failed save shows an error instead of “Saved”.
+
 ## 0.9.0: Wheels & tyres, drivetrain care, tyre pressure
 - Fleet Manager → Wheels & tyres: every wheelset (WS-xx) and set of tyres (TY-xx) is a part with its place (a bike or spare), a Damaged tick with a note, and its own history. Created automatically from the bikes on update.
 - Bike editor: Wheelset and Tyres are drop-downs. A part can only be on one bike: taking it from another bike puts that bike “In the workshop” with a job to fit a replacement, and both bikes get a history entry.
