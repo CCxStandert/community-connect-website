@@ -12,8 +12,6 @@
 <h2 class="wp-block-heading h" id="deal">The deal, between friends</h2>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"sub"} -->
 <p class="sub">We keep the bikes in shape. You bring them back the way you got them. Not legal small print: this is our borrowing agreement, and you accept it with every request.</p>
-<!-- /wp:paragraph --><!-- wp:paragraph {"className":"is-style-mono-label"} -->
-<p class="is-style-mono-label">Community Connect × Standert · version 4 · November 2026</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --><!-- wp:group {"className":"deal max","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group deal max"><!-- wp:shortcode -->
