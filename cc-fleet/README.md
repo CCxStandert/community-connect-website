@@ -77,6 +77,16 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page: "Changing parts?" box (date, kind of work, by, cost, note). Saving compares every part field and logs what changed from what to what, with that date; it also goes into the workshop log and updates "Last upgraded". The new **History** box lists all of it, newest first. Untick "Add to the workshop log" for typo fixes.
 - Loan page: **Change the dates** (+1 day, +3 days, +1 week, ends today, or any dates), with a note on what was agreed, a clash check and an optional "new dates" email to the rider. Overdue loans extend from today.
 
+## 0.14.0: Waiting list
+
+- **Joining.** When a rider picks a bike that's booked, the form now offers "Join the waiting list for these dates". The crew can also move a request onto the list (the "Waiting list" button shows on requests whose bike is taken). A place on the list is a loan with status *Waiting list*; it never blocks the calendar.
+- **A spot opens** when a loan is cancelled, returned early or shortened, or a bike comes back from the workshop. The crew gets "Spot open" with everyone who fits, in the suggested order: event riders first, then by the day they asked, then riders who haven't borrowed in 3 months, then the exact time. Left out: dates that don't fit (with the free day), a height outside the bike's range, a bike overdue right now.
+- **Offers.** "Offer" (dashboard → Waiting list, or the loan page) holds the dates and emails the rider a yes/no link. With review on, the crew checks the email first and the clock starts when it goes out. No answer within 24 hours, or a no: it moves to the next rider by itself and the crew gets a one-line note. Starting within 48 hours: "Offer to the top 3 at once", first yes wins. The rider links open a page with one button, so mail scanners can't answer for anyone.
+- **Can't make it?** The confirmation email has a button to cancel early, which frees the bike for the list.
+- **Closing.** On the start day, anyone still waiting gets "Not this time" with the bike's next free date.
+- Seven new emails, all on the email preview page. Settings: hours to answer (24), short notice (48 hours), riders offered at short notice (3). An hourly job handles the timers.
+- Tests: `tests/waitlist-test.php` (run after `smoke-test.php`).
+
 ## 0.3.2: Long-term riders
 
 - Bike page → Website box → **Long-term rider** + **Since**. From that date the bike is blocked on every calendar with no end date (fleet calendar shows an ochre bar, the public calendar shows it booked, booking it is refused with a clear reason unless you save anyway). Set it back to None to free the bike.

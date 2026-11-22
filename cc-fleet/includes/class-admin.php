@@ -75,7 +75,10 @@ class CC_Fleet_Admin {
 	}
 
 	private static function status_buttons( $loan ) {
-		$labels = array( 'approved' => 'Approve', 'declined' => 'Decline', 'out' => 'Handed over', 'returned' => 'Returned', 'cancelled' => 'Cancel', 'requested' => 'Back to request' );
+		$labels = array( 'approved' => 'Approve', 'declined' => 'Decline', 'out' => 'Handed over', 'returned' => 'Returned', 'cancelled' => 'Cancel', 'requested' => 'Back to request', 'waiting' => 'Waiting list' );
+		if ( in_array( $loan->status, array( 'waiting', 'offered' ), true ) ) {
+			return CC_Fleet_Waitlist::buttons( $loan ) . ( 'waiting' === $loan->status ? ' <a class="button-link" href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cc_fleet_loan_status&id=' . $loan->id . '&to=requested' ), 'cc_fleet_loan_status_' . $loan->id ) ) . '">Back to request</a>' : '' );
+		}
 		$html   = '';
 		// "Any bike" request: pick a free bike and approve in one step.
 		if ( 'requested' === $loan->status && ! $loan->bike_id ) {
@@ -111,6 +114,9 @@ class CC_Fleet_Admin {
 			}
 			if ( 'approved' === $to && ! $loan->bike_id ) {
 				continue; // Handled by the picker above.
+			}
+			if ( 'waiting' === $to && ( $loan->bike_id ? CC_Fleet_Loans::is_available( $loan->bike_id, $loan->start_date, $loan->end_date, $loan->id ) : CC_Fleet_Loans::available_bikes( $loan->start_date, $loan->end_date, $loan->requested_size ) ) ) {
+				continue; // The waiting list is for bikes that are taken.
 			}
 			$url   = wp_nonce_url( admin_url( 'admin-post.php?action=cc_fleet_loan_status&id=' . $loan->id . '&to=' . $to ), 'cc_fleet_loan_status_' . $loan->id );
 			$class = in_array( $to, array( 'approved', 'out', 'returned' ), true ) ? 'button button-primary' : 'button';
@@ -205,13 +211,14 @@ class CC_Fleet_Admin {
 		foreach ( array(
 			array( 'On the website', count( $bikes ) ), array( 'Available now', $states['available'] ), array( 'Out now', $states['out'] ),
 			array( 'In the workshop', $states['workshop'] ), array( 'To review', count( $pending ), $pending ? 'pink' : '' ),
-			array( 'Overdue', count( $overdue ), $overdue ? 'pink' : '' ), array( 'Loans in ' . wp_date( 'Y' ), $year ), array( 'Riders', CC_Fleet_Riders::count() ),
+			array( 'Overdue', count( $overdue ), $overdue ? 'pink' : '' ), array( 'Waiting list', CC_Fleet_Loans::count( array( 'status' => array( 'waiting', 'offered' ) ) ) ), array( 'Loans in ' . wp_date( 'Y' ), $year ), array( 'Riders', CC_Fleet_Riders::count() ),
 		) as $k ) {
 			printf( '<div class="cc-kpi %s"><span>%s</span><strong>%s</strong></div>', esc_attr( $k[2] ?? '' ), esc_html( $k[0] ), esc_html( (string) $k[1] ) );
 		}
 		echo '</div>';
 		echo '<h2>Requests to review</h2>';
 		self::loan_rows( $pending );
+		CC_Fleet_Waitlist::dashboard_panel();
 		if ( class_exists( 'CC_Fleet_Outbox' ) ) {
 			CC_Fleet_Outbox::dashboard_panel();
 		}
@@ -608,7 +615,8 @@ class CC_Fleet_Admin {
 		if ( is_wp_error( $res ) ) {
 			self::back( $ref, esc_html( $res->get_error_message() ), 'error' );
 		}
-		self::back( $ref, 'Loan updated' . ( in_array( sanitize_key( $_GET['to'] ?? '' ), array( 'approved', 'declined', 'cancelled', 'returned' ), true ) ? ' and the rider was emailed.' : '.' ) );
+		$to = sanitize_key( $_GET['to'] ?? '' );
+		self::back( $ref, 'waiting' === $to ? 'On the waiting list. The rider was emailed.' : 'Loan updated' . ( in_array( $to, array( 'approved', 'declined', 'cancelled', 'returned' ), true ) ? ' and the rider was emailed.' : '.' ) );
 	}
 
 	public static function handle_loan_delete() {
@@ -788,6 +796,9 @@ class CC_Fleet_Admin {
 			'instagram_handle'     => array( 'Instagram handle', 'text', 'Used in emails, without the @.' ),
 			'whatsapp_number'      => array( 'Crew WhatsApp number', 'text', 'With country code, e.g. +27 82 123 4567. Riders get a button to message this number after requesting, which confirms their number has WhatsApp.' ),
 			'review_rider_emails'  => array( 'Review rider emails before sending', 'checkbox', 'Approve, decline, cancel, return and date-change emails open for you to read and change before they go out.' ),
+			'waitlist_offer_hours' => array( 'Waiting list: hours to answer an offer', 'number', 'After this the offer goes to the next rider on the list. We use 24.' ),
+			'waitlist_short_hours' => array( 'Waiting list: short notice (hours)', 'number', 'If the loan starts sooner than this, the offer goes to several riders at once and the first yes gets the bike. We use 48.' ),
+			'waitlist_short_count' => array( 'Waiting list: riders offered at short notice', 'number', 'We use 3.' ),
 			'email_style'          => array( 'Email style', 'select', '' ),
 			'privacy_url'          => array( 'Privacy policy URL', 'url', '' ),
 			'ical_key'             => array( 'Calendar feed key', 'text', 'Change it to revoke old calendar links.' ),

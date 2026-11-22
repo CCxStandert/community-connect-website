@@ -15,10 +15,12 @@ defined( 'ABSPATH' ) || exit;
  */
 class CC_Fleet_Outbox {
 
-	const REVIEW_TYPES = array( 'approved', 'declined', 'cancelled', 'returned', 'dates_changed' );
+	// Waiting list: the crew checks an offer they make and a request they move to the list.
+	// Offers that move on by themselves, and answers to the rider's own clicks, go straight out.
+	const REVIEW_TYPES = array( 'approved', 'declined', 'cancelled', 'returned', 'dates_changed', 'wl_offer', 'wl_joined' );
 	const LABELS       = array(
 		'approved' => 'Confirmation', 'declined' => 'Not this time', 'cancelled' => 'Cancelled', 'returned' => 'Thanks for returning',
-		'dates_changed' => 'New dates', 'reminder' => 'Return reminder',
+		'dates_changed' => 'New dates', 'reminder' => 'Return reminder', 'wl_offer' => 'Waiting list offer', 'wl_joined' => 'On the waiting list',
 	);
 
 	public static function init() {
@@ -123,6 +125,7 @@ class CC_Fleet_Outbox {
 		if ( $sent ) {
 			self::mark( $row->id, 'sent' );
 			CC_Fleet_Install::log( 'loan', (int) $row->loan_id, 'email sent', $row->type );
+			do_action( 'cc_fleet_email_sent', $row );
 		}
 		return $sent;
 	}
@@ -288,7 +291,8 @@ class CC_Fleet_Outbox {
 			case 'skip':
 				self::mark( $id, 'skipped' );
 				CC_Fleet_Install::log( 'loan', (int) $row->loan_id, 'email skipped', $row->type );
-				self::notice( 'reminder' === $row->type ? 'The standard reminder will go out as usual.' : 'OK, the rider wasn’t emailed.' );
+				do_action( 'cc_fleet_email_skipped', $row );
+				self::notice( 'reminder' === $row->type ? 'The standard reminder will go out as usual.' : ( 'wl_offer' === $row->type ? 'OK, no offer sent. The rider is back on the waiting list.' : 'OK, the rider wasn’t emailed.' ) );
 				wp_safe_redirect( $back );
 				exit;
 			default:

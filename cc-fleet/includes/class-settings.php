@@ -32,7 +32,10 @@ class CC_Fleet_Settings {
 			'instagram_handle'     => 'cc_x_standert',
 			'whatsapp_number'      => '',      // The crew's WhatsApp, +27…; riders confirm their number by messaging it.
 			'email_style'          => 'html',  // html or text.
-			'review_rider_emails'  => 1,       // Approve/decline/cancel/return/date emails open for editing before they go out.
+			'review_rider_emails'  => 1,
+			'waitlist_offer_hours' => 24,      // How long a waiting-list rider has to say yes to an offer.
+			'waitlist_short_hours' => 48,      // Starts sooner than this: offer to several riders at once.
+			'waitlist_short_count' => 3,       // How many riders get a short-notice offer together.       // Approve/decline/cancel/return/date emails open for editing before they go out.
 			'delete_data_on_uninstall' => 0,
 		);
 	}

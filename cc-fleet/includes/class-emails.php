@@ -162,7 +162,7 @@ class CC_Fleet_Emails {
 
 	public static function on_created( $loan_id ) {
 		$loan = CC_Fleet_Loans::get( $loan_id );
-		if ( ! $loan || 'web' !== $loan->source ) {
+		if ( ! $loan || 'web' !== $loan->source || 'waiting' === $loan->status ) {
 			return;
 		}
 		$rider = CC_Fleet_Riders::get( $loan->rider_id );
@@ -189,6 +189,9 @@ class CC_Fleet_Emails {
 	}
 
 	public static function on_status( $loan_id, $status, $old, $notify ) {
+		if ( 'waiting' === $status || ( in_array( $old, array( 'waiting', 'offered' ), true ) && 'approved' !== $status ) ) {
+			return; // CC_Fleet_Waitlist tells the rider; a yes gets the normal confirmation.
+		}
 		if ( ! $notify ) {
 			return;
 		}
@@ -214,6 +217,7 @@ class CC_Fleet_Emails {
 					'place' => $loan->handoff_place ?? '', 'time' => $loan->handoff_time ?? '', 'hnote' => $loan->handoff_note ?? '',
 					'race' => ! empty( $loan->race ) ? CC_Fleet_Settings::get( 'race_terms' ) : '', 'event' => self::event_name( $loan ),
 					'pressure' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::line_for_loan( $loan ) : '', 'pressure_note' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::advice( $loan ) : '',
+					'wl' => 'offered' === $old, 'cancel' => CC_Fleet_Waitlist::url( $loan, 'cancel' ),
 				) ), array( 'type' => 'approved', 'loan' => $loan ) );
 				break;
 			case 'declined':
@@ -431,6 +435,230 @@ class CC_Fleet_Emails {
 	}
 
 	/* =========================================================
+	 * Waiting list (see CC_Fleet_Waitlist)
+	 * ========================================================= */
+
+	private static function rider_of( $loan ) {
+		$r = $loan ? CC_Fleet_Riders::get( $loan->rider_id ) : null;
+		return $r && $r->email ? $r : null;
+	}
+
+	/** Free bikes in the same size for these dates, as buttons (at most 2). */
+	private static function free_buttons( $loan, $skip = 0 ) {
+		$size = $loan->bike_id ? CC_Fleet_Bikes::get( $loan->bike_id, 'size' ) : $loan->requested_size;
+		$out  = array();
+		foreach ( array_slice( array_values( array_diff( CC_Fleet_Loans::available_bikes( $loan->start_date, $loan->end_date, $size ), array( (int) $skip ) ) ), 0, 2 ) as $b ) {
+			$out[] = array( CC_Fleet_Bikes::get( $b, 'cc_id' ) . ' is free for your dates', self::bike_url( $b ), false );
+		}
+		return $out;
+	}
+
+	public static function wl_joined( $loan, $type = 'wl_joined' ) {
+		$r = self::rider_of( $loan );
+		if ( ! $r ) {
+			return false;
+		}
+		return self::send( $r->email, 'You’re on the waiting list: ' . ( $loan->bike_id ? CC_Fleet_Bikes::get( $loan->bike_id, 'cc_id' ) : 'size ' . $loan->requested_size ), self::msg_wl_joined( array(
+			'name' => self::first_name( $r->name ), 'bike' => self::bike_name( $loan ), 'cc' => $loan->bike_id ? CC_Fleet_Bikes::get( $loan->bike_id, 'cc_id' ) : '', 'dates' => self::dates( $loan ),
+			'place' => CC_Fleet_Waitlist::position( $loan ), 'hours' => CC_Fleet_Waitlist::offer_hours(), 'free' => self::free_buttons( $loan, $loan->bike_id ), 'leave' => CC_Fleet_Waitlist::url( $loan, 'leave' ),
+		) ), array( 'type' => $type, 'loan' => $loan ) );
+	}
+
+	public static function msg_wl_joined( $f ) {
+		$what = $f['cc'] ? $f['cc'] . ' is already booked' : 'Every bike in that size is booked';
+		return array(
+			'kicker' => 'Waiting list · ' . ( $f['cc'] ?: 'any bike' ), 'headline' => 'You’re in line.', 'subline' => 'We’ll shout if it frees up.',
+			'preheader' => $f['bike'] . ', ' . $f['dates'] . ' · number ' . $f['place'] . ' in line',
+			'blocks' => array(
+				array( 'p', "Hi {$f['name']},\n\n$what for {$f['dates']}, so we’ve put you on the waiting list. Plans change and bikes come back early. When that happens, we go down the list." ),
+				array( 'details', 'Your spot', array( array( 'Bike', $f['bike'] ), array( 'Dates', $f['dates'] ), array( 'In line', 'Number ' . $f['place'] ) ) ),
+				array( 'p', "If it frees up, you get an email with a yes and a no button and {$f['hours']} hours to answer. Until then nothing is held for you, so feel free to grab another bike or other dates in the meantime." ),
+				array( 'buttons', array_merge( $f['free'], array( array( 'Take me off the list', $f['leave'], false ) ) ) ),
+			),
+		) + self::rider_sign();
+	}
+
+	/** @return bool|string 'held' when kept back for the crew to check first. */
+	public static function wl_offer( $loan, $type = 'wl_offer', $short = false ) {
+		$r = self::rider_of( $loan );
+		if ( ! $r ) {
+			return false;
+		}
+		$by = wp_date( 'D j M, H:i', time() + CC_Fleet_Waitlist::offer_hours() * HOUR_IN_SECONDS );
+		return self::send( $r->email, 'It’s free: ' . CC_Fleet_Bikes::get( $loan->bike_id, 'cc_id' ) . ', ' . self::dates( $loan ), self::msg_wl_offer( array(
+			'name' => self::first_name( $r->name ), 'bike' => self::bike_name( $loan ), 'dates' => self::dates( $loan ), 'by' => $by, 'hours' => CC_Fleet_Waitlist::offer_hours(),
+			'short' => $short, 'yes' => CC_Fleet_Waitlist::url( $loan, 'yes' ), 'no' => CC_Fleet_Waitlist::url( $loan, 'no' ), 'photo' => get_the_post_thumbnail_url( $loan->bike_id, 'large' ) ?: '',
+		) ), array( 'type' => $type, 'loan' => $loan ) );
+	}
+
+	public static function msg_wl_offer( $f ) {
+		$intro = $f['short']
+			? "Someone’s plans changed and {$f['bike']} is free for {$f['dates']}. That’s soon, so we’ve let a few people on the list know. First yes gets it."
+			: "Someone’s plans changed and {$f['bike']} is free for {$f['dates']}. You were next in line, so it’s yours if you want it.";
+		$blocks = array();
+		if ( ! empty( $f['photo'] ) ) {
+			$blocks[] = array( 'image', $f['photo'], $f['bike'] );
+		}
+		$blocks[] = array( 'p', "Hi {$f['name']},\n\n$intro" );
+		$blocks[] = array( 'details', 'The offer', array( array( 'Bike', $f['bike'] ), array( 'Dates', $f['dates'] ), array( 'Answer by', $f['by'] ) ) );
+		$blocks[] = array( 'p', $f['short'] ? 'Tap yes as soon as you can.' : "We’re holding it for you for {$f['hours']} hours. After that it goes to the next person on the list." );
+		$blocks[] = array( 'buttons', array( array( 'Yes, I’ll take it', $f['yes'], true ), array( 'No, pass it on', $f['no'], false ) ) );
+		$blocks[] = array( 'small', 'Same deal as always: you bring it back the way you got it.' );
+		return array(
+			'kicker' => 'Waiting list · good news', 'headline' => 'It’s free.', 'subline' => 'Still want it?',
+			'preheader' => $f['bike'] . ', ' . $f['dates'] . ' · answer by ' . $f['by'], 'blocks' => $blocks,
+		) + self::rider_sign();
+	}
+
+	/** The offer went to someone quicker, or ran out. The rider stays on the list. */
+	public static function wl_gone( $loan, $why = 'lapsed', $bike = '' ) {
+		$r = self::rider_of( $loan );
+		if ( ! $r ) {
+			return false;
+		}
+		return self::send( $r->email, 'About ' . ( $bike ?: self::bike_name( $loan ) ), self::msg_wl_gone( array(
+			'name' => self::first_name( $r->name ), 'bike' => $bike ?: self::bike_name( $loan ), 'dates' => self::dates( $loan ), 'why' => $why, 'hours' => CC_Fleet_Waitlist::offer_hours(),
+			'fleet' => self::fleet_url(), 'leave' => CC_Fleet_Waitlist::url( $loan, 'leave' ),
+		) ), array( 'type' => 'wl_gone', 'loan' => $loan ) );
+	}
+
+	public static function msg_wl_gone( $f ) {
+		$what = 'quicker' === $f['why']
+			? "{$f['bike']} for {$f['dates']} went to someone who said yes first this time."
+			: "We didn’t hear back within {$f['hours']} hours, so we passed {$f['bike']} for {$f['dates']} on.";
+		return array(
+			'kicker' => 'Waiting list · update', 'headline' => 'Not this round.', 'subline' => 'You’re still in line.',
+			'preheader' => $f['bike'] . ', ' . $f['dates'],
+			'blocks' => array(
+				array( 'p', "Hi {$f['name']},\n\n$what No stress, you’re still on the list for any other openings." ),
+				array( 'buttons', array( array( 'See what’s free', $f['fleet'], true ), array( 'Take me off the list', $f['leave'], false ) ) ),
+			),
+		) + self::rider_sign();
+	}
+
+	/** The start day came and the bike never freed up. */
+	public static function wl_closed( $loan ) {
+		$r = self::rider_of( $loan );
+		if ( ! $r ) {
+			return false;
+		}
+		$later = '';
+		if ( $loan->bike_id ) {
+			$len = CC_Fleet_Loans::days_between( $loan->start_date, $loan->end_date );
+			for ( $o = 1; $o <= 60 && ! $later; $o++ ) {
+				$st = CC_Fleet_Loans::add_days( CC_Fleet_Settings::today(), $o );
+				if ( CC_Fleet_Loans::is_available( $loan->bike_id, $st, CC_Fleet_Loans::add_days( $st, $len ) ) ) {
+					$later = $st;
+				}
+			}
+		}
+		return self::send( $r->email, 'Your waiting list spot: ' . self::bike_name( $loan ), self::msg_wl_closed( array(
+			'name' => self::first_name( $r->name ), 'bike' => self::bike_name( $loan ), 'cc' => $loan->bike_id ? CC_Fleet_Bikes::get( $loan->bike_id, 'cc_id' ) : '', 'dates' => self::dates( $loan ),
+			'later' => $later ? self::short_date( $later ) : '', 'later_url' => self::bike_url( $loan->bike_id ), 'fleet' => self::fleet_url(),
+		) ), array( 'type' => 'wl_closed', 'loan' => $loan ) );
+	}
+
+	public static function msg_wl_closed( $f ) {
+		$buttons = array();
+		if ( $f['later'] ) {
+			$buttons[] = array( 'Request ' . $f['cc'] . ' from ' . $f['later'], $f['later_url'], true );
+		}
+		$buttons[] = array( 'See the fleet', $f['fleet'], ! $f['later'] );
+		return array(
+			'kicker' => 'Waiting list · closed', 'headline' => 'Not this time.', 'subline' => 'Let’s find you another ride.',
+			'preheader' => $f['bike'] . ', ' . $f['dates'],
+			'blocks' => array(
+				array( 'p', "Hi {$f['name']},\n\n{$f['bike']} stayed booked for {$f['dates']}, so we’ve closed your spot on the list. Sorry it didn’t work out." . ( $f['later'] ? " {$f['cc']} is free again from {$f['later']}." : '' ) ),
+				array( 'buttons', $buttons ),
+			),
+		) + self::rider_sign();
+	}
+
+	/** To a rider who cancelled with the "Can't make it?" button. */
+	public static function wl_thanks( $loan ) {
+		$r = self::rider_of( $loan );
+		if ( ! $r ) {
+			return false;
+		}
+		return self::send( $r->email, 'Booking cancelled: thanks for the heads-up', self::msg_wl_thanks( array(
+			'name' => self::first_name( $r->name ), 'bike' => self::bike_name( $loan ), 'dates' => self::dates( $loan ), 'fleet' => self::fleet_url(),
+		) ), array( 'type' => 'wl_thanks', 'loan' => $loan ) );
+	}
+
+	public static function msg_wl_thanks( $f ) {
+		return array(
+			'kicker' => 'Bike booking · cancelled', 'headline' => 'Thanks for the heads-up.', 'subline' => 'Someone else gets to ride.',
+			'preheader' => $f['bike'] . ', ' . $f['dates'],
+			'blocks' => array(
+				array( 'p', "Hi {$f['name']},\n\nWe’ve freed {$f['bike']} for {$f['dates']}. Telling us early means someone on the waiting list gets to ride, so thank you. Hope to see you on one soon." ),
+				array( 'buttons', array( array( 'Find another bike', $f['fleet'], true ) ) ),
+			),
+		) + self::rider_sign();
+	}
+
+	/** Crew: a bike is free for riders on the list. */
+	public static function wl_crew_spot( $bike_id, array $cands, $freed = null ) {
+		$admin = self::admin_recipients();
+		if ( ! $admin || ! $cands ) {
+			return false;
+		}
+		$cc  = CC_Fleet_Bikes::get( $bike_id, 'cc_id' );
+		$why = '';
+		if ( $freed ) {
+			$now  = CC_Fleet_Loans::get( $freed->id );
+			$verb = ! $now ? 'gave up' : ( 'returned' === $now->status ? 'brought back early' : ( in_array( $now->status, array( 'cancelled', 'declined' ), true ) ? 'cancelled' : 'changed the dates of' ) );
+			$p    = CC_Fleet_Riders::get( $freed->rider_id );
+			$why  = ( $p ? $p->name : 'A rider' ) . ' ' . $verb . ' ' . $cc . ', ' . self::dates( $freed ) . '.';
+		}
+		$rows = array();
+		foreach ( array_slice( $cands, 0, 6 ) as $i => $l ) {
+			$r      = CC_Fleet_Riders::get( $l->rider_id );
+			$h      = CC_Fleet_Waitlist::history( (int) $l->rider_id );
+			$rows[] = array( '#' . ( $i + 1 ), ( $r ? $r->name : '?' ) . ' · ' . self::dates( $l ) . ' · asked ' . mysql2date( 'j M', $l->created_at ) . ' · ' . ( $h['count'] ? $h['count'] . ' loan' . ( 1 === $h['count'] ? '' : 's' ) . ', last ' . mysql2date( 'M Y', $h['last'] ) : 'first loan' ) . ( (int) $l->event_id > 0 ? ' · for an event' : '' ) );
+		}
+		$first = $cands[0];
+		$short = CC_Fleet_Waitlist::is_short_notice( $first );
+		return self::send( $admin, 'Spot open: ' . $cc . ', ' . count( $cands ) . ' waiting', self::msg_wl_crew_spot( array(
+			'cc' => $cc, 'bike' => CC_Fleet_Bikes::label( $bike_id ), 'why' => $why, 'rows' => $rows, 'n' => count( $cands ),
+			'first' => CC_Fleet_Waitlist::rider_first( $first ), 'hours' => CC_Fleet_Waitlist::offer_hours(), 'short' => $short && count( $cands ) > 1 ? min( CC_Fleet_Waitlist::short_count(), count( $cands ) ) : 0,
+			'offer' => admin_url( 'admin.php?page=cc-fleet-loan&id=' . $first->id ), 'list' => admin_url( 'admin.php?page=cc-fleet#waitlist' ),
+		) ), array( 'type' => 'wl_crew_spot' ) );
+	}
+
+	public static function msg_wl_crew_spot( $f ) {
+		$blocks   = array();
+		$blocks[] = array( 'p', ( $f['why'] ? $f['why'] . ' ' : '' ) . $f['n'] . ' rider' . ( 1 === $f['n'] ? '' : 's' ) . ' on the waiting list fit' . ( 1 === $f['n'] ? 's' : '' ) . ' ' . $f['bike'] . ' now, in this order:' );
+		$blocks[] = array( 'details', 'In line', $f['rows'] );
+		$blocks[] = array( 'callout', array( $f['short']
+			? 'Suggested: it starts soon, so offer it to the top ' . $f['short'] . ' at once (on the waiting list page). First yes gets it.'
+			: 'Suggested: ' . $f['first'] . ', first in line. They get ' . $f['hours'] . ' hours to say yes, then it moves on by itself.' ), 'cream' );
+		$blocks[] = array( 'buttons', array_values( array_filter( array( $f['short'] ? null : array( 'Offer to ' . $f['first'], $f['offer'], true ), array( 'Open the waiting list', $f['list'], (bool) $f['short'] ) ) ) ) );
+		$blocks[] = array( 'small', 'Nobody you want to offer it to? Do nothing: the dates are already free for new requests.' );
+		return array(
+			'kicker' => 'Crew · waiting list', 'headline' => 'Spot open: ' . $f['cc'] . '.', 'subline' => $f['n'] . ' waiting.',
+			'preheader' => $f['first'] . ' is first in line', 'blocks' => $blocks, 'footer' => 'crew',
+		);
+	}
+
+	/** Crew: one short update (a yes, a no, an offer that ran out). */
+	public static function wl_crew_note( $subject, $headline, array $lines, $link, $label ) {
+		$admin = self::admin_recipients();
+		if ( ! $admin ) {
+			return false;
+		}
+		return self::send( $admin, $subject, self::msg_wl_crew_note( array( 'headline' => $headline, 'lines' => $lines, 'link' => $link, 'label' => $label ) ), array( 'type' => 'wl_crew_note' ) );
+	}
+
+	public static function msg_wl_crew_note( $f ) {
+		return array(
+			'kicker' => 'Crew · waiting list', 'headline' => $f['headline'], 'subline' => '',
+			'preheader' => $f['lines'][0] ?? '',
+			'blocks' => array( array( 'p', implode( "\n\n", $f['lines'] ) ), array( 'buttons', array( array( $f['label'], $f['link'], true ) ) ) ),
+			'footer' => 'crew',
+		);
+	}
+
+	/* =========================================================
 	 * Messages (facts in, blocks out). Shared by real sends and the preview.
 	 * ========================================================= */
 
@@ -473,7 +701,7 @@ class CC_Fleet_Emails {
 		if ( $f['photo'] ) {
 			$blocks[] = array( 'image', $f['photo'], $f['bike'] );
 		}
-		$blocks[] = array( 'p', "Hi {$f['name']}," );
+		$blocks[] = array( 'p', "Hi {$f['name']}," . ( ! empty( $f['wl'] ) ? "\n\nGood things come to those who wait. Here's your bike." : '' ) );
 		$blocks[] = array( 'details', 'Your loan', array(
 			array( 'Bike', $f['bike'] ), array( 'Dates', $f['dates'] ), array( 'Pick-up', $f['from'] ? 'From ' . $f['from'] : 'From the crew' ), array( 'Return', $f['return'] ),
 		) );
@@ -494,7 +722,10 @@ class CC_Fleet_Emails {
 		if ( $note ) {
 			$blocks[] = array( 'callout', $note, 'pink' );
 		}
-		$blocks[] = array( 'buttons', array( array( 'Add to my calendar', $f['calendar'], true ), array( 'Bike details & size', $f['bike_url'], false ) ) );
+		$blocks[] = array( 'buttons', array_values( array_filter( array( array( 'Add to my calendar', $f['calendar'], true ), array( 'Bike details & size', $f['bike_url'], false ), ! empty( $f['cancel'] ) ? array( 'Can’t make it?', $f['cancel'], false ) : null ) ) ) );
+		if ( ! empty( $f['cancel'] ) ) {
+			$blocks[] = array( 'small', 'Plans changed? Tap “Can’t make it?” as early as you can, so someone on the waiting list gets to ride instead.' );
+		}
 		return array(
 			'kicker' => 'Bike request · confirmed', 'headline' => 'You’re on.', 'subline' => 'The bike is yours for those dates.',
 			'preheader' => $f['bike'] . ', ' . $f['dates'], 'blocks' => $blocks,
@@ -720,7 +951,7 @@ class CC_Fleet_Emails {
 		$cal = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
 		return array(
 			'Rider · request received' => array( 'We got your bike request', self::msg_received( array( 'name' => 'Naledi', 'bike' => 'Any bike in size 58', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'plan' => 'Overnighter to Greyton', 'whatsapp' => CC_Fleet_Settings::get( 'whatsapp_number' ) ? CC_Fleet_Phone::wa_link( CC_Fleet_Settings::get( 'whatsapp_number' ), 'Hi' ) : '' ) ) ),
-			'Rider · confirmed'        => array( "You're on — bike confirmed", self::msg_confirmed( array( 'name' => 'Naledi', 'bike' => 'CC-08 Erdgeschoss 58', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'from' => 'Thandi, Fri 4 Dec', 'from_first' => 'Thandi', 'return' => 'Mon 7 Dec 2026', 'photo' => '', 'calendar' => $cal, 'bike_url' => self::fleet_url(), 'agreement' => CC_Fleet_Landing::agreement_url() ?: home_url( '/' ), 'handoff_notes' => CC_Fleet_Settings::get( 'handoff_notes' ) ?: '[Handoff note from Settings, e.g. “Pedals: bring your own.”]', 'pressure' => 'Front 32 psi (2.2 bar) · Rear 34 psi (2.3 bar)', 'pressure_note' => 'Starting point for 68 kg on 45 mm tubeless tyres, mixed gravel. Loose or rough: 2–3 psi lower. Mostly tar: 3–5 psi higher. Check before every ride.' ) ) ),
+			'Rider · confirmed'        => array( "You're on — bike confirmed", self::msg_confirmed( array( 'name' => 'Naledi', 'bike' => 'CC-08 Erdgeschoss 58', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'from' => 'Thandi, Fri 4 Dec', 'from_first' => 'Thandi', 'return' => 'Mon 7 Dec 2026', 'photo' => '', 'calendar' => $cal, 'bike_url' => self::fleet_url(), 'cancel' => home_url( '/' ), 'agreement' => CC_Fleet_Landing::agreement_url() ?: home_url( '/' ), 'handoff_notes' => CC_Fleet_Settings::get( 'handoff_notes' ) ?: '[Handoff note from Settings, e.g. “Pedals: bring your own.”]', 'pressure' => 'Front 32 psi (2.2 bar) · Rear 34 psi (2.3 bar)', 'pressure_note' => 'Starting point for 68 kg on 45 mm tubeless tyres, mixed gravel. Loose or rough: 2–3 psi lower. Mostly tar: 3–5 psi higher. Check before every ride.' ) ) ),
 			'Rider · return reminder'  => array( 'Bike due back Mon 7 Dec 2026', self::msg_reminder( array( 'name' => 'Naledi', 'bike' => 'CC-08 Erdgeschoss 58', 'cc' => 'CC-08', 'due' => 'Mon 7 Dec 2026', 'when' => 'tomorrow', 'next' => 'Sipho', 'dropoff' => CC_Fleet_Settings::get( 'dropoff_place' ), 'report' => self::crew_mailto( 'Problem' ), 'extend' => self::crew_mailto( 'One more day' ) ) ) ),
 			'Rider · not this time'    => array( 'About your bike request', self::msg_declined( array( 'name' => 'Naledi', 'bike' => 'CC-12 Kettensäge 56', 'cc' => 'CC-12', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'free' => array( array( 'CC-07 Erdgeschoss 56', self::fleet_url() ), array( 'CC-11 Kettensäge 54', self::fleet_url() ) ), 'busy' => true, 'later' => 'Thu 10 Dec', 'later_url' => self::fleet_url() ) ) ),
 			'Crew · new request'       => array( 'New bike request: size 58', self::msg_crew_request( array( 'name' => 'Naledi Khumalo', 'height' => 176, 'email' => 'naledi@example.org', 'phone' => '+27 82 000 0000', 'instagram' => 'naledi.rides', 'wa' => 'https://wa.me/27820000000', 'wa_status' => '', 'bike' => 'Any bike in size 58', 'any' => true, 'size' => '58', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'plan' => 'Overnighter to Greyton', 'history' => '3 loans before', 'free' => array( 'CC-08 Erdgeschoss 58', 'CC-13 Kettensäge 58' ), 'clashes' => 0, 'link' => admin_url( 'admin.php?page=cc-fleet' ) ) ) ),
@@ -729,6 +960,13 @@ class CC_Fleet_Emails {
 				array( 'bike' => 'CC-08 Erdgeschoss 58', 'rider' => 'Naledi Khumalo', 'rider_c' => '+27 82 000 0000', 'rider_wa' => 'https://wa.me/27820000000', 'due' => 'Mon 7 Dec 2026', 'next' => 'Sipho Dlamini · from Wed 9 Dec', 'next_c' => '+27 83 000 0000', 'next_wa' => 'https://wa.me/27830000000', 'place' => 'Woodstock Cycleworks', 'time' => 'Tue 8 Dec, 17:30', 'note' => 'Sipho brings his own pedals.', 'dropoff' => '', 'edited' => false, 'edit' => admin_url( 'admin.php?page=cc-fleet' ) ),
 				array( 'bike' => 'CC-05 Kettensäge 54', 'rider' => 'Gabri Moreau', 'rider_c' => '+27 84 000 0000', 'rider_wa' => 'https://wa.me/27840000000', 'due' => 'Mon 7 Dec 2026', 'next' => '', 'next_c' => '', 'next_wa' => '', 'place' => '', 'time' => '', 'note' => '', 'dropoff' => CC_Fleet_Settings::get( 'dropoff_place' ), 'edited' => true, 'edit' => admin_url( 'admin.php?page=cc-fleet' ) ),
 			) ) ) ),
+			'Rider · waiting list'     => array( 'You’re on the waiting list: CC-12', self::msg_wl_joined( array( 'name' => 'Naledi', 'bike' => 'CC-12 Kettensäge 56', 'cc' => 'CC-12', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'place' => 2, 'hours' => 24, 'free' => array( array( 'CC-07 is free for your dates', self::fleet_url(), false ) ), 'leave' => home_url( '/' ) ) ) ),
+			'Rider · it’s free (offer)' => array( 'It’s free: CC-12, Sat 5 Dec → Mon 7 Dec 2026', self::msg_wl_offer( array( 'name' => 'Naledi', 'bike' => 'CC-12 Kettensäge 56', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'by' => 'Wed 2 Dec, 15:30', 'hours' => 24, 'short' => false, 'yes' => home_url( '/' ), 'no' => home_url( '/' ), 'photo' => '' ) ) ),
+			'Rider · not this round'   => array( 'About CC-12 Kettensäge 56', self::msg_wl_gone( array( 'name' => 'Naledi', 'bike' => 'CC-12 Kettensäge 56', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'why' => 'lapsed', 'hours' => 24, 'fleet' => self::fleet_url(), 'leave' => home_url( '/' ) ) ) ),
+			'Rider · list closed'      => array( 'Your waiting list spot: CC-12 Kettensäge 56', self::msg_wl_closed( array( 'name' => 'Naledi', 'bike' => 'CC-12 Kettensäge 56', 'cc' => 'CC-12', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'later' => 'Thu 10 Dec', 'later_url' => self::fleet_url(), 'fleet' => self::fleet_url() ) ) ),
+			'Rider · thanks for the heads-up' => array( 'Booking cancelled: thanks for the heads-up', self::msg_wl_thanks( array( 'name' => 'Thandi', 'bike' => 'CC-12 Kettensäge 56', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'fleet' => self::fleet_url() ) ) ),
+			'Crew · spot open'         => array( 'Spot open: CC-12, 2 waiting', self::msg_wl_crew_spot( array( 'cc' => 'CC-12', 'bike' => 'CC-12 Kettensäge 56', 'why' => 'Thandi Mokoena cancelled CC-12, Sat 5 Dec → Mon 7 Dec 2026.', 'n' => 2, 'rows' => array( array( '#1', 'Naledi Khumalo · Sat 5 Dec → Mon 7 Dec 2026 · asked 20 Nov · first loan' ), array( '#2', 'Luke Peters · Sat 5 Dec → Sun 6 Dec 2026 · asked 21 Nov · 3 loans, last Aug 2026' ) ), 'first' => 'Naledi', 'hours' => 24, 'short' => 0, 'offer' => admin_url( 'admin.php?page=cc-fleet' ), 'list' => admin_url( 'admin.php?page=cc-fleet#waitlist' ) ) ) ),
+			'Crew · waiting list note' => array( 'Naledi didn’t answer: CC-12', self::msg_wl_crew_note( array( 'headline' => 'No answer in time.', 'lines' => array( 'Naledi didn’t say yes to CC-12 Kettensäge 56 within 24 hours. They stay on the list.', 'Offered to Luke, next in line.' ), 'link' => admin_url( 'admin.php?page=cc-fleet#waitlist' ), 'label' => 'Open the waiting list' ) ) ),
 			'Crew · daily digest'      => array( 'Fleet today: 1 overdue, 2 to review', self::msg_digest( array( 'today' => 'Fri 4 Dec', 'overdue' => array( array( 'CC-03', 'Camryn · due Tue 1 Dec' ) ), 'handoffs' => array( array( 'Fri 4 Dec', 'CC-08 → Naledi' ), array( 'Sat 5 Dec', 'CC-05 → Gabri' ) ), 'pending' => array( array( 'Waiting', 'Naledi · size 58 · Sat 5 Dec' ), array( 'Waiting', 'Luke · CC-07 · Sat 12 Dec' ) ), 'work' => array( array( 'Workshop', 'CC-12 · spoke' ) ), 'low' => array( array( 'Low stock', 'SRAM metal sintered brake pads · 3 left' ) ), 'link' => admin_url( 'admin.php?page=cc-fleet' ) ) ) ),
 		);
 	}

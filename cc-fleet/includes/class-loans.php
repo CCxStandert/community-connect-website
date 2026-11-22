@@ -19,17 +19,21 @@ class CC_Fleet_Loans {
 		'declined'  => 'Declined',
 		'cancelled' => 'Cancelled',
 		'held'      => 'Raffle hold',
+		'waiting'   => 'Waiting list',
+		'offered'   => 'Offered',
 	);
 
 	/** Which status changes are allowed. */
 	const TRANSITIONS = array(
-		'requested' => array( 'approved', 'declined', 'cancelled' ),
+		'requested' => array( 'approved', 'declined', 'cancelled', 'waiting' ),
 		'approved'  => array( 'out', 'cancelled', 'requested' ),
 		'out'       => array( 'returned' ),
 		'returned'  => array( 'out' ),
 		'declined'  => array( 'requested' ),
 		'cancelled' => array( 'requested' ),
 		'held'      => array( 'approved', 'cancelled' ),
+		'waiting'   => array( 'offered', 'cancelled', 'declined', 'requested' ),
+		'offered'   => array( 'approved', 'waiting', 'cancelled' ),
 	);
 
 	public static function table() {
@@ -37,7 +41,7 @@ class CC_Fleet_Loans {
 	}
 
 	public static function blocking_statuses( $include_requested = false ) {
-		$s = array( 'approved', 'out', 'held' );
+		$s = array( 'approved', 'out', 'held', 'offered' );
 		if ( $include_requested ) {
 			$s[] = 'requested';
 		}
@@ -337,6 +341,7 @@ class CC_Fleet_Loans {
 		}
 		$wpdb->update( self::table(), $fields, array( 'id' => (int) $id ) );
 		CC_Fleet_Install::log( 'loan', $id, 'updated' );
+		do_action( 'cc_fleet_loan_updated', (int) $id, $loan );
 		return true;
 	}
 
@@ -356,6 +361,9 @@ class CC_Fleet_Loans {
 		if ( ! $force && ! in_array( $status, self::TRANSITIONS[ $loan->status ] ?? array(), true ) ) {
 			return new WP_Error( 'cc_transition', sprintf( 'A %s loan cannot be marked %s.', $loan->status, $status ) );
 		}
+		if ( 'offered' === $loan->status && 'approved' === $status && class_exists( 'CC_Fleet_Waitlist' ) ) {
+			CC_Fleet_Waitlist::release_others( $loan );
+		}
 		if ( in_array( $status, array( 'approved', 'out' ), true ) ) {
 			if ( ! $loan->bike_id ) {
 				return new WP_Error( 'cc_bike', 'Assign a bike before approving.' );
@@ -369,6 +377,12 @@ class CC_Fleet_Loans {
 			}
 		}
 		$update = array( 'status' => $status, 'updated_at' => current_time( 'mysql' ) );
+		if ( 'waiting' === $status && empty( $loan->waitlisted_at ) ) {
+			$update['waitlisted_at'] = current_time( 'mysql' );
+		}
+		if ( 'offered' !== $status ) {
+			$update['offer_until'] = null; // An open offer ends with any other status.
+		}
 		if ( 'returned' === $status && $loan->end_date > CC_Fleet_Settings::today() ) {
 			$update['end_date'] = CC_Fleet_Settings::today(); // Early return frees the remaining days.
 		}

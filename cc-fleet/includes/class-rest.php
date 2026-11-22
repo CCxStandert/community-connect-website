@@ -227,10 +227,16 @@ class CC_Fleet_Rest {
 		if ( $errors ) {
 			return new WP_Error( 'cc_invalid', 'Please check the form.', array( 'status' => 400, 'fields' => $errors ) );
 		}
+		// Booked: offer the waiting list (needs the bike active; a bike in the workshop has no list).
+		$join = false;
 		if ( $bike_id && ! CC_Fleet_Loans::is_available( $bike_id, $start, $end ) ) {
-			$alts = array_map( function ( $id ) { return CC_Fleet_Bikes::get( $id, 'cc_id' ); },
-				CC_Fleet_Loans::available_bikes( $start, $end, CC_Fleet_Bikes::get( $bike_id, 'size' ) ) );
-			return new WP_Error( 'cc_conflict', 'Sorry, that bike is booked for some of those dates.', array( 'status' => 409, 'alternatives' => $alts ) );
+			$can_wait = 'active' === CC_Fleet_Bikes::get( $bike_id, 'state' );
+			if ( ! $can_wait || empty( $p['waitlist'] ) ) {
+				$alts = array_map( function ( $id ) { return CC_Fleet_Bikes::get( $id, 'cc_id' ); },
+					CC_Fleet_Loans::available_bikes( $start, $end, CC_Fleet_Bikes::get( $bike_id, 'size' ) ) );
+				return new WP_Error( 'cc_conflict', 'Sorry, that bike is booked for some of those dates.', array( 'status' => 409, 'alternatives' => $alts, 'waitlist' => $can_wait ) );
+			}
+			$join = true;
 		}
 
 		$rider_id = CC_Fleet_Riders::upsert( array(
@@ -238,9 +244,13 @@ class CC_Fleet_Rest {
 			'phone' => $phone, 'instagram' => $insta,
 			'height_cm' => $height, 'weight_kg' => $weight ?: null, 'consent' => true,
 		) );
+		$dupe = $join ? CC_Fleet_Waitlist::find_duplicate( $rider_id, $bike_id, '', $start, $end ) : 0;
+		if ( $dupe ) {
+			return new WP_REST_Response( array( 'ok' => true, 'waitlist' => true, 'message' => "You’re already on the waiting list for these dates, {$name}. We’ll email you if it frees up." ), 200 );
+		}
 		$loan_id = CC_Fleet_Loans::create( array(
 			'bike_id' => $bike_id, 'rider_id' => $rider_id, 'start_date' => $start, 'end_date' => $end,
-			'status' => 'requested', 'plan' => ( $event ? '[' . $event->name . '] ' : ( -1 === $event_id ? '[Race] ' : ( $other_ride ? '[Event] ' : '' ) ) ) . $plan, 'source' => 'web',
+			'status' => $join ? 'waiting' : 'requested', 'plan' => ( $event ? '[' . $event->name . '] ' : ( -1 === $event_id ? '[Race] ' : ( $other_ride ? '[Event] ' : '' ) ) ) . $plan, 'source' => 'web',
 			'event_id' => max( 0, $event_id ), 'race' => $is_race ? 1 : 0,
 			'requested_size' => $bike_id ? CC_Fleet_Bikes::get( $bike_id, 'size' ) : $size,
 			'notes'          => CC_Fleet_Loans::days_between( $start, $end ) + 1 > CC_Fleet_Frontend::usual_days() ? sprintf( 'Longer than the usual %d days (%d days): check the reason in the plan.', CC_Fleet_Frontend::usual_days(), CC_Fleet_Loans::days_between( $start, $end ) + 1 ) : '',
@@ -250,6 +260,14 @@ class CC_Fleet_Rest {
 			return $loan_id;
 		}
 		set_transient( $ip_key, $hits + 1, HOUR_IN_SECONDS );
+		if ( $join ) {
+			$place = CC_Fleet_Waitlist::position( CC_Fleet_Loans::get( $loan_id ) );
+			return new WP_REST_Response( array(
+				'ok'       => true,
+				'waitlist' => true,
+				'message'  => "You’re on the waiting list, {$name}: number {$place} in line for " . CC_Fleet_Bikes::get( $bike_id, 'cc_id' ) . '. If it frees up, we’ll email you a yes/no link. Nothing is held for you meanwhile, so feel free to book another bike.',
+			), 201 );
+		}
 		$wa = CC_Fleet_Emails::whatsapp_confirm_link( $loan_id );
 		return new WP_REST_Response( array(
 			'ok'       => true,

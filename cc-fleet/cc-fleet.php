@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       CC Fleet
  * Description:       Community Connect fleet backend: bikes, riders, loans, availability calendar, request form, workshop log, stock, events calendar, notes, emails and calendar feeds.
- * Version:           0.13.7
+ * Version:           0.14.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Community Connect NPC
@@ -12,8 +12,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CC_FLEET_VERSION', '0.13.7' );
-define( 'CC_FLEET_DB_VERSION', '9' );
+define( 'CC_FLEET_VERSION', '0.14.0' );
+define( 'CC_FLEET_DB_VERSION', '10' );
 define( 'CC_FLEET_FILE', __FILE__ );
 define( 'CC_FLEET_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CC_FLEET_URL', plugin_dir_url( __FILE__ ) );
@@ -26,6 +26,7 @@ require_once CC_FLEET_DIR . 'includes/class-riders.php';
 require_once CC_FLEET_DIR . 'includes/class-loans.php';
 require_once CC_FLEET_DIR . 'includes/class-emails.php';
 require_once CC_FLEET_DIR . 'includes/class-outbox.php';
+require_once CC_FLEET_DIR . 'includes/class-waitlist.php';
 require_once CC_FLEET_DIR . 'includes/class-landing.php';
 require_once CC_FLEET_DIR . 'includes/class-import.php';
 require_once CC_FLEET_DIR . 'includes/class-records.php';
@@ -52,6 +53,7 @@ add_action( 'plugins_loaded', function () {
 	CC_Fleet_Rest::init();
 	CC_Fleet_Ical::init();
 	CC_Fleet_Cron::init();
+	CC_Fleet_Waitlist::init();
 	CC_Fleet_Frontend::init();
 	CC_Fleet_Landing::init();
 	CC_Fleet_Records::init();

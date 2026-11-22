@@ -129,3 +129,9 @@
 .cc-filters { margin: 12px 0; }
 .cc-bike-ticks label { display: inline-block; min-width: 76px; margin: 0 6px 6px 0; }
 .cc-expenses td { vertical-align: top; }
+
+/* Waiting list (0.14) */
+.cc-badge--waiting { background: #EDE3E8; border-color: #EDE3E8; }
+.cc-badge--offered { background: #FFB1EC; border-color: #FFB1EC; font-weight: 600; }
+.cc-wl-spot { margin: 12px 0 20px; padding: 4px 14px 10px; border: 1.5px solid #141217; background: #fff; }
+.cc-wl-spot h3 { margin: 10px 0; }

@@ -168,3 +168,8 @@
 
 .cc-long{margin:6px 0 10px;padding:10px 12px;background:#FFE3F6;border:1.5px solid #141217;font-size:14px;line-height:1.4}
 .cc-usual{margin:4px 0 12px}
+
+/* Waiting list (0.14): shown under "that bike is booked" */
+.cc-waitlist-btn { display: block; width: 100%; margin: 12px 0 6px; padding: 14px 16px; border-radius: var(--cc-radius-pill, 999px); border: 1.5px solid var(--cc-ink, #141217); background: var(--cc-ink, #141217); color: var(--cc-paper, #F4EEE4); font: inherit; font-weight: 600; font-size: 15px; cursor: pointer; }
+.cc-waitlist-btn:hover, .cc-waitlist-btn:focus-visible { background: var(--cc-pink, #FFB1EC); color: #141217; border-color: var(--cc-pink, #FFB1EC); }
+.cc-waitlist-note { color: var(--cc-ink, #141217); }

@@ -331,7 +331,7 @@ CC_Fleet_Settings::update( array( 'email_style' => 'text' ) ); $mails = array();
 CC_Fleet_Loans::set_status( $el, 'cancelled' );
 cc_t( 'Plain-text setting sends text only', false !== strpos( implode( '|', (array) $mails[0]['headers'] ), 'text/plain' ) && false === strpos( $mails[0]['message'], '<table' ) );
 CC_Fleet_Settings::update( array( 'email_style' => 'html' ) );
-cc_t( 'Preview page renders all eight emails', 8 === substr_count( CC_Fleet_Emails::preview_page(), '<iframe' ) );
+cc_t( 'Preview page renders all fifteen emails (eight + seven for the waiting list)', 15 === substr_count( CC_Fleet_Emails::preview_page(), '<iframe' ) );
 CC_Fleet_Loans::delete( $el );
 
 echo "Spec history + changed dates\n";
@@ -463,6 +463,8 @@ CC_Fleet_Loans::set_status( $h2, 'cancelled', false );
 cc_t( 'Released raffle bike is bookable again', CC_Fleet_Loans::is_available( $b07, $d( 230 ), $d( 232 ) ) );
 $_GET = array( 'page' => 'cc-fleet-record', 'kind' => 'events', 'id' => $ev ); ob_start(); CC_Fleet_Records_Admin::page_edit(); $ep = ob_get_clean();
 cc_t( 'Event page has the raffle panel', false !== strpos( $ep, 'Hold for the raffle' ) && false !== strpos( $ep, 'Raffle bikes' ) );
-$imp = CC_Fleet_Records::import_csv( 'events', CC_Fleet_Import::read_rows( '/home/claude/events2027/cc-events-2027.csv' ) );
-cc_t( '2027 events CSV imports', ! is_wp_error( $imp ) && ( $imp['created'] ?? 0 ) + ( $imp['skipped'] ?? 0 ) >= 8, wp_json_encode( $imp ) );
+if ( file_exists( '/home/claude/events2027/cc-events-2027.csv' ) ) { // Local copy of the 2027 events sheet, when there is one.
+	$imp = CC_Fleet_Records::import_csv( 'events', CC_Fleet_Import::read_rows( '/home/claude/events2027/cc-events-2027.csv' ) );
+	cc_t( '2027 events CSV imports', ! is_wp_error( $imp ) && ( $imp['created'] ?? 0 ) + ( $imp['skipped'] ?? 0 ) >= 8, wp_json_encode( $imp ) );
+}
 echo "\n" . $GLOBALS['cc_pass'] . ' passed, ' . $GLOBALS['cc_fail'] . " failed (incl. backend-only checks)\n";

@@ -151,6 +151,10 @@
 			};
 			ev.addEventListener('change', sync); sync();
 		}
+		form.addEventListener('change', function (e) {
+			var hid = form.querySelector('input[name=waitlist]');
+			if (hid && e.target && e.target !== hid && /start|end|bike|size/.test(e.target.name || '')) hid.value = '';
+		});
 		form.addEventListener('submit', function (ev) {
 			ev.preventDefault();
 			form.querySelectorAll('[data-cc-error]').forEach(function (e) { e.hidden = true; });
@@ -185,6 +189,21 @@
 						var alt = res.body.data && res.body.data.alternatives;
 						f.textContent = res.body.message + (alt && alt.length ? ' Free in the same size: ' + alt.join(', ') + '.' : '');
 						f.hidden = false;
+						// Booked: offer the waiting list for the same dates (0.14).
+						if (res.body.data && res.body.data.waitlist) {
+							var w = document.createElement('button');
+							w.type = 'button'; w.className = 'cc-waitlist-btn';
+							w.textContent = 'Join the waiting list for these dates';
+							w.addEventListener('click', function () {
+								var hid = form.querySelector('input[name=waitlist]');
+								if (!hid) { hid = document.createElement('input'); hid.type = 'hidden'; hid.name = 'waitlist'; form.appendChild(hid); }
+								hid.value = '1';
+								if (form.requestSubmit) form.requestSubmit(); else btn.click();
+							});
+							var p = document.createElement('span'); p.className = 'cc-waitlist-note';
+							p.textContent = ' If someone backs out, we go down the list and email you.';
+							f.appendChild(document.createElement('br')); f.appendChild(w); f.appendChild(p);
+						}
 					}
 					btn.disabled = false; btn.textContent = btn.dataset.label;
 				})
