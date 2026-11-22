@@ -136,6 +136,10 @@ footer.foot .wp-block-details:last-of-type { border-bottom: 1px solid rgba(244, 
 footer.foot .wp-block-details p { margin: 0; }
 footer.foot .wp-block-details a { display: block; padding: 6px 0 10px; text-decoration: none; }
 footer.foot .soc { margin: 24px 0 18px; gap: 16px; }
+footer.foot .cc-soc { list-style: none; display: flex; justify-content: center; gap: 28px; margin: 28px 0 22px; padding: 0; }
+footer.foot .cc-soc a { display: block; color: var(--wp--preset--color--paper); line-height: 0; transition: opacity .15s; }
+footer.foot .cc-soc a:hover { opacity: .7; }
+footer.foot .cc-soc svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
 footer.foot .fine { text-align: center; font-size: 14px; margin: 0 0 12px; }
 
 /* --- pages, posts and bike pages --- */
