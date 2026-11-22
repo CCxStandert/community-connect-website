@@ -221,7 +221,8 @@ class CC_Fleet_Frontend {
 		}
 		$min  = CC_Fleet_Loans::add_days( CC_Fleet_Settings::today(), (int) CC_Fleet_Settings::get( 'min_notice_days' ) );
 		$once = array_values( array_filter( CC_Fleet_Records::query( 'events', array( 'from' => $min, 'to' => CC_Fleet_Loans::horizon(), 'order' => 'ASC', 'limit' => 60 ) ), function ( $e ) {
-			return ! (int) $e->cancelled && ! CC_Fleet_Records::is_regular( $e );
+			// Strava events taken off the club calendar are hidden (show_on_site 0) but kept for the records.
+			return ! (int) $e->cancelled && ! CC_Fleet_Records::is_regular( $e ) && ! ( 0 === strpos( (string) $e->source, 'strava:' ) && ! (int) $e->show_on_site );
 		} ) );
 		// Regular rides (“Every Friday at sunrise”) first, then the dated events in order.
 		return array_merge( CC_Fleet_Records::regular_events( CC_Fleet_Loans::horizon() ), $once );

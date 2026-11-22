@@ -77,6 +77,12 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page: "Changing parts?" box (date, kind of work, by, cost, note). Saving compares every part field and logs what changed from what to what, with that date; it also goes into the workshop log and updates "Last upgraded". The new **History** box lists all of it, newest first. Untick "Add to the workshop log" for typo fixes.
 - Loan page: **Change the dates** (+1 day, +3 days, +1 week, ends today, or any dates), with a note on what was agreed, a clash check and an optional "new dates" email to the rider. Overdue loans extend from today.
 
+## 0.16.2: Rides from Strava
+
+- FAR Inverted counts as a race: borrowing a bike for it needs the racing terms.
+- The Gravel group ride, the Weekend Ender and Social weekends 2027 are off the calendar again: their dates come from the Strava club’s group events (Fleet Manager → Connections), which are now labelled “Group ride”.
+- Strava events taken off the club calendar no longer show on the home page or in the request form.
+
 ## 0.16.1: FAR Inverted goes weekly
 
 - FAR Inverted is every Tuesday from 19 Jan to 9 Mar 2027 (eight rides). The 29 Dec and 12 Jan rides are cancelled, the others renumbered, the missing Tuesdays added (once, on update). Theme 1.4.1 updates the Rides card.

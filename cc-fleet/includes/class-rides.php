@@ -19,6 +19,29 @@ class CC_Fleet_Rides {
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'maybe_seed' ), 30 );
 		add_action( 'init', array( __CLASS__, 'maybe_far_weekly' ), 31 );
+		add_action( 'init', array( __CLASS__, 'maybe_v2' ), 32 );
+	}
+
+	/**
+	 * 0.16.2: FAR Inverted is a race (racing terms apply). The Gravel group ride, the Weekend Ender
+	 * and Social weekends 2027 leave the calendar: their dates come from the Strava club instead.
+	 */
+	public static function maybe_v2() {
+		if ( get_option( 'cc_fleet_rides_v2' ) || ! get_option( self::OPTION ) ) {
+			return;
+		}
+		update_option( 'cc_fleet_rides_v2', current_time( 'mysql' ), false );
+		global $wpdb;
+		$t = CC_Fleet_Records::table( 'events' );
+		$gone = $wpdb->query( "DELETE FROM $t WHERE schedule <> '' AND source = '' AND name IN ('Gravel group ride','The Weekend Ender','Social weekends 2027')" ); // phpcs:ignore
+		foreach ( (array) $wpdb->get_results( "SELECT id, name, type FROM $t WHERE name LIKE 'FAR Inverted%'" ) as $r ) { // phpcs:ignore
+			$cats = CC_Fleet_Records::event_cats( $r );
+			if ( ! in_array( 'race', $cats, true ) ) {
+				$cats[] = 'race';
+				$wpdb->update( $t, array( 'type' => implode( ',', $cats ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $r->id ) );
+			}
+		}
+		CC_Fleet_Install::log( 'event', 0, 'rides_v2', 'FAR Inverted marked as a race; ' . (int) $gone . ' regular rides removed (they come from Strava).' );
 	}
 
 	/**
@@ -47,12 +70,12 @@ class CC_Fleet_Rides {
 			}
 			$by[ $r->start_date ] = $r;
 		}
-				$n     = count( self::FAR_DATES );
+		$n     = count( self::FAR_DATES );
 		foreach ( self::FAR_DATES as $i => $d ) {
 			$last = $n - 1 === $i;
 			$name = 'FAR Inverted #' . ( $i + 1 ) . ( $last ? ' · Cycle Tour week' : '' );
 			$row  = array(
-				'name' => $name, 'type' => array( 'group', 'road' ), 'start_date' => $d, 'location' => 'Cape Town', 'show_on_site' => 1,
+				'name' => $name, 'type' => array( 'group', 'race', 'road' ), 'start_date' => $d, 'location' => 'Cape Town', 'show_on_site' => 1,
 				'description' => self::far_about() . ( $last ? ' The last one, on the Tuesday morning of Cycle Tour week.' : '' ),
 				'link' => 'https://www.instagram.com/p/DTf0fqLiLVq/',
 			);
@@ -80,31 +103,13 @@ class CC_Fleet_Rides {
 	/** The rides, as event rows. Dates for FAR Inverted count back from the Cycle Tour (Sun 14 Mar 2027). */
 	public static function rides() {
 		$far_about = self::far_about();
-		$rows      = array(
-			array(
-				'name' => 'Gravel group ride', 'type' => array( 'group', 'social', 'gravel' ), 'start_date' => '2026-12-01',
-				'schedule' => 'Monthly · a weekend day', 'location' => 'Cape Town',
-				'description' => 'Beginner friendly and open to anyone: bring your own bike or borrow one of ours. Mixed terrain, starting on gravel, so a gravel bike with decent tyres is best. Cape Town is windy and the route is exposed, so we announce the day in the week before, once we’ve seen the forecast.',
-				'link' => 'https://www.instagram.com/p/DTz3bJBDWDI/',
-			),
-			array(
-				'name' => 'The Weekend Ender', 'type' => array( 'group', 'social', 'gravel', 'mtb' ), 'start_date' => '2026-11-27',
-				'schedule' => 'Every Friday · sunrise', 'location' => 'The Blockhouse, Cape Town',
-				'description' => 'A social hill climb up to the Blockhouse to watch the sun come up from one of the best spots on the mountain. Gravel or mountain bike.',
-				'link' => 'https://www.instagram.com/p/Dfr72VQjeEy/',
-			),
-			array(
-				'name' => 'Social weekends 2027', 'type' => array( 'getaway', 'social' ), 'start_date' => '2027-01-01', 'end_date' => '2027-12-31',
-				'schedule' => '2027 · more soon', 'location' => 'Away from Cape Town',
-				'description' => 'Weekends away: we travel somewhere new to ride, or go to an event together. New formats for 2027, more information coming soon.',
-				'link' => 'https://www.instagram.com/cc_x_standert/',
-			),
-		);
+		// The Gravel group ride, the Weekend Ender and social weekends come from the Strava club (Fleet Manager → Connections).
+		$rows      = array();
 		$far = self::FAR_DATES;
 		foreach ( $far as $i => $d ) {
 			$last   = count( $far ) - 1 === $i;
 			$rows[] = array(
-				'name' => 'FAR Inverted #' . ( $i + 1 ) . ( $last ? ' · Cycle Tour week' : '' ), 'type' => array( 'group', 'road' ), 'start_date' => $d,
+				'name' => 'FAR Inverted #' . ( $i + 1 ) . ( $last ? ' · Cycle Tour week' : '' ), 'type' => array( 'group', 'race', 'road' ), 'start_date' => $d,
 				'location' => 'Cape Town', 'description' => $far_about . ( $last ? ' The last one, on the Tuesday morning of Cycle Tour week.' : '' ),
 				'link' => 'https://www.instagram.com/p/DTf0fqLiLVq/',
 			);

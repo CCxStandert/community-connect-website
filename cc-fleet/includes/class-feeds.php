@@ -120,7 +120,7 @@ class CC_Fleet_Feeds {
 	public static function strava_cats( $title, $desc = '' ) {
 		$t    = strtolower( $title . ' ' . $desc );
 		$cats = array();
-		if ( preg_match( '/\brace\b|racing/', $t ) ) {
+		if ( preg_match( '/\brace\b|racing|far inverted|segment/', $t ) ) {
 			$cats[] = 'race';
 		}
 		if ( preg_match( '/overnight|overnighter|bivvy|sleep ?out|camp(ing)? night/', $t ) ) {
@@ -131,6 +131,7 @@ class CC_Fleet_Feeds {
 		if ( ! $cats || ! in_array( 'race', $cats, true ) ) {
 			array_unshift( $cats, 'social' );
 		}
+		array_unshift( $cats, 'group' ); // Everything in the club calendar is a group ride.
 		if ( false !== strpos( $t, 'gravel' ) ) {
 			$cats[] = 'gravel';
 		} elseif ( preg_match( '/\broad\b/', $t ) ) {

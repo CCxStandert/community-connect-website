@@ -29,7 +29,7 @@
 <ul class="wp-block-list cc-ride__facts"><!-- wp:list-item -->
 <li><strong>Bike</strong> A gravel bike with decent tyres: the start is gravel</li>
 <!-- /wp:list-item --><!-- wp:list-item -->
-<li><strong>Date</strong> Announced in the week before, on Instagram and Strava</li>
+<li><strong>Date</strong> Announced in the week before, in our Strava club</li>
 <!-- /wp:list-item --></ul>
 <!-- /wp:list --><!-- wp:paragraph {"className":"cc-ride__more"} -->
 <p class="cc-ride__more"><a href="https://www.instagram.com/p/DTz3bJBDWDI/" target="_blank" rel="noreferrer noopener">The last one on Instagram ↗</a></p>
@@ -62,12 +62,14 @@
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-ride__when"} -->
 <p class="cc-ride__when">Every Tuesday · 19 Jan → 9 Mar 2027</p>
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"cc-ride__tags"} -->
-<p class="cc-ride__tags"><span>Advanced road</span><span>Drop ride</span><span>Segments</span></p>
+<p class="cc-ride__tags"><span>Advanced road</span><span>Drop ride</span><span>Racing</span></p>
 <!-- /wp:paragraph --><!-- wp:paragraph -->
 <p>Cape Town’s fastest group ride. Every Tuesday from 19 January, building up to the Cape Town Cycle Tour on 14 March 2027. The last one is on the Tuesday morning of race week. We race the segments up and down some of the city’s most contested climbs: it gets you in shape for the Tour, and maybe a PB or two along the way. It’s not a race. But it is.</p>
 <!-- /wp:paragraph --><!-- wp:list {"className":"cc-ride__facts"} -->
 <ul class="wp-block-list cc-ride__facts"><!-- wp:list-item -->
 <li><strong>Who</strong> Advanced road riders only. It’s a drop ride: nobody waits.</li>
+<!-- /wp:list-item --><!-- wp:list-item -->
+<li><strong>Terms</strong> It’s racing: on one of our bikes, the racing terms apply.</li>
 <!-- /wp:list-item --><!-- wp:list-item -->
 <li><strong>Dates</strong> 19 Jan → 9 Mar, every Tuesday</li>
 <!-- /wp:list-item --></ul>
