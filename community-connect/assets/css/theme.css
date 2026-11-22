@@ -77,6 +77,27 @@ header.top { position: sticky; top: 0; z-index: 20; }
 .cc-landing #slides { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; gap: 0; }
 .cc-landing #slides::-webkit-scrollbar { display: none; }
 .cc-landing #slides > .cc-slide { flex: 0 0 100%; scroll-snap-align: start; margin: 0; max-height: 78vh; }
+/* slides stay a short strip (Standert proportions): title and line only on phones */
+.cc-landing #slides > .cc-slide { aspect-ratio: 390 / 150; padding: 14px 18px; }
+.cc-landing #slides .is-style-pill-tag { display: none; }
+.cc-landing #slides .is-style-hand-note { font-size: 24px; }
+@media (min-width: 980px) {
+	.cc-landing #slides > .cc-slide { aspect-ratio: 3 / 1; padding: 32px 40px; }
+	.cc-landing #slides .is-style-pill-tag { display: inline-flex; }
+	.cc-landing #slides .is-style-hand-note { font-size: 40px; }
+}
+
+/* welcome: trail line + a few sentences, like Standert's collection intro */
+.cc-welcome { padding: 22px 18px 30px; border-bottom: 1.5px solid var(--wp--preset--color--ink, #141217); }
+.cc-welcome .cc-crumb { font-size: 14px; line-height: 1.3; color: #8a8580; margin: 0 0 14px; }
+.cc-welcome .cc-crumb span { color: var(--wp--preset--color--ink, #141217); }
+.cc-welcome .cc-welcome-text { font-size: 19px; line-height: 1.32; letter-spacing: -.01em; margin: 0; max-width: 40ch; }
+.cc-welcome .cc-welcome-text a { color: inherit; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
+@media (min-width: 980px) {
+	.cc-welcome { padding: 40px 40px 56px; }
+	.cc-welcome .cc-crumb { font-size: 16px; margin-bottom: 20px; }
+	.cc-welcome .cc-welcome-text { font-size: 30px; line-height: 1.25; max-width: 46ch; }
+}
 
 /* --- sections built from blocks --- */
 .sect { padding-top: 28px; }

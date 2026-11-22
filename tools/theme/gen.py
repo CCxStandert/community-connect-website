@@ -63,7 +63,7 @@ def pattern(slug, title, body, desc=''):
 
 # ---------- patterns ----------
 slides = [
-    ('hero-ghc.webp', 'Free to borrow', 'Borrow a premium bike', 'Pass it on.', '10 standerts, 0 fees x', '#fleet'),
+    ('hero-ghc.webp', 'Free to borrow', 'We share bikes.', 'Here is how you ride one.', '10 standerts, 0 fees x', '#fleet'),
     ('repaint.webp', 'New project', 'Gravel Hearts Club', 'Cute and Dirty', '2 bikes, repainted x', '#fleet'),
     ('desolation.webp', 'Events 2027', 'Race it on a fleet bike', 'Gravel races, dates out.', 'racing terms apply x', '#events'),
 ]
@@ -185,7 +185,7 @@ open(T + 'parts/footer.html', 'w').write(footer + '\n')
 def tpl(body):
     return ('<!-- wp:template-part {"slug":"header","area":"header","tagName":"div"} /-->\n' + body +
             '\n<!-- wp:template-part {"slug":"footer","area":"footer","tagName":"div"} /-->\n')
-front = ''.join(f'<!-- wp:pattern {{"slug":"community-connect/{s}"}} /-->\n' for s in ['hero', 'fleet', 'fleet-banner', 'how-it-works', 'events', 'numbers', 'deal', 'ask', 'drawings', 'agreement', 'after-ride'])
+front = ''.join(f'<!-- wp:pattern {{"slug":"community-connect/{s}"}} /-->\n' for s in ['hero', 'welcome', 'fleet', 'fleet-banner', 'how-it-works', 'events', 'numbers', 'deal', 'ask', 'drawings', 'agreement', 'after-ride'])
 open(T + 'templates/front-page.html', 'w').write(tpl(G(front, 'cc-main', tag='main', align='full', anchor='top')))
 page = G(G('<!-- wp:post-title {"level":1,"className":"h big"} /-->' + '<!-- wp:post-content {"layout":{"type":"default"},"className":"cc-content"} /-->', 'in max cc-page', gap0=False), 'cc-main', tag='main', align='full')
 open(T + 'templates/page.html', 'w').write(tpl(page))
