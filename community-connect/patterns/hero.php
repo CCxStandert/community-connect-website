@@ -11,9 +11,9 @@
 <div class="wp-block-group cc-cover cc-slide"><!-- wp:paragraph {"className":"is-style-pill-tag"} -->
 <p class="is-style-pill-tag">Free to borrow</p>
 <!-- /wp:paragraph --><!-- wp:heading {"className":"cc-hero-title"} -->
-<h2 class="wp-block-heading cc-hero-title"><a href="#fleet">Borrow a premium bike</a></h2>
+<h2 class="wp-block-heading cc-hero-title"><a href="#how">We share bikes.</a></h2>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-l2"} -->
-<p class="cc-l2">Pass it on.</p>
+<p class="cc-l2">Here is how you ride one.</p>
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"is-style-hand-note"} -->
 <p class="is-style-hand-note">10 standerts, 0 fees x</p>
 <!-- /wp:paragraph --></div>
