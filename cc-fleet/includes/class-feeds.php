@@ -225,7 +225,7 @@ class CC_Fleet_Feeds {
 	 * ========================================================= */
 
 	public static function ig() {
-		return wp_parse_args( get_option( self::OPT_IG, array() ), array( 'token' => '', 'token_set' => 0, 'expires' => 0, 'refreshed' => 0, 'fetched' => 0, 'last_result' => '', 'username' => '', 'ig_id' => '' ) );
+		return wp_parse_args( get_option( self::OPT_IG, array() ), array( 'token' => '', 'token_set' => 0, 'expires' => 0, 'refreshed' => 0, 'fetched' => 0, 'last_result' => '', 'username' => '', 'ig_id' => '', 'api' => '' ) );
 	}
 
 	/**
@@ -257,7 +257,7 @@ class CC_Fleet_Feeds {
 
 	/** Refresh the long-lived token when it is older than a day and has under 30 days left. */
 	private static function ig_refresh_if_due( array $ig ) {
-		if ( self::ig_is_fb( $ig['token'] ) ) {
+		if ( 'fb' === $ig['api'] || ( '' === $ig['api'] && 0 === strpos( $ig['token'], 'EAA' ) ) ) {
 			return $ig; // Facebook / system-user tokens are not renewed this way.
 		}
 		$age  = time() - (int) max( $ig['refreshed'], $ig['token_set'] );
@@ -281,25 +281,50 @@ class CC_Fleet_Feeds {
 		if ( ! $ig['token'] ) {
 			return new WP_Error( 'cc_ig', 'No Instagram token.' );
 		}
-		$endpoint = 'https://graph.instagram.com/me/media';
-		if ( self::ig_is_fb( $ig['token'] ) ) {
-			$ig['ig_id'] = self::ig_find_id( $ig );
-			if ( ! $ig['ig_id'] ) {
-				$ig['fetched']     = time();
-				$ig['last_result'] = 'Error: could not find the Instagram account for this token. Paste its Instagram account ID below.';
-				update_option( self::OPT_IG, $ig, false );
-				return new WP_Error( 'cc_ig', $ig['last_result'] );
-			}
-			$endpoint = 'https://graph.facebook.com/' . rawurlencode( $ig['ig_id'] ) . '/media';
+		// Try each way Meta serves an account's posts; remember the one that works.
+		$fields = 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,username';
+		$tries  = array();
+		if ( 'fb' === $ig['api'] && $ig['ig_id'] ) {
+			$tries[] = array( 'fb', 'https://graph.facebook.com/' . rawurlencode( $ig['ig_id'] ) . '/media' );
 		}
-		$url = add_query_arg( array( 'fields' => 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,username', 'limit' => 12, 'access_token' => $ig['token'] ), $endpoint );
-		$res = wp_remote_get( $url, array( 'timeout' => 20 ) );
-		$j   = is_wp_error( $res ) ? null : json_decode( wp_remote_retrieve_body( $res ), true );
+		$tries[] = array( 'ig', 'https://graph.instagram.com/me/media' );
+		if ( $ig['ig_id'] ) {
+			$tries[] = array( 'fb', 'https://graph.facebook.com/' . rawurlencode( $ig['ig_id'] ) . '/media' );
+			$tries[] = array( 'ig', 'https://graph.instagram.com/' . rawurlencode( $ig['ig_id'] ) . '/media' );
+		}
+		$tries[] = array( 'find', '' );
+		$j      = null;
+		$errors = array();
+		foreach ( $tries as $try ) {
+			list( $api, $endpoint ) = $try;
+			if ( 'find' === $api ) {
+				$found = self::ig_find_id( array_merge( $ig, array( 'ig_id' => '' ) ) );
+				if ( ! $found ) {
+					continue;
+				}
+				$ig['ig_id'] = $found;
+				$api         = 'fb';
+				$endpoint    = 'https://graph.facebook.com/' . rawurlencode( $found ) . '/media';
+			}
+			$res = wp_remote_get( add_query_arg( array( 'fields' => $fields, 'limit' => 12, 'access_token' => $ig['token'] ), $endpoint ), array( 'timeout' => 20 ) );
+			$out = is_wp_error( $res ) ? null : json_decode( wp_remote_retrieve_body( $res ), true );
+			if ( isset( $out['data'] ) && is_array( $out['data'] ) ) {
+				$j         = $out;
+				$ig['api'] = $api;
+				break;
+			}
+			$errors[] = wp_parse_url( $endpoint, PHP_URL_HOST ) . ': ' . ( is_wp_error( $res ) ? $res->get_error_message() : ( $out['error']['message'] ?? 'HTTP ' . wp_remote_retrieve_response_code( $res ) ) );
+		}
 		$ig['fetched'] = time();
-		if ( empty( $j['data'] ) || ! is_array( $j['data'] ) ) {
-			$ig['last_result'] = 'Error: ' . ( is_wp_error( $res ) ? $res->get_error_message() : ( $j['error']['message'] ?? 'no posts returned' ) );
+		if ( ! $j ) {
+			$ig['last_result'] = 'Error: Instagram did not give the posts (' . implode( ' | ', array_unique( $errors ) ) . ')';
 			update_option( self::OPT_IG, $ig, false );
 			return new WP_Error( 'cc_ig', $ig['last_result'] );
+		}
+		if ( ! $j['data'] ) {
+			$ig['last_result'] = 'Connected, but the account has no posts yet.';
+			update_option( self::OPT_IG, $ig, false );
+			return 0;
 		}
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		$up   = wp_upload_dir();
@@ -523,7 +548,8 @@ class CC_Fleet_Feeds {
 			$ig              = self::ig();
 			$ig['token']     = preg_replace( '/[^A-Za-z0-9_\-|.]/', '', (string) $in['ig_token'] );
 			$ig['token_set'] = time();
-			$ig['expires']   = self::ig_is_fb( $ig['token'] ) ? 0 : time() + 60 * DAY_IN_SECONDS;
+			$ig['expires']   = 0 === strpos( $ig['token'], 'EAA' ) ? 0 : time() + 60 * DAY_IN_SECONDS;
+			$ig['api']       = '';
 			$ig['refreshed'] = 0;
 			update_option( self::OPT_IG, $ig, false );
 			$r   = self::ig_fetch();

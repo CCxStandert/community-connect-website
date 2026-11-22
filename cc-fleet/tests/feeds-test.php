@@ -21,6 +21,7 @@ add_filter( 'pre_http_request', function ( $pre, $args, $url ) {
 	if ( false !== strpos( $url, 'oauth/token' ) ) { return $r( array( 'access_token' => 'AT2', 'refresh_token' => 'RT2', 'expires_at' => time() + 21600 ) ); }
 	if ( false !== strpos( $url, '/group_events' ) ) { return $r( $GLOBALS['strava_list'] ); }
 	if ( false !== strpos( $url, 'refresh_access_token' ) ) { return $r( array( 'access_token' => 'IGT2', 'expires_in' => 5184000 ) ); }
+	if ( false !== strpos( $url, 'graph.instagram.com' ) && false !== strpos( $url, 'access_token=EAA' ) ) { return $r( array( 'error' => array( 'message' => 'Invalid OAuth access token' ) ), 400 ); }
 	if ( false !== strpos( $url, 'graph.instagram.com/me/media' ) ) {
 		return $r( array( 'data' => array(
 			array( 'id' => '1801', 'caption' => "Kettensäge 54 out on the Cederberg loop with Sikhulile. Big smiles, bigger climbs. #gravel", 'media_type' => 'IMAGE', 'media_url' => 'https://cdn.example/ig1.jpg', 'permalink' => 'https://www.instagram.com/p/AAA/', 'timestamp' => '2026-11-20T08:00:00+0000', 'username' => 'cc_x_standert' ),
@@ -103,4 +104,10 @@ ok( 1 === $n, 'fb token fetch: ' . ( is_wp_error( $n ) ? $n->get_error_message()
 ok( '17841400000000001' === CC_Fleet_Feeds::ig()['ig_id'], 'ig id found' );
 ok( ! preg_grep( '/refresh_access_token/', $GLOBALS['calls'] ), 'no refresh for fb token' );
 ok( false !== strpos( do_shortcode( '[cc_instagram]' ), 'From the FB graph' ), 'fb post shown' );
+// Nothing works → Meta's message is shown.
+update_option( CC_Fleet_Feeds::OPT_IG, array( 'token' => 'EAAbad', 'token_set' => time() ), false );
+remove_all_filters( 'pre_http_request' );
+add_filter( 'pre_http_request', function () { return array( 'headers' => array(), 'body' => '{"error":{"message":"Bad token xyz"}}', 'response' => array( 'code' => 400, 'message' => 'x' ), 'cookies' => array(), 'filename' => null ); } );
+$n = CC_Fleet_Feeds::ig_fetch();
+ok( is_wp_error( $n ) && false !== strpos( $n->get_error_message(), 'Bad token xyz' ), 'error shown: ' . ( is_wp_error( $n ) ? $n->get_error_message() : '' ) );
 echo "feeds-test: $pass passed, $fail failed\n";
