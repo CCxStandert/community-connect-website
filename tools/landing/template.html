@@ -606,9 +606,28 @@ const pills = (e) => {
   return idx.slice(0, 2).map((i) => `<span class="st${c[i] === 'race' ? ' race' : ''}">${esc(l[i])}</span>`).join('');
 };
 const evRow = (e) => `<li class="ev" data-cats="${esc(catsOf(e).join(' '))}">${e.when ? `<span class="mono when">[${esc(e.when)}]</span>` : `<time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time>`}<div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(e.link) ? 'On Instagram' : (e.when ? 'More' : 'Event page')} <svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>` : ''}</li>`;
+// A series ("FAR Inverted #1", "#2"…) becomes one row with its dates in a fold-out.
+const ARW = '<svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+const dayMon = (d) => `${Number(d.slice(8))} ${MON[+d.slice(5, 7) - 1]}`;
+const groupSeries = (list) => {
+  const out = [], at = {};
+  list.forEach((e) => {
+    const m = !e.when && (e.name || '').match(/^(.*?)\s*#\s*\d+/);
+    if (!m) { out.push(e); return; }
+    const k = m[1].trim();
+    if (at[k] === undefined) { at[k] = out.length; out.push({ series: k, items: [e] }); } else { out[at[k]].items.push(e); }
+  });
+  return out.map((x) => (x.series && x.items.length < 2 ? x.items[0] : x));
+};
+const seriesRow = (g) => {
+  const a = g.items[0], z = g.items[g.items.length - 1], cats = [...new Set(g.items.flatMap(catsOf))];
+  const range = `${dayMon(a.start)} → ${dayMon(z.end || z.start)} ${(z.end || z.start).slice(0, 4)}`;
+  const dates = g.items.map((e) => `<li><time class="mono" datetime="${esc(e.start)}">${esc(span(e))}</time><span>${esc(e.name.replace(g.series, '').replace(/^[\s·–-]+/, ''))}</span></li>`).join('');
+  return `<li class="ev ev--series" data-cats="${esc(cats.join(' '))}"><time class="mono" datetime="${esc(a.start)}">[${esc(range)}]</time><div><b>${esc(g.series)}</b><small>${g.items.length} dates · ${esc(a.where)}</small></div><span class="sts">${pills(a)}</span><details class="ev__more"><summary>All ${g.items.length} dates</summary><ol>${dates}</ol>${a.link ? `<a href="${esc(a.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(a.link) ? 'On Instagram' : 'Event page'} ${ARW}</a>` : ''}</details></li>`;
+};
 if ($('evList')) {
   const list = $('evList');
-  list.innerHTML = EVENTS.length ? EVENTS.map(evRow).join('') : '<li class="ev"><div><b>Nothing on the calendar right now.</b><small>Follow along on Instagram.</small></div></li>';
+  list.innerHTML = EVENTS.length ? groupSeries(EVENTS).map((x) => (x.series ? seriesRow(x) : evRow(x))).join('') : '<li class="ev"><div><b>Nothing on the calendar right now.</b><small>Follow along on Instagram.</small></div></li>';
   // Filter buttons for the categories that actually occur.
   const FILTERS = [['all', 'All'], ['group', 'Group rides'], ['race', 'Races'], ['social', 'Social rides'], ['overnight', 'Overnight bikepacking'], ['bikepacking', 'Bikepacking trips'], ['getaway', 'Getaways']]
     .filter(([k]) => k === 'all' || EVENTS.some((e) => catsOf(e).includes(k)));
