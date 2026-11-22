@@ -77,6 +77,13 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page: "Changing parts?" box (date, kind of work, by, cost, note). Saving compares every part field and logs what changed from what to what, with that date; it also goes into the workshop log and updates "Last upgraded". The new **History** box lists all of it, newest first. Untick "Add to the workshop log" for typo fixes.
 - Loan page: **Change the dates** (+1 day, +3 days, +1 week, ends today, or any dates), with a note on what was agreed, a clash check and an optional "new dates" email to the rider. Overdue loans extend from today.
 
+## 0.16.0: Regular rides (theme 1.4.0: the Rides section)
+
+- Events get **Regular ride: how it happens** (e.g. “Every Friday · sunrise”). Filled in, the ride stays listed on the website and in the request form from its Date until “Until” (or for good), shown with that text instead of a date, and at the top of the list.
+- New event categories: **Group ride** and **Mountain bike**, with a “Group rides” filter on the home page.
+- Our rides are added to the calendar once: the Gravel group ride, the Weekend Ender, Social weekends 2027 and the six FAR Inverted rides (29 Dec 2026 → 9 Mar 2027). After that they’re normal events: edit or cancel them under Events.
+- Theme 1.4.0: a **Rides** section on the home page (and in the menu) explaining the four kinds of rides.
+
 ## 0.15.0: Bike IDs stay internal
 
 - Riders never see a Bike ID (CC-12) any more. Fleet cards (home page and `[cc_fleet]`) show the Standert logo where the ID was; bike pages show the logo above the model and size.

@@ -182,7 +182,7 @@ class CC_Fleet_Records_Admin {
 		foreach ( $rows as $e ) {
 			$st = CC_Fleet_Records::event_status( $e );
 			printf( '<tr><td>%s%s</td><td><strong>%s</strong><br><small class="cc-muted">%s</small></td><td>%s</td><td>%d</td><td><span class="cc-badge cc-badge--ev-%s">%s</span></td><td>%s</td><td><a class="button" href="%s">Open</a></td></tr>',
-				esc_html( self::nice( $e->start_date ) ), $e->end_date ? ' → ' . esc_html( self::nice( $e->end_date ) ) : '', esc_html( $e->name ), esc_html( implode( ' · ', CC_Fleet_Records::event_cat_labels( $e ) ) . ( $e->link ? ' · ' : '' ) ) . ( $e->link ? '<a href="' . esc_url( $e->link ) . '" target="_blank" rel="noopener">link</a>' : '' ),
+				esc_html( self::nice( $e->start_date ) ), ( $e->end_date ? ' → ' . esc_html( self::nice( $e->end_date ) ) : '' ) . ( CC_Fleet_Records::is_regular( $e ) ? '<br><small>' . esc_html( $e->schedule ) . '</small>' : '' ), esc_html( $e->name ), esc_html( implode( ' · ', CC_Fleet_Records::event_cat_labels( $e ) ) . ( $e->link ? ' · ' : '' ) ) . ( $e->link ? '<a href="' . esc_url( $e->link ) . '" target="_blank" rel="noopener">link</a>' : '' ),
 				esc_html( $e->location ), CC_Fleet_Records::bikes_at( $e ), esc_attr( $st ), esc_html( array( 'upcoming' => 'Upcoming', 'ongoing' => 'On now', 'completed' => 'Done', 'cancelled' => 'Cancelled' )[ $st ] ),
 				(int) $e->show_on_site ? '✓' : '—', esc_url( self::url( 'cc-fleet-record', array( 'kind' => 'events', 'id' => $e->id ) ) ) ); // phpcs:ignore
 		}

@@ -301,7 +301,7 @@ cc_t( 'Event status from dates: upcoming', 'upcoming' === CC_Fleet_Records::even
 $le = CC_Fleet_Loans::create( array( 'bike_id' => $b12, 'rider_id' => $rider, 'start_date' => $d( 53 ), 'end_date' => $d( 57 ), 'status' => 'approved', 'plan' => 'Smoke test gravel race!', 'source' => 'admin' ) );
 cc_t( 'Loan auto-linked to the event from its plan', CC_Fleet_Records::auto_link_events() >= 1 && (int) CC_Fleet_Loans::get( $le )->event_id === $eid );
 cc_t( 'Bikes attended counted from linked loans', 1 === CC_Fleet_Records::bikes_at( CC_Fleet_Records::get( 'events', $eid ) ) );
-cc_t( '[cc_events] shows public events only, no rider names', false !== strpos( do_shortcode( '[cc_events]' ), 'Smoke Test Gravel Race' ) && false === strpos( do_shortcode( '[cc_events]' ), 'Naledi' ) );
+cc_t( '[cc_events] shows public events only, no rider names', false !== strpos( do_shortcode( '[cc_events limit="50"]' ), 'Smoke Test Gravel Race' ) && false === strpos( do_shortcode( '[cc_events]' ), 'Naledi' ) );
 $nid = CC_Fleet_Records::save( 'notes', array( 'title' => 'Note', 'content' => "a\nb", 'status' => 'nonsense' ) );
 cc_t( 'Note saved, unknown status falls back to active', 'active' === CC_Fleet_Records::get( 'notes', $nid )->status );
 foreach ( array( 'maintenance', 'stock', 'events', 'notes' ) as $kk ) {

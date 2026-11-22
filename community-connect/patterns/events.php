@@ -11,7 +11,7 @@
 <div class="wp-block-group in max"><!-- wp:heading {"className":"h","anchor":"events"} -->
 <h2 class="wp-block-heading h" id="events">Events</h2>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"sub"} -->
-<p class="sub">Races, social rides and overnight bikepacking trips. Pick one on the request form and we plan the bike around it.</p>
+<p class="sub">Our group rides, races, social rides and overnight bikepacking trips. Pick one on the request form and we plan the bike around it.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --><!-- wp:shortcode -->
 [cc_events_list]

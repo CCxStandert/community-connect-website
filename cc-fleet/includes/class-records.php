@@ -20,6 +20,8 @@ class CC_Fleet_Records {
 		'gravel'      => 'Gravel',
 		'road'        => 'Road',
 		'getaway'     => 'Getaway',
+		'group'       => 'Group ride',
+		'mtb'         => 'Mountain bike',
 		'other'       => 'Other',
 	);
 
@@ -64,6 +66,23 @@ class CC_Fleet_Records {
 
 	public static function event_cat_labels( $e ) {
 		return array_map( function ( $k ) { return self::EVENT_CATS[ $k ]; }, self::event_cats( $e ) );
+	}
+
+	/** A ride that repeats (“Every Friday at sunrise”): listed by its schedule, not by a date. */
+	public static function is_regular( $e ) {
+		return $e && '' !== trim( (string) ( $e->schedule ?? '' ) );
+	}
+
+	/**
+	 * Regular rides still running: not cancelled, started (or starting soon) and not past “Until”.
+	 * Upcoming one-off events come from query(); these are added on top of them.
+	 */
+	public static function regular_events( $to = '' ) {
+		global $wpdb;
+		$t     = self::table( 'events' );
+		$today = CC_Fleet_Settings::today();
+		$to    = $to ?: CC_Fleet_Loans::add_days( $today, 365 );
+		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $t WHERE cancelled = 0 AND schedule <> '' AND start_date <= %s AND ( end_date IS NULL OR end_date >= %s ) ORDER BY start_date ASC, id ASC", $to, $today ) ); // phpcs:ignore
 	}
 
 	public static function is_race( $e ) {
@@ -111,6 +130,7 @@ class CC_Fleet_Records {
 					'type'         => array( 'Categories', 'multi', self::EVENT_CATS ),
 					'start_date'   => array( 'Date', 'date' ),
 					'end_date'     => array( 'Until (multi-day)', 'date', 'Leave empty for a one-day event' ),
+					'schedule'     => array( 'Regular ride: how it happens', 'text', 'For rides that repeat, e.g. “Every Friday at sunrise”. Filled in, the ride stays on the website from the Date until “Until” (or for good) and shows this text instead of a date.' ),
 					'location'     => array( 'Location', 'text' ),
 					'cancelled'    => array( 'Cancelled', 'checkbox' ),
 					'bikes_count'  => array( 'Bikes attended', 'number', 'Filled in automatically from linked loans; type a number to override' ),
@@ -149,6 +169,11 @@ class CC_Fleet_Records {
 			$args += array( 'to' => CC_Fleet_Loans::add_days( $today, -1 ), 'order' => 'DESC' );
 		}
 		$rows = self::query( 'events', $args );
+		if ( 'past' !== $a['show'] ) {
+			$regular = array_filter( self::regular_events(), function ( $e ) { return (int) $e->show_on_site; } );
+			$ids     = wp_list_pluck( $rows, 'id' );
+			$rows    = array_merge( array_values( array_filter( $regular, function ( $e ) use ( $ids ) { return ! in_array( $e->id, $ids, false ); } ) ), array_values( array_filter( $rows, function ( $e ) { return ! self::is_regular( $e ); } ) ) );
+		}
 		if ( ! $rows ) {
 			return '<p class="cc-events-empty">Nothing on the calendar right now. Follow along on Instagram.</p>';
 		}
@@ -157,7 +182,7 @@ class CC_Fleet_Records {
 		$html = '<ul class="cc-events">';
 		foreach ( $rows as $e ) {
 			$img   = preg_match( '/\.(jpe?g|png|webp|gif)(\?|$)/i', $e->image_url ) ? '<img src="' . esc_url( $e->image_url ) . '" alt="" loading="lazy">' : '';
-			$when  = wp_date( 'j M', strtotime( $e->start_date . ' 12:00' ) ) . ( $e->end_date ? '–' . wp_date( 'j M', strtotime( $e->end_date . ' 12:00' ) ) : '' );
+			$when  = self::is_regular( $e ) ? (string) $e->schedule : wp_date( 'j M', strtotime( $e->start_date . ' 12:00' ) ) . ( $e->end_date ? '–' . wp_date( 'j M', strtotime( $e->end_date . ' 12:00' ) ) : '' );
 			$html .= sprintf( '<li class="cc-event">%s<div class="cc-event__body"><p class="cc-event__meta">%s · %s · %s</p><h3 class="cc-event__name">%s</h3><p>%s</p>%s</div></li>',
 				$img, esc_html( $when ), esc_html( $e->location ), esc_html( implode( ' · ', self::event_cat_labels( $e ) ) ), esc_html( $e->name ), esc_html( wp_trim_words( (string) $e->description, 28 ) ),
 				$e->link ? '<a class="cc-event__link" href="' . esc_url( $e->link ) . '" target="_blank" rel="noopener">More →</a>' : '' );
@@ -216,6 +241,7 @@ class CC_Fleet_Records {
 			start_date date NOT NULL,
 			end_date date DEFAULT NULL,
 			location varchar(190) NOT NULL DEFAULT '',
+			schedule varchar(190) NOT NULL DEFAULT '',
 			cancelled tinyint(1) NOT NULL DEFAULT 0,
 			bikes_count smallint(5) unsigned DEFAULT NULL,
 			description text NULL,

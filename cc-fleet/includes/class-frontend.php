@@ -184,7 +184,7 @@ class CC_Fleet_Frontend {
 			<label class="cc-field cc-field--wide"><span>Riding an event?</span>
 				<select name="event_id" data-cc-event>
 					<option value="">No, just riding</option>
-					<?php foreach ( $events as $ev ) : ?><option value="<?php echo (int) $ev->id; ?>" data-race="<?php echo CC_Fleet_Records::is_race( $ev ) ? 1 : 0; ?>" data-start="<?php echo esc_attr( $ev->start_date ); ?>" data-end="<?php echo esc_attr( $ev->end_date ?: $ev->start_date ); ?>"><?php echo esc_html( $ev->name . ' · ' . self::event_dates( $ev ) ); ?></option><?php endforeach; ?>
+					<?php foreach ( $events as $ev ) : ?><option value="<?php echo (int) $ev->id; ?>" data-race="<?php echo CC_Fleet_Records::is_race( $ev ) ? 1 : 0; ?>" <?php if ( ! CC_Fleet_Records::is_regular( $ev ) ) : ?> data-start="<?php echo esc_attr( $ev->start_date ); ?>" data-end="<?php echo esc_attr( $ev->end_date ?: $ev->start_date ); ?>"<?php endif; ?>><?php echo esc_html( $ev->name . ' · ' . self::event_dates( $ev ) ); ?></option><?php endforeach; ?>
 					<option value="other" data-race="1">Another race</option>
 					<option value="other-ride" data-race="0">Another ride or event (not a race)</option>
 				</select>
@@ -219,13 +219,18 @@ class CC_Fleet_Frontend {
 		if ( ! class_exists( 'CC_Fleet_Records' ) ) {
 			return array();
 		}
-		$min = CC_Fleet_Loans::add_days( CC_Fleet_Settings::today(), (int) CC_Fleet_Settings::get( 'min_notice_days' ) );
-		return array_values( array_filter( CC_Fleet_Records::query( 'events', array( 'from' => $min, 'to' => CC_Fleet_Loans::horizon(), 'order' => 'ASC', 'limit' => 60 ) ), function ( $e ) {
-			return ! (int) $e->cancelled;
+		$min  = CC_Fleet_Loans::add_days( CC_Fleet_Settings::today(), (int) CC_Fleet_Settings::get( 'min_notice_days' ) );
+		$once = array_values( array_filter( CC_Fleet_Records::query( 'events', array( 'from' => $min, 'to' => CC_Fleet_Loans::horizon(), 'order' => 'ASC', 'limit' => 60 ) ), function ( $e ) {
+			return ! (int) $e->cancelled && ! CC_Fleet_Records::is_regular( $e );
 		} ) );
+		// Regular rides (“Every Friday at sunrise”) first, then the dated events in order.
+		return array_merge( CC_Fleet_Records::regular_events( CC_Fleet_Loans::horizon() ), $once );
 	}
 
 	public static function event_dates( $e ) {
+		if ( CC_Fleet_Records::is_regular( $e ) ) {
+			return (string) $e->schedule;
+		}
 		$a = strtotime( $e->start_date . ' 12:00' );
 		$b = $e->end_date && $e->end_date !== $e->start_date ? strtotime( $e->end_date . ' 12:00' ) : 0;
 		if ( ! $b ) {
