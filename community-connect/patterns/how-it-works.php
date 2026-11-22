@@ -3,7 +3,7 @@
  * Title: Home: how it works
  * Slug: community-connect/how-it-works
  * Categories: community-connect
- * Description: Photo, the loop animation and the six step cards. Edit the cards: the animation uses their headings.
+ * Description: Photo and the six steps of a loan as a cycle of cards (edit the cards freely).
  */
 ?>
 <!-- wp:group {"align":"full","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
@@ -15,12 +15,8 @@
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"is-style-hand-note"} -->
 <p class="is-style-hand-note">one free day between loans x</p>
 <!-- /wp:paragraph --></div>
-<!-- /wp:group --><!-- wp:group {"className":"in max","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
-<div class="wp-block-group in max"><!-- wp:shortcode -->
-[cc_how_loop]
-<!-- /wp:shortcode --></div>
-<!-- /wp:group --><!-- wp:group {"className":"row max","anchor":"how-steps","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
-<div class="wp-block-group row max" id="how-steps"><!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+<!-- /wp:group --><!-- wp:group {"className":"row max cc-cycle","anchor":"how-steps","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+<div class="wp-block-group row max cc-cycle" id="how-steps"><!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group"><!-- wp:paragraph {"className":"mono"} -->
 <p class="mono">01 / Pick</p>
 <!-- /wp:paragraph --><!-- wp:heading {"level":3} -->
@@ -69,5 +65,7 @@
 <p>Hand it over, share what the bike let you do, and come back for another one.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --></div>
-<!-- /wp:group --></div>
+<!-- /wp:group --><!-- wp:paragraph {"className":"cc-cycle-back max"} -->
+<p class="cc-cycle-back max"><b>And round again.</b> After step 6 the bike gets one free day, then it’s back on the calendar for the next rider.</p>
+<!-- /wp:paragraph --></div>
 <!-- /wp:group -->

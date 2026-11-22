@@ -283,3 +283,27 @@ footer.foot .fine { text-align: center; font-size: 14px; margin: 0 0 12px; }
 	.cc-landing .cc-nl-sect .cc-nl-lede { font-size: 34px; }
 }
 .cc-shop-main .cc-nl-sect { padding-top: 40px; padding-bottom: 48px; }
+
+/* --- how it works: the six steps as a cycle (no animation) --- */
+.cc-landing .row.cc-cycle { display: grid; grid-template-columns: 1fr; overflow: visible; counter-reset: cc-step; scroll-snap-type: none; }
+.cc-landing .row.cc-cycle > * { position: relative; counter-increment: cc-step; flex: none; border-right: 0; border-bottom: 1.5px solid var(--wp--preset--color--ink); padding: 18px 16px 20px 70px; gap: 4px; background: transparent; }
+.cc-landing .row.cc-cycle > *:last-child { border-bottom: 0; }
+.cc-landing .row.cc-cycle > *::before { content: counter(cc-step); position: absolute; left: 16px; top: 16px; width: 38px; height: 38px; border-radius: 50%; background: var(--wp--preset--color--pink); border: 1.5px solid var(--wp--preset--color--ink); display: flex; align-items: center; justify-content: center; font: 800 18px/1 'Inter Tight', sans-serif; color: var(--wp--preset--color--ink); }
+.cc-landing .row.cc-cycle > *:not(:last-child)::after { content: '↓'; position: absolute; left: 22px; bottom: -14px; z-index: 2; width: 26px; height: 26px; border-radius: 50%; background: var(--wp--preset--color--paper); border: 1.5px solid var(--wp--preset--color--ink); display: flex; align-items: center; justify-content: center; font: 700 14px/1 'Inter Tight', sans-serif; }
+.cc-landing .row.cc-cycle h3 { margin: 6px 0 2px; font-size: 19px; }
+.cc-landing .row.cc-cycle .mono { display: none; } /* the number sits in the circle */
+.cc-landing .row.cc-cycle .on { background: transparent; }
+.cc-landing .cc-cycle-back { position: relative; margin: 0 auto !important; box-sizing: border-box; padding: 16px 16px 18px 70px; border-bottom: 1.5px solid var(--wp--preset--color--ink); background: var(--wp--preset--color--cream); font-size: 15px; line-height: 1.4; }
+.cc-landing .cc-cycle-back::before { content: '↻'; position: absolute; left: 16px; top: 12px; width: 38px; height: 38px; border-radius: 50%; background: var(--wp--preset--color--ink); color: var(--wp--preset--color--pink); display: flex; align-items: center; justify-content: center; font: 700 20px/1 'Inter Tight', sans-serif; }
+@media (min-width: 980px) {
+	.cc-landing .row.cc-cycle { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+	.cc-landing .row.cc-cycle > * { border-bottom: 0; border-right: 1.5px solid var(--wp--preset--color--ink); padding: 22px 22px 26px; }
+	.cc-landing .row.cc-cycle > *:last-child { border-right: 0; }
+	.cc-landing .row.cc-cycle > *::before { position: static; margin-bottom: 14px; }
+	.cc-landing .row.cc-cycle > *:not(:last-child)::after { content: '→'; left: auto; bottom: auto; right: -14px; top: 28px; }
+	/* The way back: a line from step 6 round to step 1. */
+	.cc-landing .cc-cycle-back { padding: 46px 40px 20px; text-align: center; background: transparent; }
+	.cc-landing .cc-cycle-back::before { content: ''; left: calc(100% / 12); right: calc(100% / 12); top: 0; width: auto; height: 24px; border-radius: 0 0 16px 16px; background: transparent; border: 1.5px dashed var(--wp--preset--color--ink); border-top: 0; }
+	.cc-landing .cc-cycle-back::after { content: '↑'; position: absolute; top: -2px; left: calc(100% / 12); transform: translateX(-50%); width: 22px; height: 22px; border-radius: 50%; background: var(--wp--preset--color--pink); border: 1.5px solid var(--wp--preset--color--ink); display: flex; align-items: center; justify-content: center; font: 700 12px/1 'Inter Tight', sans-serif; }
+}
+@media (min-width: 1281px) { .cc-landing .cc-cycle-back.max { border-left: 1.5px solid var(--wp--preset--color--ink); border-right: 1.5px solid var(--wp--preset--color--ink); } }
