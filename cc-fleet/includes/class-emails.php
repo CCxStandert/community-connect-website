@@ -651,6 +651,33 @@ class CC_Fleet_Emails {
 		);
 	}
 
+	/** Crew: welcome to a new Fleet Manager, with their set-password link. */
+	public static function crew_welcome( WP_User $u, $set_url, $login_url ) {
+		$first = self::first_name( $u->display_name ?: $u->user_login );
+		return self::send( $u->user_email, 'Welcome to the crew: your Fleet Manager login', self::msg_crew_welcome( array(
+			'name' => $first, 'user' => $u->user_login, 'set' => $set_url, 'login' => $login_url,
+		) ), array( 'type' => 'crew_welcome' ) );
+	}
+
+	public static function msg_crew_welcome( $f ) {
+		return array(
+			'kicker' => 'Crew · welcome', 'headline' => 'Welcome to the crew, ' . $f['name'] . '.', 'subline' => 'Your Fleet Manager login is ready.',
+			'preheader' => 'Set your password and log in to Fleet Manager',
+			'blocks' => array(
+				array( 'p', "Hi {$f['name']},\n\nThe new Community Connect website is up, and you now have your own login. As a Fleet Manager you see everything for the bikes in one place: bike requests, loans and handoffs, the fleet calendar, riders, the waiting list, workshop jobs, stock and events." ),
+				array( 'details', 'Your login', array( array( 'Username', $f['user'] ), array( 'Login page', preg_replace( '#^https?://#', '', $f['login'] ) ) ) ),
+				array( 'steps', 'Getting started', array(
+					'Tap “Set my password” below and choose your own password.',
+					'Log in and open Fleet Manager in the menu on the left.',
+					'Have a look around: the Dashboard shows what needs doing today.',
+				) ),
+				array( 'buttons', array( array( 'Set my password', $f['set'], true ), array( 'Go to the login page', $f['login'], false ) ) ),
+				array( 'small', 'The set-password link works for 24 hours. If it has run out, use “Lost your password?” on the login page with this email address. Questions? Just reply to this email.' ),
+			),
+			'footer' => 'crew',
+		);
+	}
+
 	/** Crew: one short update (a yes, a no, an offer that ran out). */
 	public static function wl_crew_note( $subject, $headline, array $lines, $link, $label ) {
 		$admin = self::admin_recipients();
@@ -977,6 +1004,7 @@ class CC_Fleet_Emails {
 			'Rider · list closed'      => array( 'Your waiting list spot: Kettensäge 56 · Team', self::msg_wl_closed( array( 'name' => 'Naledi', 'bike' => 'Kettensäge 56 · Team', 'cc' => 'Kettensäge 56', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'later' => 'Thu 10 Dec', 'later_url' => self::fleet_url(), 'fleet' => self::fleet_url() ) ) ),
 			'Rider · thanks for the heads-up' => array( 'Booking cancelled: thanks for the heads-up', self::msg_wl_thanks( array( 'name' => 'Thandi', 'bike' => 'Kettensäge 56 · Team', 'dates' => 'Sat 5 Dec → Mon 7 Dec 2026', 'fleet' => self::fleet_url() ) ) ),
 			'Crew · spot open'         => array( 'Spot open: CC-12, 2 waiting', self::msg_wl_crew_spot( array( 'cc' => 'CC-12', 'bike' => 'CC-12 Kettensäge 56', 'why' => 'Thandi Mokoena cancelled CC-12, Sat 5 Dec → Mon 7 Dec 2026.', 'n' => 2, 'rows' => array( array( '#1', 'Naledi Khumalo · Sat 5 Dec → Mon 7 Dec 2026 · asked 20 Nov · first loan' ), array( '#2', 'Luke Peters · Sat 5 Dec → Sun 6 Dec 2026 · asked 21 Nov · 3 loans, last Aug 2026' ) ), 'first' => 'Naledi', 'hours' => 24, 'short' => 0, 'offer' => admin_url( 'admin.php?page=cc-fleet' ), 'list' => admin_url( 'admin.php?page=cc-fleet#waitlist' ) ) ) ),
+			'Crew · welcome (new login)' => array( 'Welcome to the crew: your Fleet Manager login', self::msg_crew_welcome( array( 'name' => 'Kgotso', 'user' => 'kgotso', 'set' => wp_login_url(), 'login' => wp_login_url() ) ) ),
 			'Crew · waiting list note' => array( 'Naledi didn’t answer: CC-12', self::msg_wl_crew_note( array( 'headline' => 'No answer in time.', 'lines' => array( 'Naledi didn’t say yes to CC-12 Kettensäge 56 within 24 hours. They stay on the list.', 'Offered to Luke, next in line.' ), 'link' => admin_url( 'admin.php?page=cc-fleet#waitlist' ), 'label' => 'Open the waiting list' ) ) ),
 			'Crew · daily digest'      => array( 'Fleet today: 1 overdue, 2 to review', self::msg_digest( array( 'today' => 'Fri 4 Dec', 'overdue' => array( array( 'CC-03', 'Camryn · due Tue 1 Dec' ) ), 'handoffs' => array( array( 'Fri 4 Dec', 'CC-08 → Naledi' ), array( 'Sat 5 Dec', 'CC-05 → Gabri' ) ), 'pending' => array( array( 'Waiting', 'Naledi · size 58 · Sat 5 Dec' ), array( 'Waiting', 'Luke · CC-07 · Sat 12 Dec' ) ), 'work' => array( array( 'Workshop', 'CC-12 · spoke' ) ), 'low' => array( array( 'Low stock', 'SRAM metal sintered brake pads · 3 left' ) ), 'link' => admin_url( 'admin.php?page=cc-fleet' ) ) ) ),
 		);

@@ -331,7 +331,7 @@ CC_Fleet_Settings::update( array( 'email_style' => 'text' ) ); $mails = array();
 CC_Fleet_Loans::set_status( $el, 'cancelled' );
 cc_t( 'Plain-text setting sends text only', false !== strpos( implode( '|', (array) $mails[0]['headers'] ), 'text/plain' ) && false === strpos( $mails[0]['message'], '<table' ) );
 CC_Fleet_Settings::update( array( 'email_style' => 'html' ) );
-cc_t( 'Preview page renders all fifteen emails (eight + seven for the waiting list)', 15 === substr_count( CC_Fleet_Emails::preview_page(), '<iframe' ) );
+cc_t( 'Preview page renders all sixteen emails (eight + seven for the waiting list + crew welcome)', 16 === substr_count( CC_Fleet_Emails::preview_page(), '<iframe' ) );
 CC_Fleet_Loans::delete( $el );
 
 echo "Spec history + changed dates\n";
