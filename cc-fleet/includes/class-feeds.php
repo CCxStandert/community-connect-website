@@ -225,11 +225,41 @@ class CC_Fleet_Feeds {
 	 * ========================================================= */
 
 	public static function ig() {
-		return wp_parse_args( get_option( self::OPT_IG, array() ), array( 'token' => '', 'token_set' => 0, 'expires' => 0, 'refreshed' => 0, 'fetched' => 0, 'last_result' => '', 'username' => '' ) );
+		return wp_parse_args( get_option( self::OPT_IG, array() ), array( 'token' => '', 'token_set' => 0, 'expires' => 0, 'refreshed' => 0, 'fetched' => 0, 'last_result' => '', 'username' => '', 'ig_id' => '' ) );
+	}
+
+	/**
+	 * Two kinds of token: an Instagram-login token (IGAA…, renew every 60 days, graph.instagram.com)
+	 * or, for newer Meta apps, a Facebook / system-user token (EAA…, often never expires, graph.facebook.com
+	 * with the Instagram account's ID).
+	 */
+	public static function ig_is_fb( $token ) {
+		return '' !== $token && 0 !== strpos( $token, 'IG' );
+	}
+
+	/** The Instagram business account ID for a Facebook token: saved, or found through the Pages the token can see. */
+	private static function ig_find_id( array $ig ) {
+		if ( $ig['ig_id'] ) {
+			return $ig['ig_id'];
+		}
+		foreach ( array( 'me/accounts?fields=instagram_business_account{id,username}&limit=50', 'me?fields=instagram_business_account{id,username}' ) as $q ) {
+			$res = wp_remote_get( 'https://graph.facebook.com/' . $q . '&access_token=' . rawurlencode( $ig['token'] ), array( 'timeout' => 15 ) );
+			$j   = is_wp_error( $res ) ? null : json_decode( wp_remote_retrieve_body( $res ), true );
+			$rows = isset( $j['data'] ) ? $j['data'] : ( $j ? array( $j ) : array() );
+			foreach ( (array) $rows as $row ) {
+				if ( ! empty( $row['instagram_business_account']['id'] ) ) {
+					return preg_replace( '/[^0-9]/', '', $row['instagram_business_account']['id'] );
+				}
+			}
+		}
+		return '';
 	}
 
 	/** Refresh the long-lived token when it is older than a day and has under 30 days left. */
 	private static function ig_refresh_if_due( array $ig ) {
+		if ( self::ig_is_fb( $ig['token'] ) ) {
+			return $ig; // Facebook / system-user tokens are not renewed this way.
+		}
 		$age  = time() - (int) max( $ig['refreshed'], $ig['token_set'] );
 		$left = (int) $ig['expires'] ? (int) $ig['expires'] - time() : 0;
 		if ( $age < DAY_IN_SECONDS || ( (int) $ig['expires'] && $left > 30 * DAY_IN_SECONDS ) ) {
@@ -251,7 +281,18 @@ class CC_Fleet_Feeds {
 		if ( ! $ig['token'] ) {
 			return new WP_Error( 'cc_ig', 'No Instagram token.' );
 		}
-		$url = add_query_arg( array( 'fields' => 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,username', 'limit' => 12, 'access_token' => $ig['token'] ), 'https://graph.instagram.com/me/media' );
+		$endpoint = 'https://graph.instagram.com/me/media';
+		if ( self::ig_is_fb( $ig['token'] ) ) {
+			$ig['ig_id'] = self::ig_find_id( $ig );
+			if ( ! $ig['ig_id'] ) {
+				$ig['fetched']     = time();
+				$ig['last_result'] = 'Error: could not find the Instagram account for this token. Paste its Instagram account ID below.';
+				update_option( self::OPT_IG, $ig, false );
+				return new WP_Error( 'cc_ig', $ig['last_result'] );
+			}
+			$endpoint = 'https://graph.facebook.com/' . rawurlencode( $ig['ig_id'] ) . '/media';
+		}
+		$url = add_query_arg( array( 'fields' => 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,username', 'limit' => 12, 'access_token' => $ig['token'] ), $endpoint );
 		$res = wp_remote_get( $url, array( 'timeout' => 20 ) );
 		$j   = is_wp_error( $res ) ? null : json_decode( wp_remote_retrieve_body( $res ), true );
 		$ig['fetched'] = time();
@@ -425,9 +466,10 @@ class CC_Fleet_Feeds {
 		// Instagram.
 		echo '<h2>Instagram</h2><p>The latest posts show in the “On Instagram” section of the home page, in the site’s style. The images are copied to this site so they load fast. Checked every 3 hours; the token renews itself.</p>';
 		echo '<table class="form-table" role="presentation">';
-		printf( '<tr><th><label for="cc-igt">Access token</label></th><td><input id="cc-igt" type="password" name="ig_token" class="large-text" autocomplete="new-password" placeholder="%s"><p class="description">A long-lived token for @cc_x_standert from your Meta app (Instagram API with Instagram Login → Generate token). The account must be a business or creator account. Leave empty to keep the saved one.</p></td></tr>', esc_attr( $ig['token'] ? self::mask( $ig['token'] ) . ' saved' : '' ) );
+		printf( '<tr><th><label for="cc-igt">Access token</label></th><td><input id="cc-igt" type="password" name="ig_token" class="large-text" autocomplete="new-password" placeholder="%s"><p class="description">The token from your Meta app for @cc_x_standert: a system-user token (newer apps, “API setup with Unified login”) or an Instagram-login token. The account must be a business or creator account. Leave empty to keep the saved one.</p></td></tr>', esc_attr( $ig['token'] ? self::mask( $ig['token'] ) . ' saved' : '' ) );
+		printf( '<tr><th><label for="cc-igid">Instagram account ID</label></th><td><input id="cc-igid" name="ig_id" value="%s" class="regular-text" inputmode="numeric"><p class="description">Optional. Only needed if the site can’t find the account by itself (the long number Meta shows for the Instagram account).</p></td></tr>', esc_attr( $ig['ig_id'] ) );
 		if ( $ig['token'] ) {
-			printf( '<tr><th>Status</th><td>%s%s · %s <a href="%s">Remove</a></td></tr>', $ig['username'] ? '@' . esc_html( $ig['username'] ) . ' · ' : '', esc_html( $ig['expires'] ? 'token valid until ' . wp_date( 'j M Y', $ig['expires'] ) : 'token saved' ), esc_html( $ig['last_result'] ?: 'not fetched yet' ), esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cc_fleet_feeds_ig_disconnect' ), 'cc_fleet_feeds_ig_disconnect' ) ) );
+			printf( '<tr><th>Status</th><td>%s%s · %s <a href="%s">Remove</a></td></tr>', $ig['username'] ? '@' . esc_html( $ig['username'] ) . ' · ' : '', esc_html( $ig['expires'] ? 'token valid until ' . wp_date( 'j M Y', $ig['expires'] ) : 'token does not expire' ), esc_html( $ig['last_result'] ?: 'not fetched yet' ), esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cc_fleet_feeds_ig_disconnect' ), 'cc_fleet_feeds_ig_disconnect' ) ) );
 		}
 		echo '</table>';
 		submit_button( 'Save' );
@@ -465,11 +507,23 @@ class CC_Fleet_Feeds {
 		}
 		self::strava_save( $s );
 		$msg = 'Saved.';
+		if ( isset( $in['ig_id'] ) ) {
+			$ig = self::ig();
+			$new_id = preg_replace( '/[^0-9]/', '', (string) $in['ig_id'] );
+			if ( $new_id !== $ig['ig_id'] ) {
+				$ig['ig_id'] = $new_id;
+				update_option( self::OPT_IG, $ig, false );
+				if ( $ig['token'] && empty( $in['ig_token'] ) ) {
+					$r   = self::ig_fetch();
+					$msg = is_wp_error( $r ) ? 'Saved, but Instagram said: ' . $r->get_error_message() : 'Instagram: ' . $r . ' posts on the website.';
+				}
+			}
+		}
 		if ( ! empty( $in['ig_token'] ) ) {
 			$ig              = self::ig();
 			$ig['token']     = preg_replace( '/[^A-Za-z0-9_\-|.]/', '', (string) $in['ig_token'] );
 			$ig['token_set'] = time();
-			$ig['expires']   = time() + 60 * DAY_IN_SECONDS;
+			$ig['expires']   = self::ig_is_fb( $ig['token'] ) ? 0 : time() + 60 * DAY_IN_SECONDS;
 			$ig['refreshed'] = 0;
 			update_option( self::OPT_IG, $ig, false );
 			$r   = self::ig_fetch();

@@ -29,6 +29,8 @@ add_filter( 'pre_http_request', function ( $pre, $args, $url ) {
 			array( 'id' => '1804', 'caption' => '', 'media_type' => 'IMAGE', 'media_url' => 'https://cdn.example/ig2.jpg', 'permalink' => 'https://www.instagram.com/p/DDD/', 'timestamp' => '2026-11-10T08:00:00+0000' ),
 		) ) );
 	}
+	if ( false !== strpos( $url, 'graph.facebook.com/me/accounts' ) ) { return $r( array( 'data' => array( array( 'id' => '55' ), array( 'id' => '56', 'instagram_business_account' => array( 'id' => '17841400000000001' ) ) ) ) ); }
+	if ( false !== strpos( $url, 'graph.facebook.com/17841400000000001/media' ) ) { return $r( array( 'data' => array( array( 'id' => '1901', 'caption' => 'From the FB graph', 'media_type' => 'IMAGE', 'media_url' => 'https://cdn.example/ig1.jpg', 'permalink' => 'https://www.instagram.com/p/EEE/', 'timestamp' => '2026-11-21T08:00:00+0000', 'username' => 'cc_x_standert' ) ) ) ); }
 	if ( 0 === strpos( $url, 'https://cdn.example/' ) ) {
 		copy( '/tmp/' . basename( $url ), $args['filename'] );
 		return $r( '' );
@@ -93,4 +95,12 @@ ok( ! preg_grep( '/cdn\.example/', $GLOBALS['calls'] ), 'images cached' );
 touch( $up['basedir'] . '/cc-instagram/ig-999.webp' );
 CC_Fleet_Feeds::ig_fetch();
 ok( ! file_exists( $up['basedir'] . '/cc-instagram/ig-999.webp' ), 'stale removed' );
+// System-user (Facebook) token.
+$GLOBALS['calls'] = array();
+update_option( CC_Fleet_Feeds::OPT_IG, array( 'token' => 'EAAsystemtoken', 'token_set' => time() - 40 * DAY_IN_SECONDS, 'expires' => 0 ), false );
+$n = CC_Fleet_Feeds::ig_fetch();
+ok( 1 === $n, 'fb token fetch: ' . ( is_wp_error( $n ) ? $n->get_error_message() : $n ) );
+ok( '17841400000000001' === CC_Fleet_Feeds::ig()['ig_id'], 'ig id found' );
+ok( ! preg_grep( '/refresh_access_token/', $GLOBALS['calls'] ), 'no refresh for fb token' );
+ok( false !== strpos( do_shortcode( '[cc_instagram]' ), 'From the FB graph' ), 'fb post shown' );
 echo "feeds-test: $pass passed, $fail failed\n";
