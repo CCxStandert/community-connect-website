@@ -77,6 +77,14 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page: "Changing parts?" box (date, kind of work, by, cost, note). Saving compares every part field and logs what changed from what to what, with that date; it also goes into the workshop log and updates "Last upgraded". The new **History** box lists all of it, newest first. Untick "Add to the workshop log" for typo fixes.
 - Loan page: **Change the dates** (+1 day, +3 days, +1 week, ends today, or any dates), with a note on what was agreed, a clash check and an optional "new dates" email to the rider. Overdue loans extend from today.
 
+## 0.15.0: Bike IDs stay internal
+
+- Riders never see a Bike ID (CC-12) any more. Fleet cards (home page and `[cc_fleet]`) show the Standert logo where the ID was; bike pages show the logo above the model and size.
+- Everywhere else riders see the bike's public name: model, size and its own name, e.g. "Erdgeschoss 56 · Pang! Pink" (page titles, breadcrumbs, the sticky bar, "Request this bike", form messages, every rider email and the rider's data export).
+- Bike pages move from /fleet/cc-12/ to /fleet/erdgeschoss-56/. The old addresses redirect.
+- The request form and calendar use the bike's internal number instead of the ID. Shortcodes still accept `bike="CC-12"`.
+- Fleet Manager, crew emails, the calendar feed and the API keep the Bike ID.
+
 ## 0.14.0: Waiting list
 
 - **Joining.** When a rider picks a bike that's booked, the form now offers "Join the waiting list for these dates". The crew can also move a request onto the list (the "Waiting list" button shows on requests whose bike is taken). A place on the list is a loan with status *Waiting list*; it never blocks the calendar.

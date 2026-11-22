@@ -73,6 +73,9 @@ class CC_Fleet_Install {
 			if ( $from && $from < 8 ) {
 				CC_Fleet_Records::migrate_event_cats(); // Events: one type → several categories.
 			}
+			if ( $from && $from < 11 ) {
+				update_option( 'cc_fleet_migrate_slugs', 1, false ); // Bike pages: /fleet/cc-12/ → /fleet/kettensage-56/ (done on init).
+			}
 			if ( $from < 6 ) {
 				// Wheelsets and tyres become parts: done on init, when bikes can be queried.
 				update_option( 'cc_fleet_migrate_parts', 1, false );

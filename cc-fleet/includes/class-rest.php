@@ -232,7 +232,7 @@ class CC_Fleet_Rest {
 		if ( $bike_id && ! CC_Fleet_Loans::is_available( $bike_id, $start, $end ) ) {
 			$can_wait = 'active' === CC_Fleet_Bikes::get( $bike_id, 'state' );
 			if ( ! $can_wait || empty( $p['waitlist'] ) ) {
-				$alts = array_map( function ( $id ) { return CC_Fleet_Bikes::get( $id, 'cc_id' ); },
+				$alts = array_map( array( 'CC_Fleet_Bikes', 'public_label' ),
 					CC_Fleet_Loans::available_bikes( $start, $end, CC_Fleet_Bikes::get( $bike_id, 'size' ) ) );
 				return new WP_Error( 'cc_conflict', 'Sorry, that bike is booked for some of those dates.', array( 'status' => 409, 'alternatives' => $alts, 'waitlist' => $can_wait ) );
 			}
@@ -265,7 +265,7 @@ class CC_Fleet_Rest {
 			return new WP_REST_Response( array(
 				'ok'       => true,
 				'waitlist' => true,
-				'message'  => "You’re on the waiting list, {$name}: number {$place} in line for " . CC_Fleet_Bikes::get( $bike_id, 'cc_id' ) . '. If it frees up, we’ll email you a yes/no link. Nothing is held for you meanwhile, so feel free to book another bike.',
+				'message'  => "You’re on the waiting list, {$name}: number {$place} in line for " . CC_Fleet_Bikes::public_label( $bike_id ) . '. If it frees up, we’ll email you a yes/no link. Nothing is held for you meanwhile, so feel free to book another bike.',
 			), 201 );
 		}
 		$wa = CC_Fleet_Emails::whatsapp_confirm_link( $loan_id );

@@ -49,7 +49,7 @@ class CC_Fleet_Import {
 			} else {
 				$post_id = wp_insert_post( array(
 					'post_type' => CC_Fleet_Bikes::CPT, 'post_status' => 'publish',
-					'post_title' => $title, 'post_name' => sanitize_title( $cc_id ),
+					'post_title' => $title, 'post_name' => sanitize_title( trim( ( $data['model'] ?? '' ) . ' ' . ( $data['size'] ?? '' ) ) ) ?: sanitize_title( $cc_id ),
 				), true );
 				if ( is_wp_error( $post_id ) ) {
 					$res['errors'][] = "$cc_id: " . $post_id->get_error_message();

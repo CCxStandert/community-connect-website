@@ -221,7 +221,7 @@
 			if (!res.ok) return;
 			var labels = { available: 'Available', out: 'Out riding', workshop: 'Workshop', retired: 'Retired' };
 			res.body.forEach(function (b) {
-				var card = root.querySelector('[data-bike="' + b.cc_id + '"] [data-cc-state]');
+				var card = root.querySelector('[data-bike="' + b.id + '"] [data-cc-state]');
 				if (card) { card.className = 'cc-state cc-state--' + b.state; card.textContent = labels[b.state] || b.state; }
 			});
 		});

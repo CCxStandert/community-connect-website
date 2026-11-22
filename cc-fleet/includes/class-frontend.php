@@ -97,16 +97,16 @@ class CC_Fleet_Frontend {
 			}
 			printf(
 				'<a class="cc-bike-card" href="%1$s" data-bike="%2$s" data-size="%3$s" data-category="%4$s">
-					<span class="cc-bike-card__top"><span class="cc-bike-card__id">%2$s</span><span class="cc-state cc-state--%5$s" data-cc-state>%6$s</span></span>
+					<span class="cc-bike-card__top"><span class="cc-bike-card__id">%10$s</span><span class="cc-state cc-state--%5$s" data-cc-state>%6$s</span></span>
 					%7$s
 					<span class="cc-bike-card__name">%8$s %3$s</span>
 					<span class="cc-bike-card__meta">%9$s · %4$s</span>
 				</a>',
-				esc_url( $b['url'] ), esc_html( $b['cc_id'] ), esc_html( $b['size'] ), esc_html( $b['category'] ),
+				esc_url( $b['url'] ), (int) $b['id'], esc_html( $b['size'] ), esc_html( $b['category'] ),
 				esc_attr( $b['state'] ), esc_html( self::state_label( $b['state'] ) ),
-				$b['image'] ? '<img class="cc-bike-card__img" src="' . esc_url( $b['image'] ) . '" alt="' . esc_attr( $b['cc_id'] . ' ' . $b['model'] ) . '" loading="lazy" decoding="async" width="600" height="450">'
+				$b['image'] ? '<img class="cc-bike-card__img" src="' . esc_url( $b['image'] ) . '" alt="' . esc_attr( $b['model'] . ' ' . $b['size'] . ( $b['name'] ? ', ' . $b['name'] : '' ) ) . '" loading="lazy" decoding="async" width="600" height="450">'
 					: '<span class="cc-bike-card__img cc-bike-card__img--empty" aria-hidden="true">' . esc_html( $b['size'] ) . '</span>',
-				esc_html( $b['model'] ), esc_html( $b['colourway'] )
+				esc_html( $b['model'] ), esc_html( $b['colourway'] ), CC_Fleet_Bikes::brand_svg( 'cc-brand cc-bike-card__brand' )
 			);
 		}
 		echo '</div></div>';
@@ -118,14 +118,23 @@ class CC_Fleet_Frontend {
 	public static function sc_calendar( $atts ) {
 		self::enqueue();
 		$atts = shortcode_atts( array( 'bike' => '' ), $atts );
-		return sprintf( '<div class="cc-cal" data-cc-calendar' . self::data_attrs() . ' data-bike="%s" aria-live="polite"><p class="cc-cal__loading">Loading availability…</p></div>', esc_attr( strtoupper( $atts['bike'] ) ) );
+		return sprintf( '<div class="cc-cal" data-cc-calendar' . self::data_attrs() . ' data-bike="%s" aria-live="polite"><p class="cc-cal__loading">Loading availability…</p></div>', esc_attr( self::bike_ref( $atts['bike'] ) ) );
+	}
+
+	/** The bike's post ID for the page (the Bike ID stays internal). Shortcodes may still say bike="CC-12". */
+	private static function bike_ref( $ref ) {
+		$ref = trim( (string) $ref );
+		if ( '' === $ref || ctype_digit( $ref ) ) {
+			return $ref;
+		}
+		return (string) ( CC_Fleet_Bikes::find_by_cc_id( $ref ) ?: '' );
 	}
 
 	public static function sc_request( $atts ) {
 		self::enqueue();
 		$atts  = shortcode_atts( array( 'bike' => 'any' ), $atts );
-		$bike  = strtoupper( $atts['bike'] );
-		$any   = 'ANY' === $bike;
+		$any   = 'ANY' === strtoupper( (string) $atts['bike'] );
+		$bike  = $any ? 'ANY' : self::bike_ref( $atts['bike'] );
 		$s     = CC_Fleet_Settings::all();
 		$uid   = 'ccr' . wp_rand( 1000, 9999 );
 		$sizes = array_keys( CC_Fleet_Settings::size_heights() );
@@ -197,7 +206,7 @@ class CC_Fleet_Frontend {
 			<input type="hidden" name="t" value="" data-cc-t>
 			<p class="cc-error cc-error--form" data-cc-error="form" hidden></p>
 			<div class="cc-request__bar">
-				<button type="submit" class="cc-button">Request <?php echo $any ? 'a bike' : esc_html( $bike ); ?></button>
+				<button type="submit" class="cc-button">Request <?php echo $any ? 'a bike' : 'this bike'; ?></button>
 			</div>
 			<p class="cc-success" data-cc-success hidden></p>
 		</form>
@@ -311,9 +320,10 @@ class CC_Fleet_Frontend {
 			<?php elseif ( ! has_post_thumbnail( $id ) || 'community-connect' === get_template() ) : ?>
 				<div class="cc-bike__ph" style="background:<?php echo esc_attr( self::COLOURS[ $b['cc_id'] ] ?? '#D3C8B4' ); ?>"><b><?php echo esc_html( $b['size'] ); ?></b><span>photo to come</span></div>
 			<?php endif; ?>
-			<nav class="cc-crumbs" aria-label="Breadcrumb"><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a> / <a href="<?php echo esc_url( home_url( '/#fleet' ) ); ?>">Fleet</a> / <?php echo esc_html( $b['category'] ); ?> / <?php echo esc_html( $b['cc_id'] ); ?></nav>
+			<nav class="cc-crumbs" aria-label="Breadcrumb"><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Home</a> / <a href="<?php echo esc_url( home_url( '/#fleet' ) ); ?>">Fleet</a> / <?php echo esc_html( $b['category'] ); ?> / <?php echo esc_html( $b['model'] . ' ' . $b['size'] ); ?></nav>
 			<header class="cc-bike__head">
-				<h1 class="cc-bike__model"><?php echo esc_html( mb_strtoupper( $b['model'] ) ); ?> <small><?php echo esc_html( $b['cc_id'] ); ?></small></h1>
+				<p class="cc-bike__brand"><?php echo CC_Fleet_Bikes::brand_svg( 'cc-brand' ); // phpcs:ignore -- our own SVG file. ?></p>
+				<h1 class="cc-bike__model"><?php echo esc_html( mb_strtoupper( $b['model'] . ' ' . $b['size'] ) ); ?></h1>
 				<p class="cc-bike__name"><?php echo esc_html( $b['name'] ); ?></p>
 				<p class="cc-bike__pills"><span class="cc-state cc-state--<?php echo esc_attr( $b['state'] ); ?>"><?php echo esc_html( self::state_label( $b['state'] ) ); ?></span><?php if ( $b['tag'] ) : ?> <span class="cc-state cc-state--tag"><?php echo esc_html( $b['tag'] ); ?></span><?php endif; ?></p>
 				<?php if ( $b['blurb'] ) : ?><p class="cc-bike__blurb"><?php echo esc_html( $b['blurb'] ); ?></p><?php endif; ?>
@@ -334,7 +344,7 @@ class CC_Fleet_Frontend {
 			<ul class="cc-sizes">
 				<?php foreach ( $sizes as $sz => $ids ) : ?>
 					<?php $this_one = in_array( $id, $ids, true ); $first = $this_one ? $id : $ids[0]; ?>
-					<li><a class="<?php echo $this_one ? 'is-this' : ''; ?>" href="<?php echo esc_url( get_permalink( $first ) ); ?>"<?php echo $this_one ? ' aria-current="page"' : ''; ?>><b><?php echo esc_html( $sz ); ?></b><small><?php echo $this_one ? 'this bike' : ( 1 === count( $ids ) ? esc_html( CC_Fleet_Bikes::get( $ids[0], 'cc_id' ) ) : count( $ids ) . ' bikes' ); ?></small></a></li>
+					<li><a class="<?php echo $this_one ? 'is-this' : ''; ?>" href="<?php echo esc_url( get_permalink( $first ) ); ?>"<?php echo $this_one ? ' aria-current="page"' : ''; ?>><b><?php echo esc_html( $sz ); ?></b><small><?php echo $this_one ? 'this bike' : ( 1 === count( $ids ) ? esc_html( CC_Fleet_Bikes::public_data( $ids[0] )['name'] ?: CC_Fleet_Bikes::get( $ids[0], 'model' ) ) : count( $ids ) . ' bikes' ); ?></small></a></li>
 				<?php endforeach; ?>
 			</ul>
 			<?php if ( $range ) : ?><p class="cc-bike__note"><?php echo esc_html( $range ); ?></p><?php endif; ?>
@@ -353,8 +363,8 @@ class CC_Fleet_Frontend {
 			<?php if ( $open ) : ?>
 				<h2 class="cc-bike__h" id="request">Availability</h2>
 				<p class="cc-bike__note">Tap your first day, then your last. Pink days are taken; we keep one free day between loans. Loans are usually up to <?php echo (int) self::usual_days(); ?> days; ask in your plan if you need longer.</p>
-				<?php echo self::sc_request( array( 'bike' => $b['cc_id'] ) ); // phpcs:ignore ?>
-				<div class="cc-stickybar" data-cc-sticky><?php echo $thumb; // phpcs:ignore ?><span><b>Free · <?php echo esc_html( $b['cc_id'] ); ?></b><small><?php echo esc_html( $b['model'] . ' ' . $b['size'] ); ?></small></span><a href="#request">Request bike</a></div>
+				<?php echo self::sc_request( array( 'bike' => (string) $id ) ); // phpcs:ignore ?>
+				<div class="cc-stickybar" data-cc-sticky><?php echo $thumb; // phpcs:ignore ?><span><b>Free · <?php echo esc_html( $b['model'] . ' ' . $b['size'] ); ?></b><small><?php echo esc_html( $b['name'] ); ?></small></span><a href="#request">Request bike</a></div>
 			<?php else : ?>
 				<p class="cc-bike__note">This bike is in the workshop right now. <a href="<?php echo esc_url( $fleet ); ?>">See the other bikes</a>.</p>
 			<?php endif; ?>

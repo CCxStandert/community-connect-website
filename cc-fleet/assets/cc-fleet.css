@@ -173,3 +173,9 @@
 .cc-waitlist-btn { display: block; width: 100%; margin: 12px 0 6px; padding: 14px 16px; border-radius: var(--cc-radius-pill, 999px); border: 1.5px solid var(--cc-ink, #141217); background: var(--cc-ink, #141217); color: var(--cc-paper, #F4EEE4); font: inherit; font-weight: 600; font-size: 15px; cursor: pointer; }
 .cc-waitlist-btn:hover, .cc-waitlist-btn:focus-visible { background: var(--cc-pink, #FFB1EC); color: #141217; border-color: var(--cc-pink, #FFB1EC); }
 .cc-waitlist-note { color: var(--cc-ink, #141217); }
+
+/* Standert logo where riders used to see the Bike ID (0.15) */
+.cc-brand { display: block; height: 13px; width: auto; color: var(--cc-ink, #141217); flex: none; }
+.cc-bike-card__id { display: flex; align-items: center; min-height: 22px; }
+.cc-bike--27 .cc-bike__brand { margin: 0 0 10px; }
+.cc-bike--27 .cc-bike__brand .cc-brand { height: 15px; }

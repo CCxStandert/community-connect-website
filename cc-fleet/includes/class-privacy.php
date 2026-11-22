@@ -36,7 +36,7 @@ class CC_Fleet_Privacy {
 		) );
 		foreach ( CC_Fleet_Loans::query( array( 'rider_id' => $r->id, 'limit' => 1000 ) ) as $l ) {
 			$items[] = array( 'group_id' => 'cc-loans', 'group_label' => 'Bike loans', 'item_id' => 'cc-loan-' . $l->id, 'data' => array(
-				array( 'name' => 'Bike', 'value' => $l->bike_id ? CC_Fleet_Bikes::label( $l->bike_id ) : '' ),
+				array( 'name' => 'Bike', 'value' => $l->bike_id ? CC_Fleet_Bikes::public_label( $l->bike_id ) : '' ),
 				array( 'name' => 'Dates', 'value' => $l->start_date . ' – ' . $l->end_date ),
 				array( 'name' => 'Status', 'value' => $l->status ), array( 'name' => 'Plan', 'value' => (string) $l->plan ),
 			) );

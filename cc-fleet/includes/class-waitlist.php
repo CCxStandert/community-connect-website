@@ -337,7 +337,7 @@ class CC_Fleet_Waitlist {
 		foreach ( CC_Fleet_Loans::query( array( 'status' => 'offered', 'limit' => 50 ) ) as $o ) {
 			if ( (int) $o->id !== (int) $loan->id && $o->offer_group === $loan->offer_group ) {
 				self::step_back( $o );
-				CC_Fleet_Emails::wl_gone( CC_Fleet_Loans::get( $o->id ), 'quicker', CC_Fleet_Bikes::label( $o->bike_id ) );
+				CC_Fleet_Emails::wl_gone( CC_Fleet_Loans::get( $o->id ), 'quicker', CC_Fleet_Bikes::public_label( $o->bike_id ) );
 			}
 		}
 	}
@@ -434,7 +434,7 @@ class CC_Fleet_Waitlist {
 		$cands = $loan->bike_id ? self::candidates( (int) $loan->bike_id ) : array();
 		if ( ! $cands ) {
 			CC_Fleet_Emails::wl_crew_note( self::rider_first( $loan ) . ' cancelled ' . ( $loan->bike_id ? CC_Fleet_Bikes::get( $loan->bike_id, 'cc_id' ) : 'their request' ), self::rider_first( $loan ) . ' can’t make it.',
-				array( 'They cancelled ' . self::bike( $loan ) . ', ' . self::dates( $loan ) . '.', 'Nobody on the waiting list fits these dates, so they’re free for new requests.' ),
+				array( 'They cancelled ' . self::crew_bike( $loan ) . ', ' . self::dates( $loan ) . '.', 'Nobody on the waiting list fits these dates, so they’re free for new requests.' ),
 				admin_url( 'admin.php?page=cc-fleet-loan&id=' . $loan->id ), 'Open the loan' );
 		}
 		return true;
@@ -453,7 +453,7 @@ class CC_Fleet_Waitlist {
 			if ( $o->offer_until && $o->offer_until < $now ) {
 				$bikes[ (int) $o->bike_id ][] = self::rider_first( $o );
 				self::step_back( $o, true );
-				CC_Fleet_Emails::wl_gone( CC_Fleet_Loans::get( $o->id ), 'lapsed', CC_Fleet_Bikes::label( $o->bike_id ) );
+				CC_Fleet_Emails::wl_gone( CC_Fleet_Loans::get( $o->id ), 'lapsed', CC_Fleet_Bikes::public_label( $o->bike_id ) );
 				CC_Fleet_Install::log( 'loan', $o->id, 'waiting list', 'Offer ran out' );
 				$summary['lapsed']++;
 			}
@@ -505,8 +505,14 @@ class CC_Fleet_Waitlist {
 		return implode( ', ', array_slice( $names, 0, -1 ) ) . ' and ' . end( $names );
 	}
 
+	/** As riders know it (rider pages). */
 	private static function bike( $loan ) {
-		return $loan->bike_id ? CC_Fleet_Bikes::label( $loan->bike_id ) : 'a bike in size ' . $loan->requested_size;
+		return $loan->bike_id ? CC_Fleet_Bikes::public_label( $loan->bike_id ) : 'a bike in size ' . $loan->requested_size;
+	}
+
+	/** With the Bike ID (crew notes and screens). */
+	private static function crew_bike( $loan ) {
+		return $loan->bike_id ? CC_Fleet_Bikes::label( $loan->bike_id ) : 'any bike in size ' . $loan->requested_size;
 	}
 
 	private static function dates( $loan ) {
@@ -739,7 +745,7 @@ class CC_Fleet_Waitlist {
 		if ( $waiting ) {
 			echo '<h3>Everyone waiting</h3><table class="widefat striped cc-table"><thead><tr><th>Rider</th><th>Waiting for</th><th>Dates</th><th>Place</th><th></th></tr></thead><tbody>';
 			foreach ( $waiting as $l ) {
-				printf( '<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td class="cc-actions">%s</td></tr>', self::rider_line( $l ), esc_html( self::bike( $l ) ), esc_html( self::dates( $l ) ), self::position( $l ), self::buttons( $l ) );
+				printf( '<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td class="cc-actions">%s</td></tr>', self::rider_line( $l ), esc_html( self::crew_bike( $l ) ), esc_html( self::dates( $l ) ), self::position( $l ), self::buttons( $l ) );
 			}
 			echo '</tbody></table>';
 		}

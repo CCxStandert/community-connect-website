@@ -142,6 +142,7 @@ class CC_Fleet_Landing {
 		}
 		return array(
 			'bikes' => $bikes, 'events' => $events, 'horizon' => CC_Fleet_Loans::horizon(), 'icon' => self::svg( 'icon' ),
+			'brand' => CC_Fleet_Bikes::brand_svg( 'cc-brand' ), // Shown on the cards instead of the internal Bike ID.
 			'api' => esc_url_raw( rest_url( CC_Fleet_Rest::NS ) ), 'live' => true,
 			'img' => CC_FLEET_URL . 'assets/landing/img',
 			'stats' => self::stats(),

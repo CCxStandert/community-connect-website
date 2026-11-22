@@ -12,7 +12,8 @@ function cc_w( $name, $cond, $extra = '' ) {
 	if ( $cond ) { $GLOBALS['cc_pass']++; echo "  ✓ $name\n"; } else { $GLOBALS['cc_fail']++; echo "  ✗ $name" . ( $extra ? " — $extra" : '' ) . "\n"; }
 }
 $mails = array();
-add_filter( 'pre_wp_mail', function ( $null, $atts ) use ( &$mails ) { $mails[] = $atts; return true; }, 10, 2 );
+$all_mails = array();
+add_filter( 'pre_wp_mail', function ( $null, $atts ) use ( &$mails, &$all_mails ) { $mails[] = $atts; $all_mails[] = $atts; return true; }, 10, 2 );
 $subjects = function () use ( &$mails ) { return implode( ' | ', wp_list_pluck( $mails, 'subject' ) ); };
 $mailed   = function ( $to, $needle ) use ( &$mails ) {
 	foreach ( $mails as $m ) {
@@ -123,7 +124,7 @@ $mails = array();
 $sum   = CC_Fleet_Waitlist::hourly();
 $amy_l = CC_Fleet_Loans::get( $amy_wait );
 cc_w( 'Amy steps back onto the list', 'waiting' === $amy_l->status && $amy_l->offer_lapsed_at, wp_json_encode( $sum ) );
-cc_w( 'Amy got "Not this round"', (bool) $mailed( 'amy@', 'About CC-12' ), $subjects() );
+cc_w( 'Amy got "Not this round"', (bool) $mailed( 'amy@', 'About ' . CC_Fleet_Bikes::public_short( $b12 ) ), $subjects() );
 $luke_l = CC_Fleet_Loans::get( $luke_wait );
 cc_w( 'It moved on to Luke by itself', 'offered' === $luke_l->status && $luke_l->offer_until, $luke_l->status );
 cc_w( 'Luke got the offer straight away', (bool) $mailed( 'luke@', 'It’s free' ), $subjects() );
@@ -170,7 +171,7 @@ $mails = array();
 cc_w( 'Luke says yes first', true === CC_Fleet_Waitlist::accept( CC_Fleet_Loans::get( $x2 ) ) );
 cc_w( 'The others step back onto the list', 'waiting' === CC_Fleet_Loans::get( $x1 )->status && 'waiting' === CC_Fleet_Loans::get( $x3 )->status );
 cc_w( 'The "any size" rider is free of CC-12 again', 0 === (int) CC_Fleet_Loans::get( $x3 )->bike_id );
-cc_w( 'They were told someone was quicker', (bool) $mailed( 'naledi@', 'About CC-12' ) && (bool) $mailed( 'amy@', 'About CC-12' ), $subjects() );
+cc_w( 'They were told someone was quicker', (bool) $mailed( 'naledi@', 'About ' . CC_Fleet_Bikes::public_short( $b12 ) ) && (bool) $mailed( 'amy@', 'About ' . CC_Fleet_Bikes::public_short( $b12 ) ), $subjects() );
 cc_w( 'A late yes is refused', is_wp_error( CC_Fleet_Waitlist::accept( CC_Fleet_Loans::get( $x1 ) ) ) );
 
 echo "The list closes on the start day\n";
@@ -189,5 +190,34 @@ cc_w( 'Dashboard has the waiting list', false !== strpos( $panel, 'id="waitlist"
 $prev = CC_Fleet_Emails::preview_page();
 cc_w( 'Email preview shows the 7 waiting-list emails', 7 === preg_match_all( '/(waiting list|it’s free|not this round|list closed|heads-up|spot open)/i', implode( ' ', array_keys( CC_Fleet_Emails::samples() ) ) ) );
 cc_w( 'Each sample renders', false === strpos( $prev, 'Warning' ) && false === strpos( $prev, 'Notice' ) );
+
+echo "Bike IDs stay internal\n";
+$leaks = array();
+foreach ( $all_mails as $m ) {
+	$to = is_array( $m['to'] ) ? implode( ',', $m['to'] ) : (string) $m['to'];
+	if ( false === strpos( $to, 'crew@' ) && preg_match( '/\bCC-\d+/', $m['subject'] . ' ' . wp_strip_all_tags( $m['message'] ) ) ) {
+		$leaks[] = $m['subject'];
+	}
+}
+cc_w( 'No rider email shows a Bike ID', ! $leaks, implode( ' | ', $leaks ) );
+$crew_ids = array_filter( $all_mails, function ( $m ) { return false !== strpos( is_array( $m['to'] ) ? implode( ',', $m['to'] ) : (string) $m['to'], 'crew@' ) && preg_match( '/\bCC-\d+/', $m['subject'] ); } );
+cc_w( 'Crew emails keep the Bike ID', (bool) $crew_ids );
+foreach ( CC_Fleet_Emails::samples() as $label => $smp ) {
+	if ( 0 === strpos( $label, 'Rider' ) && preg_match( '/\bCC-\d+/', $smp[0] . ' ' . wp_strip_all_tags( CC_Fleet_Emails::render_html( $smp[1], $smp[0] ) ) ) ) {
+		$leaks[] = $label;
+	}
+}
+cc_w( 'No rider preview shows a Bike ID', ! $leaks, implode( ' | ', $leaks ) );
+$grid = do_shortcode( '[cc_fleet]' );
+cc_w( 'Fleet cards show the Standert logo, no Bike ID', false !== strpos( $grid, 'aria-label="Standert"' ) && ! preg_match( '/\bCC-\d+/', wp_strip_all_tags( $grid ) ) && ! preg_match( '/data-bike="CC-/', $grid ) );
+$land = CC_Fleet_Landing::data();
+cc_w( 'Home page cards get the logo', false !== strpos( $land['brand'], '<svg' ) );
+$form = do_shortcode( '[cc_bike_request bike="CC-12"]' );
+cc_w( 'Request form carries no Bike ID', ! preg_match( '/CC-\d+/', $form ) && false !== strpos( $form, 'Request this bike' ) );
+cc_w( 'Bike page title is the public name', CC_Fleet_Bikes::public_label( $b12 ) === CC_Fleet_Bikes::public_title( get_the_title( $b12 ), $b12 ) );
+wp_update_post( array( 'ID' => $b12, 'post_name' => 'cc-12' ) );
+CC_Fleet_Bikes::migrate_slugs();
+cc_w( 'Bike address moves to model and size', sanitize_title( CC_Fleet_Bikes::public_short( $b12 ) ) === get_post_field( 'post_name', $b12 ) );
+cc_w( 'Old address is kept for the redirect', in_array( 'cc-12', get_post_meta( $b12, '_wp_old_slug' ), true ) );
 
 echo "\n" . $GLOBALS['cc_pass'] . ' passed, ' . $GLOBALS['cc_fail'] . " failed\n";

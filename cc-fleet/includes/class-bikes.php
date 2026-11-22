@@ -69,6 +69,23 @@ class CC_Fleet_Bikes {
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
+		add_action( 'init', function () {
+			if ( get_option( 'cc_fleet_migrate_slugs' ) ) {
+				delete_option( 'cc_fleet_migrate_slugs' );
+				self::migrate_slugs();
+			}
+		}, 30 );
+		// On the website a bike is called by its model, size and name; the Bike ID stays in the admin.
+		if ( ! is_admin() ) {
+			add_filter( 'the_title', array( __CLASS__, 'public_title' ), 10, 2 );
+			add_filter( 'single_post_title', array( __CLASS__, 'public_title' ), 10, 2 );
+			add_filter( 'document_title_parts', function ( $parts ) {
+				if ( is_singular( self::CPT ) ) {
+					$parts['title'] = self::public_label( get_queried_object_id() );
+				}
+				return $parts;
+			} );
+		}
 		if ( is_admin() ) {
 			add_action( 'add_meta_boxes_' . self::CPT, array( __CLASS__, 'meta_boxes' ) );
 			add_action( 'save_post_' . self::CPT, array( __CLASS__, 'save' ), 10, 2 );
@@ -76,6 +93,12 @@ class CC_Fleet_Bikes {
 			add_filter( 'manage_' . self::CPT . '_posts_columns', array( __CLASS__, 'columns' ) );
 			add_action( 'manage_' . self::CPT . '_posts_custom_column', array( __CLASS__, 'column' ), 10, 2 );
 		}
+	}
+
+	/** @param int|WP_Post $post */
+	public static function public_title( $title, $post = 0 ) {
+		$id = $post instanceof WP_Post ? $post->ID : (int) $post;
+		return $id && self::CPT === get_post_type( $id ) ? self::public_label( $id ) : $title;
 	}
 
 	public static function register_post_type() {
@@ -152,8 +175,50 @@ class CC_Fleet_Bikes {
 		return $sizes[ $size ] ?? null;
 	}
 
+	/** Crew label with the internal Bike ID, e.g. "CC-12 Kettensäge 56". Admin, crew emails and the calendar feed only. */
 	public static function label( $post_id ) {
 		return trim( self::get( $post_id, 'cc_id' ) . ' ' . self::get( $post_id, 'model' ) . ' ' . self::get( $post_id, 'size' ) );
+	}
+
+	/**
+	 * What riders see. The Bike ID (CC-12) is internal; the public name is the model and size,
+	 * plus the bike's own name (Pang! Pink) where two bikes need telling apart.
+	 */
+	public static function public_short( $post_id ) {
+		return trim( self::get( $post_id, 'model' ) . ' ' . self::get( $post_id, 'size' ) );
+	}
+
+	public static function public_label( $post_id ) {
+		$name = trim( (string) ( self::get( $post_id, 'public_name' ) ?: self::get( $post_id, 'colourway' ) ) );
+		return self::public_short( $post_id ) . ( '' !== $name ? ' · ' . $name : '' );
+	}
+
+	/** The Standert logo, inline so it takes the text colour. Shown where riders used to see the Bike ID. */
+	public static function brand_svg( $class = 'cc-brand' ) {
+		static $svg = null;
+		if ( null === $svg ) {
+			$svg = trim( (string) file_get_contents( CC_FLEET_DIR . 'assets/brand/standert.svg' ) ); // phpcs:ignore
+		}
+		return str_replace( '<svg ', '<svg class="' . esc_attr( $class ) . '" ', $svg );
+	}
+
+	/** Public web address part for a bike: model and size, never the Bike ID. */
+	public static function public_slug( $post_id ) {
+		return sanitize_title( self::public_short( $post_id ) );
+	}
+
+	/**
+	 * v0.15: bike pages move from /fleet/cc-12/ to /fleet/kettensage-56/.
+	 * WordPress keeps the old address and redirects it, so shared links keep working.
+	 */
+	public static function migrate_slugs() {
+		foreach ( self::all_ids() as $id ) {
+			$post = get_post( $id );
+			$cc   = sanitize_title( (string) self::get( $id, 'cc_id' ) );
+			if ( $post && '' !== $cc && $post->post_name === $cc && '' !== self::public_short( $id ) ) {
+				wp_update_post( array( 'ID' => $id, 'post_name' => self::public_slug( $id ) ) );
+			}
+		}
 	}
 
 	/**
