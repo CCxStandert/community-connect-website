@@ -142,3 +142,17 @@ function cc_cart_only_sponsorships() {
 	}
 	return true;
 }
+
+/** Pre-orders: marked in the cart, the checkout and on the order, so nobody expects it tomorrow. */
+add_filter( 'woocommerce_get_item_data', function ( $data, $item ) {
+	if ( ! empty( $item['data'] ) && cc_is_preorder( $item['data'] ) ) {
+		$data[] = array( 'key' => 'Pre-order', 'value' => 'ships when it arrives' );
+	}
+	return $data;
+}, 10, 2 );
+add_action( 'woocommerce_checkout_create_order_line_item', function ( $line, $key, $values ) {
+	if ( ! empty( $values['data'] ) && cc_is_preorder( $values['data'] ) ) {
+		$line->add_meta_data( 'Pre-order', 'ships when it arrives', true );
+	}
+}, 10, 3 );
+

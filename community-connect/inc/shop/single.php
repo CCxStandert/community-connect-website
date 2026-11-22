@@ -60,6 +60,7 @@ function cc_product_render() {
 	$variable = $p->is_type( 'variable' );
 	$attrs    = $variable ? $p->get_variation_attributes() : array();
 	$table    = cc_size_table( $p );
+	$preorder = cc_is_preorder( $p );
 	$fit      = trim( (string) get_post_meta( $p->get_id(), '_cc_fit', true ) );
 	$has_size = $variable && isset( $attrs['pa_size'] );
 	$desc     = trim( (string) $p->get_description() );
@@ -85,6 +86,7 @@ function cc_product_render() {
 
 		<div class="cc-pdp__info">
 			<p class="cc-pdp__crumbs"><a href="<?php echo esc_url( cc_shop_url() ); ?>">Shop</a> / <a href="<?php echo esc_url( cc_shop_url( $sponsor ? CC_SPONSOR_CAT : CC_APPAREL_CAT ) ); ?>"><?php echo $sponsor ? 'Sponsor a Rider' : 'Apparel &amp; Gear'; ?></a></p>
+			<?php if ( $preorder ) : ?><p><span class="cc-badge cc-badge--inline">Pre-order</span></p><?php endif; ?>
 			<h1 class="cc-pdp__name"><b><?php echo esc_html( $p->get_name() ); ?></b><?php foreach ( $lines as $l ) : ?><span><?php echo esc_html( $l ); ?></span><?php endforeach; ?></h1>
 			<?php if ( ! $sponsor ) : ?>
 				<p class="cc-pdp__price"><span data-cc-price><?php echo wp_kses_post( $p->get_price_html() ); ?></span> <small>excl. shipping</small></p>
@@ -136,9 +138,10 @@ function cc_product_render() {
 				<input type="hidden" name="product_id" value="<?php echo (int) $p->get_id(); ?>">
 				<?php if ( $variable ) : ?><input type="hidden" name="variation_id" value="" data-cc-variation><?php endif; ?>
 				<input type="hidden" name="quantity" value="1">
-				<button type="submit" class="cc-buy__btn" data-cc-buy-btn<?php echo $in_stock ? '' : ' disabled'; ?> data-label="<?php echo $sponsor ? 'Sponsor now' : 'Add to cart'; ?>">
-					<?php echo $in_stock ? ( $sponsor ? 'Sponsor now' : ( $has_size ? 'Choose a size' : 'Add to cart' ) ) : 'Sold out'; ?>
+				<button type="submit" class="cc-buy__btn" data-cc-buy-btn<?php echo $in_stock ? '' : ' disabled'; ?> data-label="<?php echo $sponsor ? 'Sponsor now' : ( $preorder ? 'Pre-order' : 'Add to cart' ); ?>">
+					<?php echo $in_stock ? ( $sponsor ? 'Sponsor now' : ( $has_size ? 'Choose a size' : ( $preorder ? 'Pre-order' : 'Add to cart' ) ) ) : 'Sold out'; ?>
 				</button>
+				<?php if ( $preorder ) : ?><p class="cc-preorder-note"><b>Pre-order.</b> Order now and we ship as soon as it arrives. We’ll email you when it’s on its way.</p><?php endif; ?>
 				<p class="cc-buy__msg" data-cc-msg role="status" aria-live="polite"></p>
 			</form>
 		</div>

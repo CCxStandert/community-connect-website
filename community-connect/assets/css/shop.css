@@ -1,7 +1,7 @@
 /* Community Connect shop — Standert's collection and product pages in our paper & ink.
    Colours and fonts come from theme.json / landing.css: --ink, --paper, --sand, --pink, --cream, --muted, --line. */
 
-:root { --cc-shop-tile: #ECE5D8; }
+:root { --cc-shop-tile: #EDEDEC; --cc-shop-paper: #F7F7F6; }
 
 /* ---------- header: cart button ---------- */
 .cc-cartbtn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: var(--ink, #141217); cursor: pointer; flex: none; }
@@ -36,10 +36,15 @@
 .cc-card { display: flex; flex-direction: column; height: 100%; padding: 14px 12px 12px; box-sizing: border-box; color: var(--ink, #141217); text-decoration: none; }
 .cc-card__name { display: flex; flex-direction: column; font-size: 15px; line-height: 1.25; min-height: 3.9em; }
 .cc-card__name b { font-weight: 700; }
-.cc-card__pic { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; margin: 10px 0; overflow: hidden; }
-.cc-card__pic img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transition: transform .45s ease; }
+.cc-card__pic { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; margin: 10px 0; overflow: hidden; background: var(--cc-shop-tile); }
+.cc-card__pic img { width: 74%; height: 74%; object-fit: contain; mix-blend-mode: multiply; transition: transform .45s ease; }
 .cc-card:hover .cc-card__pic img { transform: scale(1.03); }
-.cc-card--fund .cc-card__pic img { object-fit: cover; mix-blend-mode: normal; }
+.cc-card--fund .cc-card__pic img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: normal; }
+/* Transparent PNGs keep their own whites (a white tee stays white on the grey tile); white-backed photos melt into it. */
+.cc-card__pic img[src*=".png"], .cc-pdp__slide img[src*=".png"], .cc-cart__img img[src*=".png"] { mix-blend-mode: normal; }
+.cc-badge { position: absolute; top: 10px; left: 10px; z-index: 1; padding: 5px 10px; border-radius: 999px; background: var(--pink, #FFB1EC); color: var(--ink, #141217); font: 700 12px/1 'Inter Tight', sans-serif; letter-spacing: .02em; }
+.cc-badge--inline { position: static; display: inline-block; }
+.cc-preorder-note { margin: 0; padding: 12px 14px; background: var(--cc-shop-tile); font-size: 14.5px; line-height: 1.4; }
 .cc-card__ph { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: var(--cc-shop-tile); font-family: 'Reenie Beanie', cursive; font-size: 26px; }
 .cc-card__foot { margin-top: auto; display: flex; flex-direction: column; gap: 14px; }
 .cc-card__price { display: flex; flex-direction: column; font-size: 16px; }
@@ -60,12 +65,12 @@
 @media (min-width: 1360px) { .cc-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
 /* ---------- product page ---------- */
-.cc-pdp { display: grid; grid-template-columns: minmax(0, 1fr); border-bottom: var(--line, 1.5px solid #141217); }
+.cc-pdp { display: grid; grid-template-columns: minmax(0, 1fr); border-bottom: var(--line, 1.5px solid #141217); background: var(--cc-shop-paper); }
 .cc-pdp__gallery { position: relative; background: var(--cc-shop-tile); }
 .cc-pdp__track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
 .cc-pdp__track::-webkit-scrollbar { display: none; }
-.cc-pdp__slide { flex: 0 0 100%; margin: 0; aspect-ratio: 1; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; }
-.cc-pdp__slide img { width: 88%; height: 88%; object-fit: contain; mix-blend-mode: multiply; }
+.cc-pdp__slide { flex: 0 0 100%; margin: 0; aspect-ratio: 1; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; background: var(--cc-shop-tile); }
+.cc-pdp__slide img { width: 68%; height: 68%; object-fit: contain; mix-blend-mode: multiply; }
 .cc-pdp--fund .cc-pdp__slide img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: normal; }
 .cc-pdp__slide--ph span { font: 800 64px/1 'Inter Tight', sans-serif; letter-spacing: -.04em; }
 .cc-pdp__dots { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; gap: 6px; }

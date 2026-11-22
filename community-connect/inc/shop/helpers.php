@@ -91,3 +91,14 @@ function cc_shipping_note() {
 		cc_money( $free )
 	);
 }
+
+/** Pre-order: the product can be ordered now and ships when it arrives (tick it in “Shop page extras”). */
+function cc_is_preorder( $p ) {
+	$p = $p instanceof WC_Product ? $p : wc_get_product( $p );
+	if ( ! $p ) {
+		return false;
+	}
+	$id = $p->get_parent_id() ?: $p->get_id();
+	return 'yes' === get_post_meta( $id, '_cc_preorder', true );
+}
+

@@ -165,10 +165,90 @@ function cc_shop_ensure_attribute( $slug, $label, array $terms ) {
 	return $out;
 }
 
+/** Apparel comes in S to XXL. The '26 pieces run one size small. */
+const CC_SHOP_SIZES = array( 'S', 'M', 'L', 'XL', 'XXL' );
+const CC_SHOP_FIT26 = "Unisex, boxy and oversized, made with Standert.\nRuns one size small: an S fits like an XS. Between sizes? Take the bigger one.";
+
+/**
+ * Theme 1.6.0, once: apparel goes to S–XXL (other sizes removed), the '26 fit note follows,
+ * and the Koos tee becomes a pre-order. Only sizes, the fit note and the pre-order flag change.
+ */
+add_action( 'admin_init', 'cc_shop_migrate_v2' );
+add_action( 'template_redirect', 'cc_shop_migrate_v2' );
+function cc_shop_migrate_v2() {
+	if ( get_option( 'cc_shop_v2' ) || ! get_option( 'cc_shop_setup_done' ) || ! function_exists( 'wc_get_product_id_by_sku' ) ) {
+		return;
+	}
+	update_option( 'cc_shop_v2', current_time( 'mysql' ), false );
+	$sizes = cc_shop_ensure_attribute( 'size', 'Size', array( 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL' ) );
+	$cats  = array();
+	foreach ( array( CC_APPAREL_CAT, CC_SPONSOR_CAT ) as $slug ) {
+		$t             = get_term_by( 'slug', $slug, 'product_cat' );
+		$cats[ $slug ] = $t ? (int) $t->term_id : 0;
+	}
+	foreach ( cc_shop_starter_products() as $def ) {
+		if ( empty( $def['sizes'] ) ) {
+			continue;
+		}
+		$pid = wc_get_product_id_by_sku( $def['sku'] );
+		$p   = $pid ? wc_get_product( $pid ) : null;
+		if ( ! $p || ! $p->is_type( 'variable' ) ) {
+			continue;
+		}
+		$att = new WC_Product_Attribute();
+		$att->set_id( wc_attribute_taxonomy_id_by_name( 'size' ) );
+		$att->set_name( 'pa_size' );
+		$att->set_options( array_values( array_intersect_key( $sizes, array_flip( $def['sizes'] ) ) ) );
+		$att->set_visible( true );
+		$att->set_variation( true );
+		$others = array_filter( $p->get_attributes(), function ( $a, $k ) { return 'pa_size' !== $k; }, ARRAY_FILTER_USE_BOTH );
+		$p->set_attributes( array( 'pa_size' => $att ) + $others );
+		$p->save();
+		$have = array();
+		$price = (string) $def['price'];
+		foreach ( $p->get_children() as $vid ) {
+			$v = wc_get_product( $vid );
+			if ( ! $v ) {
+				continue;
+			}
+			$slug = $v->get_attributes()['pa_size'] ?? '';
+			if ( ! in_array( $slug, array_map( 'sanitize_title', $def['sizes'] ), true ) ) {
+				wp_delete_post( $vid, true );
+			} else {
+				$have[ $slug ] = $vid;
+				$price         = $v->get_regular_price() ?: $price;
+			}
+		}
+		foreach ( $def['sizes'] as $mo => $size ) {
+			$slug = sanitize_title( $size );
+			if ( isset( $have[ $slug ] ) ) {
+				wp_update_post( array( 'ID' => $have[ $slug ], 'menu_order' => $mo ) );
+				continue;
+			}
+			$v = new WC_Product_Variation();
+			$v->set_parent_id( $pid );
+			$v->set_attributes( array( 'pa_size' => $slug ) );
+			$v->set_regular_price( $price );
+			$v->set_stock_status( 'instock' );
+			$v->set_menu_order( $mo );
+			$v->save();
+		}
+		WC_Product_Variable::sync( $pid );
+		wc_delete_product_transients( $pid );
+		$fit = (string) get_post_meta( $pid, '_cc_fit', true );
+		if ( false !== strpos( $fit, 'label inside says one size up' ) ) {
+			update_post_meta( $pid, '_cc_fit', CC_SHOP_FIT26 );
+		}
+		if ( ! empty( $def['preorder'] ) ) {
+			update_post_meta( $pid, '_cc_preorder', 'yes' );
+		}
+	}
+}
+
 /** What we sell at launch. Photos come from roadtodesolation.cc and the theme. */
 function cc_shop_starter_products() {
 	$rtd  = 'https://roadtodesolation.cc/wp-content/uploads/';
-	$fit26 = "Unisex, boxy and oversized, made with Standert.\nThe sizes here are the real fit: the label inside says one size up (XS here has an S label).";
+	$fit26 = CC_SHOP_FIT26;
 	$fitls = 'Unisex, relaxed and oversized.';
 	$theme = get_theme_file_path( 'assets/' );
 	return array(
@@ -177,35 +257,35 @@ function cc_shop_starter_products() {
 			'sub' => "Road to Desolation 2026\nMade with Standert", 'fit' => $fit26,
 			'short' => 'Our 2026 hoodie, made in collaboration with Standert in a versatile mid-weight cotton blend that’s built to last, wash after wash. Super boxy, oversized fit with a classic front pouch pocket. For work, play and pleasure, with or without a bike.',
 			'desc' => "Made in collaboration with Standert for Road to Desolation 2026.\n\nComposition: cotton blend (60% cotton, 40% polyester).\n\nCare: hand wash at 40°C, hang dry, low iron if needed. Do not tumble dry, bleach or dry clean.",
-			'sizes' => array( 'XXS', 'XS', 'S', 'M', 'L', 'XL' ), 'imgs' => array( $rtd . 'CC_RTD_Hoodie26_front.png', $rtd . 'CC_RTD_Hoodie26_back.png' ),
+			'sizes' => CC_SHOP_SIZES, 'imgs' => array( $rtd . 'CC_RTD_Hoodie26_front.png', $rtd . 'CC_RTD_Hoodie26_back.png' ),
 		),
 		array(
 			'sku' => 'CC-RTD26-TEE', 'name' => '’26 RTD Apparel – Tee', 'slug' => 'rtd-tee-2026', 'price' => 450,
 			'sub' => "Road to Desolation 2026\nMade with Standert", 'fit' => $fit26,
 			'short' => 'Our 2026 unisex tee, made in collaboration with Standert: boxy cut, oversized fit and dropped shoulders, in a medium-weight 100% cotton.',
 			'desc' => "Made in collaboration with Standert for Road to Desolation 2026.\n\n100% cotton, mid-weight 180 gsm.",
-			'sizes' => array( 'XXS', 'XS', 'S', 'M', 'L', 'XL' ), 'imgs' => array( $rtd . 'RTD-Tshirt-Front.png', $rtd . 'RTD-Tshirt-Back.png' ),
+			'sizes' => CC_SHOP_SIZES, 'imgs' => array( $rtd . 'RTD-Tshirt-Front.png', $rtd . 'RTD-Tshirt-Back.png' ),
 		),
 		array(
 			'sku' => 'CC-KOOS-GHC-TEE', 'name' => 'Koos – Gravel Hearts Club Tee', 'slug' => 'koos-gravel-hearts-club-tee', 'price' => 600,
-			'sub' => "Sand\nGravel Hearts Club", 'fit' => 'Unisex, boxy and oversized.',
+			'sub' => "Sand\nGravel Hearts Club", 'fit' => 'Unisex, boxy and oversized.', 'preorder' => true,
 			'short' => 'The Gravel Hearts Club tee from our Standert × Koos repaint project, with HUNT: “gravel hearts club” scrawled on the chest, Koos’ pink creature on the back.',
 			'desc' => "Part of the Gravel Hearts Club project, where artist Koos repainted two of our Standert bikes.\n\nFront: “gravel hearts club” in Koos’ handwriting. Back: Koos’ pink creature with a flag, Standert × Koos × HUNT.\n\nSand-coloured tee, boxy oversized fit.",
-			'sizes' => array( 'XS', 'S', 'M', 'L', 'XL', 'XXL' ), 'imgs' => array( $theme . 'shop/koos-ghc-tee-front.jpg', $theme . 'shop/koos-ghc-tee-back.jpg' ),
+			'sizes' => CC_SHOP_SIZES, 'imgs' => array( $theme . 'shop/koos-ghc-tee-front.jpg', $theme . 'shop/koos-ghc-tee-back.jpg' ),
 		),
 		array(
 			'sku' => 'CC-RTD24-LS', 'name' => '’24 RTD Apparel – Long sleeve', 'slug' => 'rtd-long-sleeve-2024', 'price' => 400,
 			'sub' => "Road to Desolation 2024\nArt by Ben Eagle", 'fit' => $fitls,
 			'short' => 'Community driven, locally made. The 2024 long sleeve, designed with illustrator Ben Eagle (aka Ben Veitch) and produced by the ABC Collection in Cape Town.',
 			'desc' => "The 2024 long-sleeve design: a collaboration with graphic designer and illustrator Ben Eagle, aka Ben Veitch, known for his colourful, minimalist approach to art. Exclusively produced by the ABC Collection.\n\nA relaxed-fit long sleeve designed to elevate everyday life. Unisex, oversized fit. 100% organic 200 gsm cotton single jersey.\n\nLocally produced in Cape Town, South Africa.",
-			'sizes' => array( 'XS', 'S', 'M', 'L', 'XL', 'XXL' ), 'imgs' => array( $rtd . 'RTD24_ap_long-sleve.jpg', $rtd . 'RTD24_ap_long-sleve_back.jpg' ),
+			'sizes' => CC_SHOP_SIZES, 'imgs' => array( $rtd . 'RTD24_ap_long-sleve.jpg', $rtd . 'RTD24_ap_long-sleve_back.jpg' ),
 		),
 		array(
 			'sku' => 'CC-RTD23-LS', 'name' => '’23 RTD Apparel – Long sleeve', 'slug' => 'rtd-long-sleeve-2023', 'price' => 400,
 			'sub' => "Road to Desolation 2023\nArt by Ben Eagle", 'fit' => $fitls,
 			'short' => 'Community driven, locally made. The inaugural 2023 long sleeve, designed with illustrator Ben Eagle (aka Ben Veitch) and produced by the ABC Collection in Cape Town.',
 			'desc' => "The inaugural 2023 long-sleeve design: a collaboration with graphic designer and illustrator Ben Eagle, aka Ben Veitch, known for his colourful, minimalist approach to art. Exclusively produced by the ABC Collection.\n\nA relaxed-fit long sleeve designed to elevate everyday life. Unisex, oversized fit. 100% organic 160 gsm cotton single jersey.\n\nLocally produced in Cape Town, South Africa.",
-			'sizes' => array( 'XS', 'S', 'M', 'L', 'XL', 'XXL' ), 'imgs' => array( $rtd . 'RTD23_ap_long-sleve.jpg', $rtd . 'RTD23_ap_long-sleve_back.jpg' ),
+			'sizes' => CC_SHOP_SIZES, 'imgs' => array( $rtd . 'RTD23_ap_long-sleve.jpg', $rtd . 'RTD23_ap_long-sleve_back.jpg' ),
 		),
 		array(
 			'sku' => 'CC-FUND-BIKES', 'name' => 'Bike Maintenance Fund', 'slug' => 'bike-maintenance-fund', 'price' => 500, 'fund' => true,
@@ -268,6 +348,9 @@ function cc_shop_upsert_product( array $d, $order, array $cats, array $sizes, $w
 	if ( isset( $d['fit'] ) && ( $new || '' === get_post_meta( $pid, '_cc_fit', true ) ) ) {
 		update_post_meta( $pid, '_cc_fit', $d['fit'] );
 	}
+	if ( ! empty( $d['preorder'] ) && $new ) {
+		update_post_meta( $pid, '_cc_preorder', 'yes' );
+	}
 	if ( $fund && '' === get_post_meta( $pid, '_cc_amounts', true ) ) {
 		update_post_meta( $pid, '_cc_amounts', '150, 500, 1000' );
 	}
@@ -281,9 +364,16 @@ function cc_shop_upsert_product( array $d, $order, array $cats, array $sizes, $w
 				$have[ $v->get_attributes()['pa_size'] ?? '' ] = $vid;
 			}
 		}
+		$want = array_map( 'sanitize_title', $d['sizes'] );
+		foreach ( $have as $slug => $vid ) {
+			if ( ! in_array( $slug, $want, true ) ) {
+				wp_delete_post( $vid, true ); // A size we don't sell (any more).
+			}
+		}
 		foreach ( $d['sizes'] as $mo => $size ) {
 			$slug = sanitize_title( $size );
 			if ( isset( $have[ $slug ] ) ) {
+				wp_update_post( array( 'ID' => $have[ $slug ], 'menu_order' => $mo ) );
 				continue;
 			}
 			$v = new WC_Product_Variation();

@@ -22,6 +22,7 @@ function cc_shop_extras_box( $post ) {
 		<textarea name="cc_fit" rows="3" class="widefat" placeholder="Unisex, boxy and oversized. Runs one size small."><?php echo esc_textarea( $f( '_cc_fit' ) ); ?></textarea></label></p>
 	<p><label><b>Size table</b> (one measurement per line, values in the order of the sizes, in cm)<br>
 		<textarea name="cc_size_table" rows="4" class="widefat" placeholder="Chest: 120, 125, 130, 135&#10;Body length: 65, 67, 69, 71"><?php echo esc_textarea( $f( '_cc_size_table' ) ); ?></textarea></label></p>
+	<p><label><input type="checkbox" name="cc_preorder" value="yes"<?php checked( 'yes', $f( '_cc_preorder' ) ); ?>> <b>Pre-order</b>: can be ordered now, ships when it arrives (shown on the product and in the order)</label></p>
 	<p><label><b>Sponsorship amounts</b> (only for “Sponsor a Rider” products; the middle one is pre-selected)<br>
 		<input type="text" name="cc_amounts" class="regular-text" value="<?php echo esc_attr( $f( '_cc_amounts' ) ); ?>" placeholder="150, 500, 1000"></label></p>
 	<?php
@@ -31,6 +32,7 @@ add_action( 'save_post_product', function ( $post_id ) {
 	if ( ! isset( $_POST['cc_shop_extras_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['cc_shop_extras_nonce'] ), 'cc_shop_extras' ) || ! current_user_can( 'edit_post', $post_id ) ) {
 		return;
 	}
+	update_post_meta( $post_id, '_cc_preorder', isset( $_POST['cc_preorder'] ) ? 'yes' : 'no' );
 	foreach ( array( 'cc_subtitle', 'cc_fit', 'cc_size_table', 'cc_amounts' ) as $k ) {
 		if ( isset( $_POST[ $k ] ) ) {
 			update_post_meta( $post_id, '_' . $k, sanitize_textarea_field( wp_unslash( $_POST[ $k ] ) ) );

@@ -83,8 +83,9 @@ function cc_shop_card( WC_Product $p ) {
 	<a class="cc-card<?php echo $sponsor ? ' cc-card--fund' : ''; ?><?php echo $p->is_in_stock() ? '' : ' is-out'; ?>" href="<?php echo esc_url( $url ); ?>">
 		<span class="cc-card__name"><b><?php echo esc_html( $p->get_name() ); ?></b><?php foreach ( $lines as $l ) : ?><span><?php echo esc_html( $l ); ?></span><?php endforeach; ?></span>
 		<span class="cc-card__pic">
+			<?php if ( cc_is_preorder( $p ) ) : ?><span class="cc-badge">Pre-order</span><?php endif; ?>
 			<?php if ( $img ) : ?>
-				<?php echo wp_get_attachment_image( $img, 'woocommerce_thumbnail', false, array( 'loading' => 'lazy', 'alt' => $p->get_name(), 'sizes' => '(min-width: 980px) 33vw, (min-width: 600px) 50vw, 100vw' ) ); ?>
+				<?php echo wp_get_attachment_image( $img, 'woocommerce_single', false, array( 'loading' => 'lazy', 'alt' => $p->get_name(), 'sizes' => '(min-width: 980px) 33vw, (min-width: 600px) 50vw, 100vw' ) ); ?>
 			<?php else : ?>
 				<span class="cc-card__ph" aria-hidden="true"><?php echo $sponsor ? 'R' : 'photo to come'; ?></span>
 			<?php endif; ?>
