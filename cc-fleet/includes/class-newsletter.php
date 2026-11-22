@@ -31,6 +31,13 @@ class CC_Fleet_Newsletter {
 		add_action( 'admin_post_nopriv_cc_nl_subscribe', array( __CLASS__, 'handle_post' ) );
 		add_action( 'admin_post_cc_nl_subscribe', array( __CLASS__, 'handle_post' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'handle_links' ), 1 );
+		// Weekly: check the Brevo connection. Keeps the API key in use (Brevo retires keys after 90 idle days).
+		add_action( 'cc_nl_brevo_ping', array( __CLASS__, 'brevo_check' ) );
+		add_action( 'init', function () {
+			if ( ! wp_next_scheduled( 'cc_nl_brevo_ping' ) ) {
+				wp_schedule_event( time() + HOUR_IN_SECONDS, 'weekly', 'cc_nl_brevo_ping' );
+			}
+		} );
 		if ( is_admin() ) {
 			add_action( 'admin_menu', array( __CLASS__, 'menu' ), 45 );
 			foreach ( array( 'settings', 'export', 'sync', 'delete' ) as $a ) {
@@ -67,7 +74,7 @@ class CC_Fleet_Newsletter {
 	}
 
 	public static function settings() {
-		return wp_parse_args( get_option( self::OPT, array() ), array( 'brevo_key' => '', 'brevo_list' => '', 'last_sync' => '', 'last_result' => '' ) );
+		return wp_parse_args( get_option( self::OPT, array() ), array( 'brevo_key' => '', 'brevo_list' => '', 'last_sync' => '', 'last_result' => '', 'check_at' => '', 'check_ok' => 0, 'check_msg' => '' ) );
 	}
 
 	/* =========================================================
@@ -316,7 +323,26 @@ class CC_Fleet_Newsletter {
 			$j = json_decode( (string) wp_remote_retrieve_body( $res ), true );
 			return new WP_Error( 'cc_nl_brevo', 'Brevo ' . $code . ': ' . ( $j['message'] ?? 'error' ) );
 		}
-		return true;
+		return 200 === $code && 'GET' === $method ? (array) json_decode( (string) wp_remote_retrieve_body( $res ), true ) : true;
+	}
+
+	/** Reads the list from Brevo: proves the key and the list ID work. Stored for the Newsletter page. */
+	public static function brevo_check() {
+		$s = self::settings();
+		if ( ! $s['brevo_key'] ) {
+			return null;
+		}
+		$res = (int) $s['brevo_list'] ? self::brevo( 'GET', '/contacts/lists/' . (int) $s['brevo_list'] ) : new WP_Error( 'cc_nl_nolist', 'No list ID saved.' );
+		$s['check_at'] = current_time( 'mysql' );
+		if ( is_wp_error( $res ) ) {
+			$s['check_ok']  = 0;
+			$s['check_msg'] = $res->get_error_message();
+		} else {
+			$s['check_ok']  = 1;
+			$s['check_msg'] = sprintf( 'Connected to the list “%s” (%d contacts).', $res['name'] ?? '?', (int) ( $res['uniqueSubscribers'] ?? $res['totalSubscribers'] ?? 0 ) );
+		}
+		update_option( self::OPT, $s, false );
+		return $s['check_ok'];
 	}
 
 	public static function brevo_push( $id ) {
@@ -366,6 +392,9 @@ class CC_Fleet_Newsletter {
 			return;
 		}
 		global $wpdb;
+		if ( self::settings()['brevo_key'] && ! self::settings()['check_at'] ) {
+			self::brevo_check();
+		}
 		$s    = self::settings();
 		$c    = self::counts();
 		$rows = $wpdb->get_results( 'SELECT * FROM ' . self::table() . ' ORDER BY created_at DESC LIMIT 500' ); // phpcs:ignore
@@ -386,6 +415,12 @@ class CC_Fleet_Newsletter {
 		submit_button( 'Save' );
 		echo '</form>';
 		if ( $s['brevo_key'] ) {
+			if ( $s['check_at'] ) {
+				printf( '<div class="notice %s inline"><p><b>Brevo:</b> %s <span class="description">Checked %s; checked again every week.</span></p></div>',
+					$s['check_ok'] ? 'notice-success' : 'notice-error',
+					esc_html( $s['check_ok'] ? $s['check_msg'] : 'Not working: ' . $s['check_msg'] . ' Check the API key (Contacts: read/write) and the list ID, then save again.' ),
+					esc_html( mysql2date( 'j M, H:i', $s['check_at'] ) ) );
+			}
 			echo '<p><a class="button" href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cc_nl_sync' ), 'cc_nl_sync' ) ) . '">Copy all confirmed subscribers to Brevo now</a> ';
 			echo $s['last_sync'] ? '<span class="description">Last: ' . esc_html( $s['last_sync'] . ' · ' . $s['last_result'] ) . '</span>' : '';
 			echo '</p>';
@@ -423,7 +458,8 @@ class CC_Fleet_Newsletter {
 		}
 		$s['brevo_list'] = (string) absint( $_POST['brevo_list'] ?? 0 ); // phpcs:ignore
 		update_option( self::OPT, $s, false );
-		self::back( 'Saved.' );
+		$ok = self::brevo_check();
+		self::back( null === $ok ? 'Saved.' : ( $ok ? 'Saved. Brevo is connected.' : 'Saved, but Brevo answered with an error (see below).' ) );
 	}
 
 	public static function admin_sync() {
@@ -441,6 +477,7 @@ class CC_Fleet_Newsletter {
 				$err = $r->get_error_message();
 			}
 		}
+		self::brevo_check();
 		$s                = self::settings();
 		$s['last_sync']   = current_time( 'mysql' );
 		$s['last_result'] = $ok . ' copied' . ( $err ? ' · ' . $err : '' );

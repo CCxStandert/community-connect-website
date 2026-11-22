@@ -77,6 +77,10 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page: "Changing parts?" box (date, kind of work, by, cost, note). Saving compares every part field and logs what changed from what to what, with that date; it also goes into the workshop log and updates "Last upgraded". The new **History** box lists all of it, newest first. Untick "Add to the workshop log" for typo fixes.
 - Loan page: **Change the dates** (+1 day, +3 days, +1 week, ends today, or any dates), with a note on what was agreed, a clash check and an optional "new dates" email to the rider. Overdue loans extend from today.
 
+## 0.17.2: Brevo check
+
+- Fleet Manager → Newsletter shows whether Brevo answers (list name and contacts), tested on save and every week. The weekly check also keeps the API key in use, as Brevo retires keys after 90 idle days.
+
 ## 0.17.1: Event series fold up
 
 - Events named like a series (“FAR Inverted #1”, “#2”…) show as one row on the home page with the date range, and “All 8 dates” opens the list.
