@@ -162,7 +162,7 @@ header = G(G(
     '<!-- wp:navigation-link {"label":"The deal","url":"/#deal","kind":"custom"} /-->\n'
     '<!-- wp:navigation-link {"label":"Agreement","url":"/#agreement","kind":"custom"} /-->\n'
     '<!-- /wp:navigation -->' +
-    G('<!-- wp:site-logo {"width":28,"shouldSyncIcon":false,"className":"cc-logo"} /-->' + '<!-- wp:site-title {"level":0} /-->', 'brand-group', gap0=False, extra={'layout': {'type': 'flex', 'flexWrap': 'nowrap'}}) +
+    G(open(T + 'assets/images/cc-landing-logo.svg').read() and ('<!-- wp:html -->\n<a class="cc-wordmark" href="/" rel="home" aria-label="Community Connect × Standert, home">' + re.sub(r'^.*?<svg[^>]*>', '<svg viewBox="0 0 380.12 96.42" fill="currentColor" role="img" aria-hidden="true" focusable="false">', open(T + 'assets/images/cc-landing-logo.svg').read(), flags=re.S) + '</a>\n<!-- /wp:html -->'), 'brand-group', gap0=False, extra={'layout': {'type': 'flex', 'flexWrap': 'nowrap'}}) +
     '<!-- wp:social-links {"iconColor":"ink","iconColorValue":"#141217","className":"is-style-logos-only cc-social","layout":{"type":"flex"}} -->\n<ul class="wp-block-social-links has-icon-color is-style-logos-only cc-social"><!-- wp:social-link {"url":"https://www.instagram.com/cc_x_standert/","service":"instagram"} /--></ul>\n<!-- /wp:social-links -->' +
     BTN('Borrow a bike →', '/#fleet', 'pink').replace('<!-- wp:buttons -->', '<!-- wp:buttons {"className":"cc-borrow"} -->').replace('class="wp-block-buttons"', 'class="wp-block-buttons cc-borrow"'),
     'max cc-bar', gap0=False, extra={'layout': {'type': 'flex', 'flexWrap': 'nowrap', 'justifyContent': 'space-between'}}),
