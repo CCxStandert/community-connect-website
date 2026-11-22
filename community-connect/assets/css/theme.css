@@ -80,7 +80,8 @@ header.top { position: sticky; top: 0; z-index: 20; }
 
 /* --- sections built from blocks --- */
 .sect { padding-top: 28px; }
-.cc-landing .in.max > * { margin-top: 0; margin-bottom: 0; }
+/* block-built sections only: the plugin's live parts (finder, filters, dates…) keep their own spacing */
+.cc-landing .in.max > *:not(.cc-part *) { margin-top: 0; margin-bottom: 0; }
 .cc-landing .h { margin: 0; }
 .cc-landing .sub { margin: 4px 0 14px; }
 .banner .wp-block-heading { color: #fff; font-size: 22px; margin: 8px 0 0; }

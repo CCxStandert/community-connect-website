@@ -82,6 +82,9 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page → Website box → **Long-term rider** + **Since**. From that date the bike is blocked on every calendar with no end date (fleet calendar shows an ochre bar, the public calendar shows it booked, booking it is refused with a clear reason unless you save anyway). Set it back to None to free the bike.
 - Re-importing the parts list records each changed part in the bike's History ("Updated from the parts list"). Bundled copy updated to the 20 Nov 2026 16:55 sheet (CC-01 tyres, CC-02 size/groupset/brakes/chainring, CC-03 full spec).
 
+## 0.10.2: Fleet grid spacing
+- The bike cards line up with the size finder and filters (inset on phone and desktop), rows have equal heights and the box is closed at the bottom. Theme 1.0.2: the finder, filters and date boxes keep their spacing.
+
 ## 0.10.1: Fix
 - Expense amounts like “1,529.30” or “R 2 210,00” are read correctly (thousands separators).
 
