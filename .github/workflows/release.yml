@@ -1,0 +1,46 @@
+name: Release
+
+# Push a tag like v2026.11.22 (or run it by hand) and this builds
+#   cc-fleet-<plugin version>.zip and community-connect-<theme version>.zip
+# from the versions inside the files, and publishes them as a GitHub release.
+# The website's updater (Fleet Manager → Updates) picks them up.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read versions
+        id: v
+        run: |
+          PV=$(grep -m1 -E "^\s*\*\s*Version:" cc-fleet/cc-fleet.php | sed -E 's/.*Version:\s*//; s/\s+$//')
+          TV=$(grep -m1 -E "^Version:" community-connect/style.css | sed -E 's/Version:\s*//; s/\s+$//')
+          echo "plugin=$PV" >> "$GITHUB_OUTPUT"
+          echo "theme=$TV" >> "$GITHUB_OUTPUT"
+          TAG="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then TAG="v$(date -u +%Y.%m.%d-%H%M)"; fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Plugin $PV, theme $TV, tag $TAG"
+
+      - name: Build zips
+        run: |
+          mkdir -p dist
+          zip -qr "dist/cc-fleet-${{ steps.v.outputs.plugin }}.zip" cc-fleet -x "cc-fleet/tests/*" "*.DS_Store"
+          zip -qr "dist/community-connect-${{ steps.v.outputs.theme }}.zip" community-connect -x "*.DS_Store"
+          ls -la dist
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="CC Fleet plugin ${{ steps.v.outputs.plugin }} · Community Connect theme ${{ steps.v.outputs.theme }}"
+          gh release create "${{ steps.v.outputs.tag }}" dist/*.zip --title "${{ steps.v.outputs.tag }}" --notes "$NOTES" --generate-notes --latest

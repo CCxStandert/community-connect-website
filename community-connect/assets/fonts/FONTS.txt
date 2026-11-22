@@ -1,0 +1,2 @@
+Inter Tight, EB Garamond, IBM Plex Mono and Reenie Beanie are licensed under the SIL Open Font License 1.1
+(https://openfontlicense.org). Files from the Fontsource packages (latin subset).

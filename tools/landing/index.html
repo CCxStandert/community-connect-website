@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Community Connect bikes</title>
+<meta name="description" content="Borrow a premium gravel or road bike from the Community Connect × Standert fleet in Cape Town. Free for anyone. Ride it, look after it, pass it on.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=EB+Garamond:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Reenie+Beanie&display=swap">
+<style>
+/* Community Connect — Mobile 2027. Follows standert.de on phones: photo-led, hairline tiles,
+   short bold headings, outlined pills. Paper #F4EEE4 · Ink #141217 · Sand #D3C8B4 · Hearts Pink #FFB1EC
+   · Karoo Ochre #A56C12 · Cream Fade #EDE3E8. Inter Tight (UI), EB Garamond (stories), IBM Plex Mono (labels),
+   Reenie Beanie (one hand note). Mobile first at 390 px; wider screens get more columns. */
+:root{--ink:#141217;--paper:#F4EEE4;--sand:#D3C8B4;--pink:#FFB1EC;--ochre:#A56C12;--cream:#EDE3E8;--muted:#5B5560;--line:1.5px solid #141217}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:64px;scroll-behavior:smooth}
+body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 'Inter Tight',Helvetica,Arial,sans-serif;overflow-x:clip;-webkit-font-smoothing:antialiased}
+.cc-landing a{color:inherit}
+.cc-landing .slide,.cc-landing .photo,.cc-landing .menu .card b{color:#fff}
+.cc-landing img{display:block;max-width:100%}
+.cc-landing button{font-family:inherit}
+.in{padding-inline:16px}
+.max{max-width:1280px;margin-inline:auto}
+.mono{font:400 12px/1.3 'IBM Plex Mono',ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase}
+.hand{font-family:'Reenie Beanie',cursive;font-weight:400;line-height:1}
+.serif{font-family:'EB Garamond',Georgia,serif}
+.h{margin:0;font:700 24px/1.08 'Inter Tight',sans-serif;letter-spacing:-.035em}
+.h.big{font-size:clamp(30px,6vw,52px);font-weight:800;letter-spacing:-.045em;line-height:1}
+.sub{margin:4px 0 0;font-size:15px;color:var(--ink)}
+.sect{padding-block:28px 0}
+.sect>.in>.h+.sub{margin-bottom:14px}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+
+/* notice + header */
+.notice{background:var(--cream);text-align:center;padding:8px 14px}
+.notice.mono{font-size:10.5px;letter-spacing:.06em}
+.top{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:var(--line)}
+.top .max{display:flex;align-items:center;gap:4px;height:56px;padding-inline:8px}
+.ibtn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:0;background:none;color:var(--ink);cursor:pointer;border-radius:999px;text-decoration:none}
+.ibtn:hover{background:var(--cream)}
+.ibtn svg{width:22px;height:22px}
+.brand{display:flex;align-items:center;gap:7px;margin-inline:auto;text-decoration:none;font:700 16px/1 'Inter Tight',sans-serif;letter-spacing:-.03em;white-space:nowrap}
+.brand i{width:26px;height:26px;border-radius:50%;background:var(--ink);display:inline-flex;align-items:center;justify-content:center}
+.brand i svg{width:18px;height:18px;color:var(--paper)}
+.links{display:none}
+@media(min-width:980px){
+  .top .max{height:64px;padding-inline:24px;gap:18px}
+  .top .menu-btn{display:none}
+  .brand{margin:0;font-size:18px}
+  .links{display:flex;gap:4px;margin-left:auto}
+  .links a{text-decoration:none;font-weight:500;font-size:15px;padding:10px 12px;border-radius:999px}
+  .links a:hover{background:var(--cream)}
+}
+.pillbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border-radius:999px;border:var(--line);background:transparent;color:var(--ink);font:700 15px/1 'Inter Tight',sans-serif;text-decoration:none;cursor:pointer;white-space:nowrap}
+.pillbtn.pink{background:var(--pink);border-color:var(--pink)}
+.pillbtn.ink{background:var(--ink);color:var(--paper)}
+.pillbtn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.pillbtn.sm{height:40px;padding:0 16px;font-size:14px}
+.top .pillbtn.sm{display:none}
+@media(min-width:980px){.top .pillbtn.sm{display:inline-flex}}
+
+/* menu overlay */
+.menu{position:fixed;inset:0;z-index:50;background:var(--paper);display:flex;flex-direction:column;padding:12px 16px 24px;overflow:auto}
+.menu[hidden]{display:none}
+.menu .close{align-self:flex-start;width:48px;height:48px;border-radius:50%;background:var(--sand);border:0;font-size:22px;cursor:pointer;margin-bottom:12px}
+.menu nav a{display:flex;justify-content:space-between;align-items:center;min-height:52px;text-decoration:none;font-size:20px;font-weight:500;letter-spacing:-.02em}
+.menu nav a::after{content:'›';font-size:26px;line-height:1}
+.menu .social{display:flex;gap:8px;margin:18px 0}
+.menu .card{position:relative;margin-top:8px;border:var(--line);overflow:hidden;display:block;text-decoration:none}
+.menu .card img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.menu .card b{position:absolute;left:16px;bottom:14px;color:#fff;font-size:20px;text-shadow:0 1px 12px rgba(0,0,0,.4)}
+
+/* photo heroes */
+.slides{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.slides::-webkit-scrollbar{display:none}
+.slide{position:relative;flex:0 0 100%;scroll-snap-align:start;aspect-ratio:390/330;max-height:78vh;overflow:hidden;color:#fff;text-decoration:none;display:block;background:#222}
+@media(min-width:980px){.slide{aspect-ratio:16/7}}
+.slide img,.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slide::after,.photo::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.42),rgba(0,0,0,0) 45%,rgba(0,0,0,0) 70%,rgba(0,0,0,.35))}
+.ov{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;padding:16px 18px}
+.ov .tag{align-self:flex-start;border:1.5px solid #fff;border-radius:999px;padding:5px 12px;font-size:14px;margin-bottom:10px}
+.ov b{font:800 22px/1.05 'Inter Tight',sans-serif;letter-spacing:-.03em;text-transform:uppercase}
+.ov span.l2{font-size:22px;line-height:1.1;letter-spacing:-.02em;font-weight:400}
+.ov .hand{margin-top:auto;color:var(--pink);font-size:30px;transform:rotate(-3deg);transform-origin:left}
+@media(min-width:980px){.ov{padding:32px 40px}.ov b{font-size:44px}.ov span.l2{font-size:40px}.ov .hand{font-size:44px}}
+.dots{display:flex;justify-content:center;gap:6px;padding:12px 0 0}
+.dots button{width:26px;height:20px;border:0;background:none;padding:0;cursor:pointer;display:flex;align-items:center}
+.dots button::before{content:'';display:block;width:100%;height:3px;background:var(--ink);opacity:.25}
+.dots button[aria-current=true]::before{opacity:1}
+.photo{position:relative;display:block;aspect-ratio:390/300;overflow:hidden;color:#fff;text-decoration:none;background:#222}
+@media(min-width:980px){.photo{aspect-ratio:16/6}}
+.photo .ov b{text-transform:none;font-size:22px;font-weight:700}
+@media(min-width:980px){.photo .ov b{font-size:40px}}
+
+/* finder + filters */
+.finder{border:var(--line);background:var(--sand);padding:14px 16px;margin:14px 0 12px}
+.finder .frow{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.finder output{font-size:15px;white-space:nowrap}
+.finder input[type=range]{width:100%;height:36px;accent-color:var(--ink);margin:6px 0}
+.finder p{margin:0;font-weight:700;font-size:17px;letter-spacing:-.02em}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:40px;padding:0 16px;border-radius:999px;border:var(--line);background:transparent;color:var(--ink);font:500 15px/1 'Inter Tight',sans-serif;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.when{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 8px;margin:12px 0 0;align-items:end}
+.when label{display:grid;gap:4px;font-size:13px;font-weight:500;min-width:0}
+.when .pillbtn{grid-column:1/-1;height:46px}
+@media(min-width:640px){.when{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}.when .pillbtn{grid-column:auto;height:46px;padding:0 22px}}
+/* Date fields: iOS Safari gives them a fixed native width and shows nothing when empty.
+   Strip the native look, let them shrink, and add a calendar mark so an empty field still reads as a date. */
+.cc-landing input[type=date]{-webkit-appearance:none;appearance:none;display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:46px;margin:0;border:var(--line);border-radius:999px;background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23141217' stroke-width='1.8'%3E%3Crect x='3.5' y='5' width='17' height='15' rx='2'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E") no-repeat right 14px center/18px;color:var(--ink);font:16px/46px 'Inter Tight',sans-serif;padding:0 34px 0 12px;background-position:right 12px center;text-align:left}
+.cc-landing input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+.cc-landing input[type=date]::-webkit-calendar-picker-indicator{opacity:0;width:28px;height:100%;margin:0;cursor:pointer}
+.cc-landing .cc-request input[type=date]{border-radius:10px}
+.cc-landing .cc-request__dates{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.cc-landing .cc-request__dates .cc-field{min-width:0}
+.count{margin:12px 0 10px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:var(--line);list-style:none;margin:0;padding:0}
+@media(min-width:760px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1100px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.card{border-bottom:var(--line);border-right:var(--line);padding:12px;display:flex;flex-direction:column;gap:8px;text-decoration:none;transition:opacity .2s}
+.grid>li:nth-child(2n) .card{border-right:0}
+@media(min-width:760px){.grid>li:nth-child(2n) .card{border-right:var(--line)}.grid>li:nth-child(3n) .card{border-right:0}}
+@media(min-width:1100px){.grid>li:nth-child(3n) .card{border-right:var(--line)}.grid>li:nth-child(4n) .card{border-right:0}}
+.grid>li[hidden]{display:none}
+.card .hd{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.card .hd .mono{font-size:12px;letter-spacing:.04em}
+.st{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap;border:1.2px solid var(--ink)}
+.st.available{background:var(--ink);color:var(--paper)}
+.st.workshop{background:var(--pink);border-color:var(--pink)}
+.st.booked,.st.out{background:transparent}
+.st.reserved{background:var(--cream);border-style:dashed}
+.pic{position:relative;aspect-ratio:184/130;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#141217}
+.pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pic b{font:800 44px/1 'Inter Tight',sans-serif;letter-spacing:-.04em}
+.pic .hand{font-size:19px;opacity:.85}
+.pic.dark{color:#F4EEE4}
+.card strong{font-size:17px;letter-spacing:-.02em;line-height:1.15}
+.card small{font-size:13px;color:var(--muted);margin-top:-6px}
+.card .fit{font-size:12.5px;margin-top:-4px}
+.card.dim{opacity:.38}
+.banner{background:var(--ochre);color:#fff;padding:22px 16px 24px;margin-top:0}
+.banner .h{color:#fff;font-size:22px;margin-top:8px}
+.banner .hand{color:var(--pink);font-size:26px;margin-top:6px;display:inline-block}
+.banner .mono{color:#F4EEE4}
+
+/* loop + steps */
+.loop{position:relative;border:var(--line);aspect-ratio:1/1;max-height:520px;width:100%;overflow:hidden;background:var(--paper);margin:14px 0 0}
+@media(min-width:760px){.loop{aspect-ratio:16/9}}
+.loop svg{position:absolute;inset:0;width:100%;height:100%}
+.say{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:0 18%;pointer-events:none}
+.say i{display:block;font:400 11px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-style:normal;margin-bottom:8px;transition:opacity .35s}
+.say b{display:block;font:800 clamp(28px,7vw,52px)/1 'Inter Tight',sans-serif;letter-spacing:-.04em;transition:opacity .35s,transform .35s}
+.say span{display:block;margin-top:8px;font:400 18px/1.2 'EB Garamond',Georgia,serif;transition:opacity .35s}
+.say.swap b,.say.swap span,.say.swap i{opacity:0;transform:translateY(8px)}
+.ctrl{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.ctrl button{min-width:40px;height:40px;border:var(--line);border-radius:999px;background:var(--paper);color:var(--ink);font:700 13px/1 'Inter Tight',sans-serif;padding:0 12px;cursor:pointer}
+.row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;border-top:var(--line);border-bottom:var(--line);margin-top:14px;scrollbar-width:none}
+.row::-webkit-scrollbar{display:none}
+.row>*{flex:0 0 min(78%,300px);scroll-snap-align:start;border-right:var(--line);padding:14px 14px 18px;display:flex;flex-direction:column;gap:6px}
+.row .mono{font-size:11.5px}
+.row h3{margin:14px 0 0;font-size:18px;letter-spacing:-.02em;line-height:1.15}
+.row p{margin:0;font-size:14.5px}
+.row .on{background:var(--pink)}
+
+/* events */
+.evs{list-style:none;margin:14px 0 0;padding:0;border-top:var(--line)}
+.ev{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--ink)}
+.ev .mono{font-size:11px;letter-spacing:.04em}
+.ev b{font-size:16px;letter-spacing:-.02em;line-height:1.2;display:block}
+.ev small{display:block;font-size:13px;color:var(--muted)}
+.ev a{grid-column:2;font-size:13px;font-weight:600}
+.ev .st{grid-row:1;grid-column:3}
+.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));border-bottom:var(--line)}
+.terms>div{padding:16px;border-right:var(--line)}
+.terms>div:last-child{border-right:0}
+@media(max-width:640px){.terms>div{border-right:0;border-bottom:var(--line)}.terms>div:last-child{border-bottom:0}}
+.terms .cream{background:var(--cream)}
+.terms .pinkb{background:var(--pink)}
+.terms p{margin:8px 0 0;font-size:14.5px}
+.src{font-size:12px;color:var(--muted);padding:10px 16px 0;margin:0}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:26px 16px;border-bottom:var(--line)}
+.stats b{display:block;font:800 30px/1 'Inter Tight',sans-serif;letter-spacing:-.045em}
+.stats span{font-size:12.5px}
+
+/* deal */
+.deal{border-top:var(--line);margin-top:14px}
+.deal details{border-bottom:var(--line)}
+.deal summary{list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:54px;padding:0 16px;font-weight:700;font-size:17px;letter-spacing:-.02em;cursor:pointer}
+.deal summary::-webkit-details-marker{display:none}
+.deal summary::after{content:'+';font-size:24px;font-weight:400}
+.deal details[open] summary::after{content:'–'}
+.deal ul{margin:0;padding:0 16px 16px 34px;font-size:15px}
+.deal li{margin-bottom:6px}
+.game{background:var(--cream);padding:16px;display:grid;gap:12px;border-bottom:var(--line)}
+.game .q{margin:0;font:400 24px/1.15 "EB Garamond",Georgia,serif;min-height:2.3em}
+.game .ans{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.game .ans .pillbtn{white-space:normal;text-align:center;line-height:1.1;font-size:14px;padding:0 10px}
+.game .why{margin:0;min-height:3em;font-size:15px}
+.game .why.ok b{color:var(--ochre)}
+.game .meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pips{display:flex;gap:5px}
+.pips i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink)}
+.pips i.done{background:var(--ink)}
+
+/* any-bike form */
+.ask{border-top:var(--line);border-bottom:var(--line);margin-top:14px;background:var(--paper)}
+.ask .cc-request{padding:16px;max-width:760px}
+.cc-landing .cc-field input,.cc-landing .cc-field select,.cc-landing .cc-field textarea{border:var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:16px 'Inter Tight',sans-serif;min-height:46px;padding:8px 12px;width:100%}
+.cc-landing .cc-button{display:inline-flex;align-items:center;justify-content:center;height:52px;padding:0 26px;border-radius:999px;border:0;background:var(--ink);color:var(--paper);font:700 16px/1 'Inter Tight',sans-serif;cursor:pointer;width:100%}
+@media(min-width:640px){.cc-landing .cc-button{width:auto}}
+
+/* agreement */
+.agree{border-top:var(--line);margin-top:14px}
+.agree>p{padding:0 16px;max-width:68ch}
+.agree>p em{font-style:normal}
+.agree details{border-bottom:var(--line)}
+.agree summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:54px;padding:8px 16px;font-weight:700;font-size:17px;letter-spacing:-.02em;cursor:pointer}
+.agree summary::-webkit-details-marker{display:none}
+.agree summary::after{content:'+';font-size:24px;font-weight:400}
+.agree details[open] summary::after{content:'–'}
+.agree details>*:not(summary){padding-inline:16px;max-width:68ch;font-size:15.5px}
+.agree details ul{padding-left:34px}
+.agree details>:last-child{padding-bottom:12px}
+.agree .intro{font:400 22px/1.25 'EB Garamond',Georgia,serif;margin:14px 0}
+
+/* merch-like drawings strip */
+.drawings{display:grid;grid-template-columns:1fr 1fr;border-bottom:var(--line)}
+.drawings figure{margin:0;padding:12px;border-right:var(--line)}
+.drawings figure:last-child{border-right:0}
+.drawings .art{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;padding:10px}
+.drawings img{max-height:100%;object-fit:contain}
+.drawings figcaption{font-weight:700;font-size:15px;margin-top:8px}
+
+/* footer */
+.foot{background:var(--ink);color:var(--paper);padding:32px 22px 40px;margin-top:0}
+.foot a{color:var(--paper)}
+.foot .max>p{margin:0 0 16px;font-size:15px;line-height:1.5}
+.foot details{border-top:1px solid rgba(244,238,228,.5)}
+.foot details:last-of-type{border-bottom:1px solid rgba(244,238,228,.5)}
+.foot summary{list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:54px;font-weight:700;cursor:pointer}
+.foot summary::-webkit-details-marker{display:none}
+.foot summary::after{content:'›';font-size:26px;font-weight:400;transition:transform .2s}
+.foot details[open] summary::after{transform:rotate(90deg)}
+.foot details a{display:block;padding:6px 0 10px;text-decoration:none}
+.foot .soc{display:flex;justify-content:center;gap:16px;margin:24px 0 18px}
+.foot .soc .ibtn{color:var(--paper)}
+.foot .soc .ibtn:hover{background:rgba(255,255,255,.1)}
+.foot .fine{text-align:center;font-size:14px;margin:0 0 12px}
+@media(min-width:980px){.in{padding-inline:40px}.ev{padding-inline:40px}.terms>div{padding:22px 40px}.src{padding-inline:40px}.stats{padding:36px 40px}.deal summary,.agree summary{padding-inline:40px}.deal ul{padding-left:58px}.agree>p,.agree details>*:not(summary){padding-inline:40px}.agree details ul{padding-left:58px}.game{padding:22px 40px}.ask .cc-request{padding:22px 40px}.banner{padding:30px 40px}.foot{padding:48px 40px}}
+@media(min-width:760px){.ev{grid-template-columns:150px minmax(0,1fr) auto}}
+/* Wide screens: content blocks sit centred in a 1280 px column, framed by hairlines like the tiles inside them */
+.cc-landing .max{margin-left:auto;margin-right:auto}
+@media(min-width:1281px){.grid.max,.row.max,.evs.max,.terms.max,.deal.max,.ask.max,.agree.max,.drawings.max,.stats.max{border-left:var(--line);border-right:var(--line)}.evs.max,.stats.max{border-top:var(--line)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.say b,.say span,.say i{transition:none}}
+</style>
+</head>
+<body class="cc-landing">
+<p class="notice mono" role="note">We’re building our new website · until then, borrow bikes right here</p>
+<header class="top">
+  <div class="max">
+    <button class="ibtn menu-btn" id="menuOpen" aria-label="Open menu" aria-expanded="false" aria-controls="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    <a class="brand" href="#top" aria-label="Community Connect, back to top"><i><svg viewBox="0 0 400 400" fill="currentColor" aria-hidden="true"><path d="M144.93,187.93l-29.08,29.07.97,1.4c16.39,23.62,4.98,58.26-27.24,65.08-9.59,2.03-19.68.21-27.96-5.05-27.8-17.66-26.38-54.11-2.76-70.5l2.83-1.96c.69-.48.91-1.39.52-2.13l-17.71-33.24c-.4-.75-1.35-1.04-2.09-.63-2.35,1.31-4.65,2.74-6.91,4.3-45.28,31.42-49.42,100,.13,136.2,19.27,14.07,44.13,18.57,67.1,12.12,59.07-16.56,79.16-82.26,47.74-127.54-1.74-2.5-3.59-4.87-5.55-7.12Z"/><path d="M87.56,97.26c0-12.57-10.19-22.73-22.74-22.73s-22.7,10.16-22.7,22.73,10.14,22.72,22.7,22.72,22.74-10.17,22.74-22.72Z"/><path d="M219.92,299.69h.2c6.79,0,12.33-5.54,12.33-12.37V100.47c-24.88,24.88-49.74,49.79-74.63,74.68-.68.68-1.4,1.38-2.09,2.06-5.16,5.21-5.16,13.59,0,18.8,3.53,3.48,7.04,6.99,10.5,10.48,9.94,9.94,19.93,19.93,29.94,29.87,3.79,3.82,7.57,7.64,11.41,11.44v39.53c0,6.82,5.54,12.37,12.35,12.37ZM186.13,186.6l21.44-21.46v42.92l-21.44-21.46Z"/><path d="M332.63,281.94c-.28-.79-1.11-1.24-1.93-1.05l-3.35.77c-28.02,6.43-55.93-17.05-50.28-49.5,1.68-9.66,7.13-18.35,15.09-24.08,26.73-19.23,60.04-4.36,66.47,23.66l.77,3.35c.19.82.96,1.36,1.79,1.27l37.44-4.07c.85-.09,1.47-.86,1.36-1.71-.34-2.67-.81-5.34-1.43-8.01-12.33-53.72-74.45-83.08-126.47-50.55-20.23,12.65-33.65,34.06-36.21,57.79-6.59,61,46.92,104.1,100.64,91.77,2.67-.61,5.29-1.35,7.83-2.21.81-.27,1.23-1.16.94-1.97l-12.67-35.47Z"/><path d="M137.91,177.81l2.78-2.77,1.69-1.68c2.07-2.26,4.14-4.52,6.18-6.79,4.65-5.13,4.6-12.97-.11-17.99-.36-.4-.72-.76-1.11-1.16-4.18-4.33-8.36-8.65-12.57-12.96,12.57-.4,25.12-.77,37.69-1.16,14.41-14.41,28.82-28.84,43.28-43.29h-105.38c-20.49,0-30.87,24.72-16.52,39.36.61.61,1.2,1.24,1.75,1.87,3.05,3.5,6,7.02,9.06,10.51.27.28.63.57.89.86,2.28,2.49,4.57,4.97,6.86,7.45h0s8.6,9.35,8.6,9.35l-25.52,25.41c-5.64,5.62-6.31,14.11-1.51,18.93l.14.14c4.79,4.8,13.29,4.15,18.93-1.47"/><polygon points="297.63 133.56 297.63 106.35 307.14 106.35 307.14 100.45 279.88 100.45 279.88 106.35 289.37 106.35 289.37 133.56 297.63 133.56"/><polygon points="311.46 100.45 311.46 133.56 319.23 133.56 319.23 109.59 319.39 109.59 328.11 133.56 333.46 133.56 342.15 109.59 342.33 109.59 342.33 133.56 350.1 133.56 350.1 100.45 338.95 100.45 330.81 121.83 322.69 100.45 311.46 100.45"/></svg></i>Community Connect</a>
+    <nav class="links" aria-label="Sections"><a href="#fleet">Fleet</a><a href="#how">How it works</a><a href="#events">Events</a><a href="#deal">The deal</a><a href="#agreement">Agreement</a></nav>
+    <a class="ibtn" href="https://www.instagram.com/cc_x_standert/" aria-label="Community Connect on Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></a>
+    <a class="pillbtn pink sm" href="#fleet">Borrow a bike →</a>
+  </div>
+</header>
+
+<div class="menu" id="menu" hidden role="dialog" aria-modal="true" aria-label="Menu">
+  <button class="close" id="menuClose" aria-label="Close menu">✕</button>
+  <nav aria-label="Menu"><a href="#fleet">Fleet</a><a href="#how">How it works</a><a href="#events">Events</a><a href="#deal">The deal</a><a href="#ask">Ask for any bike</a><a href="#agreement">Agreement</a></nav>
+  <div class="social"><a class="ibtn" href="https://www.instagram.com/cc_x_standert/" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/></svg></a><a class="ibtn" href="mailto:contact@community-connect.cc" aria-label="Email us"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg></a></div>
+  <a class="card" href="#fleet"><img src="img/cc-12.jpg" alt="" loading="lazy"><b>Borrow a bike →</b></a>
+</div>
+
+<main id="top">
+<section aria-label="Highlights">
+  <div class="slides" id="slides">
+    <a class="slide" href="#fleet" aria-label="Borrow a bike: free, then pass it on"><img src="img/hero-ghc.jpg" alt="A pink Standert gravel bike hanging in a sunlit workshop"><span class="ov"><span class="tag">Free to borrow</span><b>Borrow a premium bike</b><span class="l2">Pass it on.</span><span class="hand">10 standerts, 0 fees x</span></span></a>
+    <a class="slide" href="#fleet" aria-label="Gravel Hearts Club: two bikes repainted"><img src="img/repaint.jpg" alt="A frame being repainted pink by hand"><span class="ov"><span class="tag">New project</span><b>Gravel Hearts Club</b><span class="l2">Cute and Dirty</span><span class="hand">2 bikes, repainted x</span></span></a>
+    <a class="slide" href="#events" aria-label="Events 2027: race it on a fleet bike"><img src="img/desolation.jpg" alt="A rider carrying a frame, motion blurred"><span class="ov"><span class="tag">Events 2027</span><b>Race it on a fleet bike</b><span class="l2">Gravel races, dates out.</span><span class="hand">racing terms apply x</span></span></a>
+  </div>
+  <div class="dots" id="dots" role="group" aria-label="Choose a highlight"></div>
+</section>
+
+<section class="sect" id="fleet" aria-labelledby="fleetT">
+  <div class="in max">
+    <h2 class="h" id="fleetT">Explore the fleet</h2>
+    <p class="sub"><span id="nBikes">10</span> Standerts · free to borrow · book up to <span id="horizon">31 Dec 2027</span></p>
+  </div>
+<!--cc:fleet-->
+  <div class="in max">
+    <div class="finder">
+      <div class="frow"><label class="mono" for="h">What’s my size?</label><output for="h" id="hv">176 cm</output></div>
+      <input id="h" type="range" min="150" max="200" value="176" step="1" aria-describedby="fitMsg">
+      <p id="fitMsg">Probably size 54 or 56.</p>
+    </div>
+    <div class="chips" role="group" aria-label="Filter bikes" id="chips"></div>
+    <form class="when" id="dateForm"><label for="d1">From<input id="d1" type="date" required></label><label for="d2">Until<input id="d2" type="date" required></label><button class="pillbtn ink" type="submit">Check</button></form>
+    <p class="count" id="msg" aria-live="polite"></p>
+  </div>
+  <ul class="grid max" id="list"></ul>
+<!--/cc:fleet-->
+</section>
+
+<aside class="banner" aria-label="Fleet news">
+  <div class="max"><p class="mono">Fleet 2027</p><p class="h">New Kieswerks in 52 and 56 are on the way.</p><span class="hand">bye bye Erdgeschoss 54 + 56 x</span></div>
+</aside>
+
+<section id="how" aria-labelledby="howT">
+  <a class="photo" href="#how-steps"><img src="img/getaways.jpg" alt="A fleet bike leaning in a bright room" loading="lazy"><span class="ov"><b id="howT">How it works</b><span class="l2">Six steps, mostly on your phone.</span><span class="hand">one free day between loans x</span></span></a>
+  <div class="in max">
+<!--cc:loop-->
+    <figure class="loop" id="route" aria-label="Animation: the Community Connect icon travels a loop past the six steps of a loan" style="margin-bottom:0">
+      <svg id="track" aria-hidden="true"></svg>
+      <div class="say" id="say" aria-live="polite"><i id="sayN">Step 1 of 6</i><b id="sayB">Pick a bike</b><span id="sayS">Find one in your size that’s free on your dates.</span></div>
+      <div class="ctrl"><button id="prev" aria-label="Previous step">‹</button><button id="play" aria-label="Pause animation">Pause</button><button id="next" aria-label="Next step">›</button></div>
+    </figure>
+<!--/cc:loop-->
+  </div>
+  <div class="row max" id="how-steps" role="list"></div>
+</section>
+
+<section class="sect" id="events" aria-labelledby="evT">
+  <div class="in max"><h2 class="h" id="evT">Events</h2><p class="sub">Gravel races with dates out. Pick one on the request form and we plan the bike around it.</p></div>
+<!--cc:events--><ul class="evs max" id="evList"></ul><!--/cc:events-->
+  <div class="terms max">
+    <div class="cream"><span class="st" style="background:var(--ochre);border-color:var(--ochre);color:#fff">Racing terms</span><p><b>Racing is harder on a bike than riding.</b> For an event you tick one extra line: damage while racing, crashes included, is yours to cover. Repairs at Woodstock Cycleworks, invoice shared, no markup.</p></div>
+    <div class="pinkb"><span class="st reserved">Raffle bikes</span><p><b>Win a bike, an entry, sometimes kit and nutrition.</b> Some bikes stay held for organisers’ raffles until the winner is drawn. They show as raffle bikes and go back into the pool if nobody claims them.</p></div>
+  </div>
+  <p class="src max">Dates as published by the organisers. Always confirm on the event’s own page before you enter.</p>
+</section>
+
+<!--cc:stats--><section class="stats max" aria-label="In numbers">
+  <div><b id="sLoans">115</b><span>loans in <span id="sYear">2026</span></span></div>
+  <div><b id="sRiders">102</b><span>Connectors</span></div>
+  <div><b id="sEvents">19</b><span>races &amp; events</span></div>
+</section><!--/cc:stats-->
+
+<section class="sect" id="deal" aria-labelledby="dealT">
+  <div class="in max"><h2 class="h" id="dealT">The deal, between friends</h2><p class="sub">We keep the bikes in shape. You bring them back the way you got them. Who pays?</p></div>
+  <div class="deal max">
+<!--cc:game-->
+    <div class="game" id="game" aria-live="polite">
+      <div class="meta"><span class="mono">Who pays?</span><span class="pips" id="pips"></span></div>
+      <p class="q" id="gq"></p>
+      <div class="ans"><button class="pillbtn" id="aUs">Community Connect</button><button class="pillbtn" id="aYou">The rider</button></div>
+      <p class="why" id="gw"></p>
+      <div class="meta"><span id="gs" class="mono"></span><button class="pillbtn ink sm" id="gn">Next</button></div>
+    </div>
+<!--/cc:game-->
+    <details><summary>We cover</summary><ul><li>Regular servicing with Woodstock Cycleworks</li><li>Normal wear: chain, tyres, brake pads</li><li>A puncture on a long day out</li><li>Finding you a bike as often as we can</li></ul></details>
+    <details><summary>You cover</summary><ul><li>Breaks from reckless riding or the wrong kind of use</li><li>Damage while racing, crashes included</li><li>A wash &amp; lube if it comes back dirty</li><li>Telling us early, and flagging damage at the handover</li></ul></details>
+  </div>
+</section>
+
+<section class="sect" id="ask" aria-labelledby="askT">
+  <div class="in max"><h2 class="h" id="askT">Any bike will do?</h2><p class="sub">Ask for any bike in your size. We pick one that’s free on your dates.</p></div>
+  <div class="ask max"><p style="padding:22px;margin:0">On community-connect.cc the request form sits right here. <a href="#bikes">Pick a bike above</a> for now.</p></div>
+</section>
+
+<section class="drawings max" aria-label="Drawings by Kooooos">
+  <figure><div class="art" style="background:var(--pink)"><img src="img/bear.png" alt="Hand-drawn bear waving a flag, with the Standert lettering" loading="lazy"></div><figcaption>Gravel Hearts Club</figcaption></figure>
+  <figure><div class="art" style="background:var(--sand)"><img src="img/eatmydust.png" alt="Hand-lettered Eat my Dust with a poodle" loading="lazy"></div><figcaption>Eat my Dust</figcaption></figure>
+</section>
+
+<section class="sect" id="agreement" aria-labelledby="agT">
+  <div class="in max"><h2 class="h" id="agT">The agreement</h2><p class="sub">Not legal small print. How friends share something they love.</p></div>
+  <div class="agree max"><p class="mono"><em>Community Connect × Standert · version 2 · November 2026</em></p>
+<p class="intro">Hey, nice to have you here. Before you roll off on one of our bikes, here's how this works. It's not legal small print, just how friends share something they love.</p>
+<details id="ag-why-we-do-this"><summary>Why we do this</summary>
+<p>Community Connect is a non-profit bike collective in Cape Town. Together with Standert we keep a small fleet of premium gravel and road bikes that <strong>anyone can borrow</strong>. You don't have to be fast, famous or part of the crew. We do our best to keep the bikes available as often as we can, so more people get to ride.</p>
+<p>The whole idea is simple: <strong>share the joy of riding a really good bike, and meet people who love it as much as you do.</strong> If you end up riding with the person who handed you the bike, even better.</p>
+</details>
+<details id="ag-before-you-ride"><summary>Before you ride</summary>
+<ul>
+<li><strong>Request the bike on our website.</strong> You can ask for any dates up to the end of next year (right now: 31 December 2027). We check the calendar and confirm by email, usually within a couple of days.</li>
+<li><strong>We always keep one day free between loans.</strong> That's our day to check the bike and pass it on calmly, so please don't ask us to squeeze bookings back to back.</li>
+<li><strong>Handoffs happen on WhatsApp.</strong> We'll put you in a chat with the rider before or after you, or with the crew, to agree a time and place.</li>
+</ul>
+</details>
+<details id="ag-we-look-after-the-bikes"><summary>We look after the bikes</summary>
+<p>We maintain every bike together with our friends at <strong>Woodstock Cycleworks</strong>. <strong>Normal wear is on us</strong>: chains, tyres and brake pads that wear out from riding, a puncture on a long day out, a cable that stretches. That's what bikes do, and that's what we're here for.</p>
+</details>
+<details id="ag-your-part-bring-it-back-like-you-got-it"><summary>Your part: bring it back like you got it</summary>
+<ul>
+<li><strong>Same condition back.</strong> The bike comes back the way you received it: clean, chain lubed, everything still on it.</li>
+<li><strong>Dirty or neglected?</strong> If a bike comes back muddy, dry-chained or not looked after, you cover a <strong>service or a wash &amp; lube</strong> at Woodstock Cycleworks. Fair's fair: the next person deserves a bike that's ready to go.</li>
+<li><strong>Broken because of reckless riding?</strong> If something breaks because the bike was ridden carelessly, crashed while messing around, or used for something it isn't made for, <strong>the repair is on you</strong>. We'll have it fixed at Woodstock Cycleworks and share the invoice with you. No markup, no drama.</li>
+<li><strong>Something feels off? Tell us early.</strong> A strange noise, a wobbly wheel, a scratch you're not sure about: message us. Small things caught early stay small.</li>
+<li><strong>Back on time.</strong> Someone else is usually waiting for the bike. Need more time? Ask us before your end date and we'll see what we can do.</li>
+</ul>
+</details>
+<details id="ag-racing-and-events"><summary>Racing and events</summary>
+<p>Taking a bike to a race or an event? Brilliant, tell us which one when you ask. <strong>Racing is harder on a bike than riding</strong>, so there's one extra rule you tick for it: <strong>any damage that happens while racing, crashes included, is yours to cover.</strong> We get it fixed at Woodstock Cycleworks and share the invoice, no markup. Everything else in this agreement stays the same.</p>
+</details>
+<details id="ag-raffle-bikes"><summary>Raffle bikes</summary>
+<p>Some events run raffles with us: the winner gets a bike for the race, and sometimes the entry, nutrition or kit too. <strong>We hold those bikes back until the winner is drawn</strong>, sometimes right before the event. You'll see them marked as raffle bikes in the calendar. If a raffle bike isn't claimed, it goes back into the pool and you can ask for it.</p>
+</details>
+<details id="ag-handing-over-between-riders"><summary>Handing over between riders</summary>
+<p>When you collect a bike from the rider before you, <strong>check it together</strong>. Look at the tyres, brakes, gears, frame and wheels, and that everything's there. If anything isn't in decent shape, <strong>tell us in the WhatsApp chat right then</strong>, ideally with a photo. Whatever isn't mentioned at the handover, we assume you received in good condition.</p>
+</details>
+<details id="ag-share-what-the-bike-let-you-do"><summary>Share what the bike let you do</summary>
+<p>We love photos, short videos, a GPX file, a few lines about where you went, who you met or what you finally dared to ride. Tag <strong>@cc_x_standert</strong> or send it to us. It helps us show what this project makes possible.</p>
+<p>You don't need to tell us how great the bike rides (unless you really feel like it). We care much more about the ride, the place and the people.</p>
+</details>
+<details id="ag-your-details"><summary>Your details</summary>
+<p>We keep your name, email, WhatsApp number, height and loan history so we can arrange this loan and future ones. We don't sell or share them. Ask us anytime to see or delete them.</p>
+</details>
+<details id="ag-in-short"><summary>In short</summary>
+<p>Ride it, enjoy it, look after it, bring it back clean, and tell us what you got up to. Then pass it on.</p>
+<p><strong>Ride hard, look after it, pass it on.</strong></p>
+<p><em>Questions? Reply to any of our emails or message us on WhatsApp.</em></p>
+</details>
+</div>
+</section>
+
+<a class="photo" href="https://www.instagram.com/cc_x_standert/" style="margin-top:28px"><img src="img/journal.jpg" alt="The workshop, with a frame on the table and drawings on the wall" loading="lazy"><span class="ov"><b>After the ride</b><span class="l2">Tell us what the bike let you do.</span><span class="hand">@cc_x_standert</span></span></a>
+</main>
+
+<footer class="foot">
+  <div class="max">
+    <p>Community Connect NPC<br>Woodstock, Cape Town, ZA</p>
+    <p>Group rides: weekly, on Strava<br>Questions: <a href="mailto:contact@community-connect.cc">contact@community-connect.cc</a></p>
+    <details><summary>The collective</summary><a href="#how">How it works</a><a href="#deal">The deal</a><a href="#agreement">Borrowing agreement</a></details>
+    <details><summary>Happenings</summary><a href="#events">Events 2027</a><a href="https://www.instagram.com/cc_x_standert/">Instagram</a></details>
+    <details><summary>Bikes &amp; support</summary><a href="#fleet">The fleet</a><a href="#ask">Ask for any bike</a><a href="mailto:contact@community-connect.cc">Email the crew</a></details>
+    <div class="soc"><a class="ibtn" href="https://www.instagram.com/cc_x_standert/" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></a><a class="ibtn" href="mailto:contact@community-connect.cc" aria-label="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg></a></div>
+    <p class="fine"><a href="#agreement">Borrowing agreement</a> · bikes maintained with Woodstock Cycleworks</p>
+    <p class="fine">© <span id="yr">2026</span> Community Connect NPC · Reg. 2025/713989/08</p>
+  </div>
+</footer>
+
+<script>window.CCLanding = {"bikes": [{"cc": "CC-03", "name": "Analoge", "model": "Kreissäge RS", "size": "50", "cat": "Road", "range": [158, 166], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-03/"}, {"cc": "CC-04", "name": "Shimmy RAW", "model": "Kieswerk", "size": "52", "cat": "Adventure", "range": [164, 172], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-04/"}, {"cc": "CC-05", "name": "Green Thumb", "model": "Kieswerk", "size": "54", "cat": "Adventure", "range": [170, 178], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-05/"}, {"cc": "CC-06", "name": "Yeah! Yellow", "model": "Erdgeschoss", "size": "54", "cat": "Adventure", "range": [170, 178], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-06/"}, {"cc": "CC-07", "name": "Pang! Pink", "model": "Erdgeschoss", "size": "56", "cat": "Adventure", "range": [176, 184], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-07/"}, {"cc": "CC-08", "name": "Mos Def", "model": "Erdgeschoss", "size": "58", "cat": "Adventure", "range": [182, 191], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-08/"}, {"cc": "CC-09", "name": "Team", "model": "Kettensäge", "size": "50", "cat": "Gravel racing", "range": [158, 166], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-09/"}, {"cc": "CC-11", "name": "Give 'em hell caramel", "model": "Kettensäge", "size": "54", "cat": "Gravel racing", "range": [170, 178], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-11/"}, {"cc": "CC-12", "name": "Standert x KOOS", "model": "Kettensäge", "size": "56", "cat": "Gravel racing", "range": [176, 184], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-12/"}, {"cc": "CC-13", "name": "Standert x KOOS", "model": "Kettensäge", "size": "58", "cat": "Gravel racing", "range": [182, 191], "state": "available", "url": "https://community-connect.cc/new/fleet/cc-13/"}], "events": [{"name": "The Grind", "start": "2027-02-06", "end": "2027-02-06", "where": "Valley Lodge & Spa, Magaliesburg (Gauteng)", "type": "Gravel race", "link": "https://leveragecorporation.co.za/the-grind/"}, {"name": "Gravel Valley by Grand Canyon Series", "start": "2027-03-05", "end": "2027-03-07", "where": "Greyton, WC", "type": "Gravel race", "link": "https://bikehub.co.za/events/western-cape"}, {"name": "Race Across South Africa (RASA)", "start": "2027-04-05", "end": "2027-04-20", "where": "Freedom Trail, KZN to Diemersfontein (Wellington), WC", "type": "Bikepacking race", "link": "https://www.freedomchallenge.org.za/rasa"}, {"name": "Garden Route Giro", "start": "2027-04-19", "end": "2027-04-24", "where": "George / Southern Cape, WC", "type": "Gravel stage race", "link": "https://www.gardenroutegiro.co.za/"}, {"name": "Ride The Owl Route", "start": "2027-04-23", "end": "2027-04-25", "where": "Nieu-Bethesda, EC", "type": "Gravel ride", "link": "https://startingline.co.za/discover/gravel-biking"}, {"name": "The Gallows", "start": "2027-05-08", "end": "2027-05-08", "where": "Lords Wines, McGregor, WC", "type": "Gravel race", "link": "https://bikehub.co.za/events/western-cape?page=2"}, {"name": "Crater Cruise Gravel", "start": "2027-05-16", "end": "2027-05-16", "where": "Parys, Vredefort Dome (NW / FS)", "type": "Gravel race", "link": "https://www.entryninja.com/events/84449-crater-cruise-gravel"}, {"name": "Prince George 100 Miler", "start": "2027-10-16", "end": "2027-10-16", "where": "Prince Albert to the Langkloof, WC", "type": "Gravel race", "link": "https://dryland.co.za/cycling-events/"}], "horizon": "2027-12-31", "icon": "<path d=\"M144.93,187.93l-29.08,29.07.97,1.4c16.39,23.62,4.98,58.26-27.24,65.08-9.59,2.03-19.68.21-27.96-5.05-27.8-17.66-26.38-54.11-2.76-70.5l2.83-1.96c.69-.48.91-1.39.52-2.13l-17.71-33.24c-.4-.75-1.35-1.04-2.09-.63-2.35,1.31-4.65,2.74-6.91,4.3-45.28,31.42-49.42,100,.13,136.2,19.27,14.07,44.13,18.57,67.1,12.12,59.07-16.56,79.16-82.26,47.74-127.54-1.74-2.5-3.59-4.87-5.55-7.12Z\"/><path d=\"M87.56,97.26c0-12.57-10.19-22.73-22.74-22.73s-22.7,10.16-22.7,22.73,10.14,22.72,22.7,22.72,22.74-10.17,22.74-22.72Z\"/><path d=\"M219.92,299.69h.2c6.79,0,12.33-5.54,12.33-12.37V100.47c-24.88,24.88-49.74,49.79-74.63,74.68-.68.68-1.4,1.38-2.09,2.06-5.16,5.21-5.16,13.59,0,18.8,3.53,3.48,7.04,6.99,10.5,10.48,9.94,9.94,19.93,19.93,29.94,29.87,3.79,3.82,7.57,7.64,11.41,11.44v39.53c0,6.82,5.54,12.37,12.35,12.37ZM186.13,186.6l21.44-21.46v42.92l-21.44-21.46Z\"/><path d=\"M332.63,281.94c-.28-.79-1.11-1.24-1.93-1.05l-3.35.77c-28.02,6.43-55.93-17.05-50.28-49.5,1.68-9.66,7.13-18.35,15.09-24.08,26.73-19.23,60.04-4.36,66.47,23.66l.77,3.35c.19.82.96,1.36,1.79,1.27l37.44-4.07c.85-.09,1.47-.86,1.36-1.71-.34-2.67-.81-5.34-1.43-8.01-12.33-53.72-74.45-83.08-126.47-50.55-20.23,12.65-33.65,34.06-36.21,57.79-6.59,61,46.92,104.1,100.64,91.77,2.67-.61,5.29-1.35,7.83-2.21.81-.27,1.23-1.16.94-1.97l-12.67-35.47Z\"/><path d=\"M137.91,177.81l2.78-2.77,1.69-1.68c2.07-2.26,4.14-4.52,6.18-6.79,4.65-5.13,4.6-12.97-.11-17.99-.36-.4-.72-.76-1.11-1.16-4.18-4.33-8.36-8.65-12.57-12.96,12.57-.4,25.12-.77,37.69-1.16,14.41-14.41,28.82-28.84,43.28-43.29h-105.38c-20.49,0-30.87,24.72-16.52,39.36.61.61,1.2,1.24,1.75,1.87,3.05,3.5,6,7.02,9.06,10.51.27.28.63.57.89.86,2.28,2.49,4.57,4.97,6.86,7.45h0s8.6,9.35,8.6,9.35l-25.52,25.41c-5.64,5.62-6.31,14.11-1.51,18.93l.14.14c4.79,4.8,13.29,4.15,18.93-1.47\"/><polygon points=\"297.63 133.56 297.63 106.35 307.14 106.35 307.14 100.45 279.88 100.45 279.88 106.35 289.37 106.35 289.37 133.56 297.63 133.56\"/><polygon points=\"311.46 100.45 311.46 133.56 319.23 133.56 319.23 109.59 319.39 109.59 328.11 133.56 333.46 133.56 342.15 109.59 342.33 109.59 342.33 133.56 350.1 133.56 350.1 100.45 338.95 100.45 330.81 121.83 322.69 100.45 311.46 100.45\"/>", "api": null, "live": false, "img": "img"};</script>
+<script>
+{
+const CFG = window.CCLanding || {};
+const FALLBACK = CFG.bikes || [];
+const EVENTS = CFG.events || [];
+const HORIZON = CFG.horizon || '2027-12-31';
+const ICON = CFG.icon || '';
+const IMG = CFG.img || 'img';
+const STATS = CFG.stats || null;
+const API = CFG.api || null;
+const LIVE = !!CFG.live;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const nice = (d) => `${Number(d.slice(8))} ${MON[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
+const setText = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+setText('horizon', nice(HORIZON));
+setText('yr', new Date().getFullYear());
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---- menu ---- */
+const menu = $('menu'), mOpen = $('menuOpen');
+if (menu && mOpen) {
+const setMenu = (on) => { menu.hidden = !on; mOpen.setAttribute('aria-expanded', on); document.body.style.overflow = on ? 'hidden' : ''; if (on) $('menuClose').focus(); else mOpen.focus(); };
+mOpen.addEventListener('click', () => setMenu(true));
+$('menuClose').addEventListener('click', () => setMenu(false));
+menu.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
+menu.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+}
+
+/* ---- hero slides (any element with id="slides"; dots are added if the page has none) ---- */
+const slides = $('slides');
+if (slides) {
+const slideEls = [...slides.children];
+if (!$('dots')) { const d = document.createElement('div'); d.className = 'dots'; d.id = 'dots'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', 'Choose a highlight'); slides.after(d); }
+$('dots').innerHTML = slideEls.map((_, i) => `<button aria-label="Highlight ${i + 1} of ${slideEls.length}"></button>`).join('');
+const dotEls = [...$('dots').children];
+const curSlide = () => Math.round(slides.scrollLeft / slides.clientWidth);
+const mark = () => dotEls.forEach((d, i) => d.setAttribute('aria-current', i === curSlide()));
+slides.addEventListener('scroll', () => requestAnimationFrame(mark), { passive: true });
+dotEls.forEach((d, i) => d.addEventListener('click', () => slides.scrollTo({ left: i * slides.clientWidth, behavior: reduce ? 'auto' : 'smooth' })));
+mark();
+let heroPaused = reduce;
+slides.addEventListener('pointerdown', () => { heroPaused = true; });
+if (!reduce && slideEls.length > 1) setInterval(() => { if (!heroPaused && !document.hidden) { const n = (curSlide() + 1) % slideEls.length; slides.scrollTo({ left: n * slides.clientWidth, behavior: 'smooth' }); } }, 6000);
+}
+
+/* ---- the fleet ---- */
+if ($('list')) {
+const COLORS = { 'CC-03': ['#CFC8BB', 0], 'CC-04': ['#BDB8AE', 0], 'CC-05': ['#4E6F3A', 0], 'CC-06': ['#E8C33A', 0], 'CC-07': ['#EF6AA9', 0], 'CC-08': ['#2A2830', 1], 'CC-09': ['#2F5C45', 0], 'CC-11': ['#B9783A', 0], 'CC-12': ['#D9CBD3', 0], 'CC-13': ['#D9CBD3', 0] };
+const PHOTOS = { 'CC-12': 'cc-12.jpg', 'CC-13': 'cc-13.jpg' };
+let bikes = FALLBACK.map((b) => ({ ...b })), free = null, filter = 'all';
+const fits = (b, h) => b.range && h >= b.range[0] - 2 && h <= b.range[1] + 2;
+const label = { available: 'Available', out: 'Out riding', workshop: 'Workshop', booked: 'Booked', reserved: 'Raffle bike' };
+const cats = () => [...new Set(bikes.map((b) => b.cat).filter(Boolean))];
+const chipsHtml = () => [['all', 'All'], ['fits', 'Fits me'], ...cats().map((c) => [c, c])].map(([k, l]) => `<button class="chip" data-f="${esc(k)}" aria-pressed="${k === filter}">${esc(l)}</button>`).join('');
+const pic = (b) => {
+  const img = b.image || (PHOTOS[b.cc] ? `${IMG}/${PHOTOS[b.cc]}` : '');
+  const c = COLORS[b.cc] || ['#D3C8B4', 0];
+  return img ? `<span class="pic"><img src="${esc(img)}" alt="${esc(b.model)} ${esc(b.size)}, ${esc(b.name)}" loading="lazy"></span>`
+    : `<span class="pic${c[1] ? ' dark' : ''}" style="background:${c[0]}"><b>${esc(b.size)}</b><span class="hand">photo to come</span></span>`;
+};
+const render = () => {
+  const h = +$('h').value;
+  $('hv').textContent = `${h} cm`;
+  const sizes = [...new Set(bikes.filter((b) => fits(b, h)).map((b) => b.size))].sort();
+  const nFit = bikes.filter((b) => fits(b, h)).length;
+  $('fitMsg').textContent = nFit ? `Probably size ${sizes.join(' or ')}: ${nFit} bike${nFit === 1 ? '' : 's'} fit${nFit === 1 ? 's' : ''}.` : 'Nothing in the fleet fits that height yet. Message us anyway.';
+  $('chips').innerHTML = chipsHtml();
+  const show = (b) => filter === 'all' || (filter === 'fits' ? fits(b, h) : b.cat === filter);
+  const list = [...bikes].sort((a, b) => a.cc.localeCompare(b.cc));
+  $('list').innerHTML = list.map((b) => {
+    const st = free ? (free.has(b.cc) ? 'available' : 'booked') : b.state;
+    const chip = free ? (free.has(b.cc) ? 'Free those dates' : 'Booked') : (label[st] || st);
+    const ok = fits(b, h);
+    return `<li${show(b) ? '' : ' hidden'}><a class="card${free && !free.has(b.cc) ? ' dim' : ''}" href="${esc(b.url)}"><span class="hd"><span class="mono">${esc(b.cc)}</span><span class="st ${esc(st)}">${esc(chip)}</span></span>${pic(b)}<strong>${esc(b.model)} ${esc(b.size)}</strong><small>${esc(b.name)}</small><span class="fit">${b.range ? `${b.range[0]}–${b.range[1]} cm${ok ? ' · <b>fits you</b>' : ''}` : ''}</span></a></li>`;
+  }).join('');
+  const shown = list.filter(show).length;
+  if (!free) $('msg').textContent = `${shown} bike${shown === 1 ? '' : 's'}` + (LIVE ? '' : ' · preview, fleet as of 21 Nov 2026');
+  setText('nBikes', bikes.length);
+};
+$('chips').addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f; render(); });
+$('h').addEventListener('input', render);
+try { const saved = localStorage.getItem('cc-height'); if (saved) $('h').value = saved; } catch (e) {}
+$('h').addEventListener('change', () => { try { localStorage.setItem('cc-height', $('h').value); } catch (e) {} });
+const pad = (n) => String(n).padStart(2, '0');
+const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+$('d1').min = $('d2').min = iso(tomorrow);
+$('d1').max = $('d2').max = HORIZON;
+$('dateForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const a = $('d1').value, b = $('d2').value;
+  if (!a || !b || b < a) { $('msg').textContent = 'Pick a first and a last day, in that order.'; return; }
+  if (b > HORIZON) { $('msg').textContent = `We take requests up to ${nice(HORIZON)}.`; return; }
+  if (!API) { $('msg').textContent = 'The live date check works on community-connect.cc. Open a bike to see its calendar.'; return; }
+  $('msg').textContent = 'Checking…';
+  try {
+    const r = await fetch(`${API}/available?start=${a}&end=${b}`, { headers: { Accept: 'application/json' } });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.message || 'Those dates don’t work.');
+    free = new Set(j.map((x) => x.cc_id));
+    render();
+    $('msg').textContent = free.size ? `${free.size} bike${free.size === 1 ? '' : 's'} free ${nice(a)} – ${nice(b)}.` : 'Nothing free on those dates. Try shifting by a few days.';
+  } catch (e) { $('msg').textContent = e.message; }
+});
+render();
+if (API && !LIVE) {
+  fetch(`${API}/bikes`, { headers: { Accept: 'application/json' } }).then((r) => r.ok ? r.json() : null).then((j) => {
+    if (!j || !j.length) return;
+    bikes = j.map((b) => ({ cc: b.cc_id, name: b.name, model: b.model, size: b.size, cat: b.category, range: b.rider_range, state: b.state, url: b.url, image: b.image }));
+    render();
+  }).catch(() => {});
+}
+
+}
+
+/* ---- how it works: the loop + step cards ---- */
+const STEPS = [
+  ['Pick a bike', 'Find one in your size that’s free on your dates.', 'Open a bike, tap your first and last day and send the request. Racing? Pick the event.'],
+  ['We say yes', 'Usually within a couple of days, by email.', 'We check who has the bike before you. You get a yes with the handoff, or other dates or bikes.'],
+  ['Meet the last rider', 'We connect you on WhatsApp.', 'Collect from the rider before you, or from the crew. Check the bike together and flag anything off.'],
+  ['Ride', 'Race, explore, commute, go bikepacking.', 'It’s yours for those dates. Something feels off? Message us early.'],
+  ['Bring it back clean', 'Washed, chain lubed, on time.', 'Same condition you got it in. A dirty bike means you cover a wash & lube.'],
+  ['Pass it on', 'The next rider is waiting.', 'Hand it over, share what the bike let you do, and come back for another one.']
+];
+const NAMES = ['Pick', 'Yes', 'Handoff', 'Ride', 'Return', 'Pass on'];
+const stepsBox = $('how-steps');
+// Step cards written on the page (e.g. in the theme's editor) win: the loop takes its words from them.
+const cards = stepsBox ? [...stepsBox.children].filter((c) => c.querySelector('h3')) : [];
+if (cards.length >= 2) {
+  STEPS.length = 0;
+  cards.forEach((c) => { const t = c.querySelector('h3').textContent.trim(); const body = (c.querySelector('p:not(.mono)') || {}).textContent || ''; STEPS.push([t, (body.match(/^[^.!?]+[.!?]/) || [body])[0].trim(), body]); });
+} else if (stepsBox) {
+  stepsBox.innerHTML = STEPS.map((s, i) => `<div role="listitem" data-i="${i}"><span class="mono">0${i + 1} / ${esc(NAMES[i])}</span><h3>${esc(s[0])}</h3><p>${esc(s[2])}</p></div>`).join('');
+}
+const svg = $('track');
+if (svg) {
+let cur = 0, playing = !reduce, t0 = performance.now(), len = 0, pathEl = null, rider = null, stopEls = [];
+const PER = 2600;
+const draw = () => {
+  const W = svg.clientWidth, H = svg.clientHeight;
+  if (!W || !H) return;
+  const m = Math.max(30, Math.min(W, H) * 0.1);
+  const x1 = m, x2 = W - m, y1 = m, y2 = H - m - 34;
+  const ry = Math.min((x2 - x1) / 2, (y2 - y1) / 2, 170);
+  const d = `M ${x1 + ry} ${y1} H ${x2 - ry} A ${ry} ${ry} 0 0 1 ${x2 - ry} ${y2} H ${x1 + ry} A ${ry} ${ry} 0 0 1 ${x1 + ry} ${y1} Z`;
+  svg.innerHTML = `<path id="p" d="${d}" fill="none" stroke="#D3C8B4" stroke-width="12" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#141217" stroke-width="1.5" stroke-dasharray="2 9"/>` +
+    STEPS.map((_, i) => `<g class="stop"><circle r="11" fill="#F4EEE4" stroke="#141217" stroke-width="1.5"/><text text-anchor="middle" dy="4" font-family="IBM Plex Mono, monospace" font-size="11" fill="#141217">${i + 1}</text></g>`).join('') +
+    `<g id="rider"><circle r="26" fill="#FFB1EC" stroke="#141217" stroke-width="1.5"/><g transform="translate(-18 -18) scale(0.09)" fill="#141217">${ICON}</g></g>`;
+  pathEl = svg.querySelector('#p'); len = pathEl.getTotalLength(); rider = svg.querySelector('#rider'); stopEls = [...svg.querySelectorAll('.stop')];
+  stopEls.forEach((g, i) => { const p = pathEl.getPointAtLength(len * i / STEPS.length); g.setAttribute('transform', `translate(${p.x} ${p.y})`); });
+  place(cur / STEPS.length); paint();
+};
+const place = (f) => {
+  if (!pathEl) return;
+  const at = (((f % 1) + 1) % 1) * len;
+  const a = pathEl.getPointAtLength(at), b = pathEl.getPointAtLength((at + 2) % len);
+  const lean = Math.max(-14, Math.min(14, (b.y - a.y) * 7)) * (b.x >= a.x ? 1 : -1);
+  const bob = reduce ? 0 : Math.sin(at / 9) * 1.5;
+  rider.setAttribute('transform', `translate(${a.x} ${a.y - 2 + bob}) rotate(${lean})`);
+};
+const paint = () => stopEls.forEach((g, k) => g.querySelector('circle').setAttribute('fill', k === cur ? '#FFB1EC' : k < cur ? '#D3C8B4' : '#F4EEE4'));
+const show = (i) => {
+  cur = (i + STEPS.length) % STEPS.length;
+  const say = $('say');
+  say.classList.add('swap');
+  setTimeout(() => { $('sayN').textContent = `Step ${cur + 1} of ${STEPS.length}`; $('sayB').textContent = STEPS[cur][0]; $('sayS').textContent = STEPS[cur][1]; say.classList.remove('swap'); }, reduce ? 0 : 220);
+  paint();
+  if (stepsBox) [...stepsBox.children].forEach((s, k) => s.classList.toggle('on', k === cur));
+};
+const tick = (now) => {
+  if (playing) {
+    const f = (now - t0) / (PER * STEPS.length);
+    place(f);
+    const i = Math.floor((f * STEPS.length) % STEPS.length);
+    if (i !== cur) show(i);
+  }
+  requestAnimationFrame(tick);
+};
+new ResizeObserver(draw).observe(svg);
+const setPlay = (on) => { playing = on; $('play').textContent = on ? 'Pause' : 'Play'; $('play').setAttribute('aria-label', on ? 'Pause animation' : 'Play animation'); };
+$('play').addEventListener('click', () => { setPlay(!playing); if (playing) t0 = performance.now() - cur * PER; });
+const jump = (k) => { setPlay(false); show(cur + k); place(cur / STEPS.length); };
+$('prev').addEventListener('click', () => jump(-1));
+$('next').addEventListener('click', () => jump(1));
+if (reduce) setPlay(false);
+show(0); requestAnimationFrame(tick);
+}
+
+/* ---- events ---- */
+const span = (e) => {
+  const y = e.start.slice(0, 4);
+  if (!e.end || e.end === e.start) return `${Number(e.start.slice(8))} ${MON[+e.start.slice(5, 7) - 1]} ${y}`;
+  const sm = MON[+e.start.slice(5, 7) - 1], em = MON[+e.end.slice(5, 7) - 1];
+  return sm === em ? `${Number(e.start.slice(8))}–${Number(e.end.slice(8))} ${sm} ${y}` : `${Number(e.start.slice(8))} ${sm}–${Number(e.end.slice(8))} ${em} ${y}`;
+};
+const kind = (e) => /ride|getaway/i.test(e.type) ? 'Ride' : 'Race';
+if ($('evList')) $('evList').innerHTML = EVENTS.map((e) => `<li class="ev"><time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time><div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="st">${kind(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">Event page ↗</a>` : ''}</li>`).join('');
+
+/* ---- numbers ---- */
+if (STATS) { setText('sLoans', STATS.loans); setText('sYear', STATS.year); setText('sRiders', STATS.riders); setText('sEvents', STATS.events); }
+else { setText('sEvents', EVENTS.length); }
+
+/* ---- who pays? ---- */
+const Q = [
+  ['The chain is worn out after 600 happy kilometres.', 'us', 'Normal wear. That’s what bikes do, and that’s on us.'],
+  ['The rear derailleur snaps when you jump a kerb for a video.', 'you', 'Reckless riding. We get it fixed at Woodstock Cycleworks and share the invoice, no markup.'],
+  ['You crash in a sprint at The Gallows and bend the bars.', 'you', 'Damage while racing is yours to cover. That’s the extra line you tick for events.'],
+  ['A puncture halfway through the Tankwa.', 'us', 'A puncture on a long day out is normal wear.'],
+  ['The bike comes back caked in mud with a dry chain.', 'you', 'You cover a wash & lube, so the next rider gets a bike that’s ready to go.'],
+  ['At pickup you spot a cracked bottle cage and post a photo in the chat.', 'us', 'Flagged at the handover, so it isn’t on you. We sort it out.'],
+  ['You noticed a scratch at pickup but didn’t mention it.', 'you', 'Whatever isn’t flagged at the handover counts as received in good condition.']
+];
+if ($('gq')) {
+let qi = 0, score = 0, answered = false;
+const pips = () => { $('pips').innerHTML = Q.map((_, i) => `<i class="${i < qi + (answered ? 1 : 0) ? 'done' : ''}"></i>`).join(''); };
+const ask = () => { answered = false; $('gq').textContent = Q[qi][0]; $('gw').textContent = ''; $('gw').className = 'why'; $('gs').textContent = `${qi + 1} of ${Q.length}`; $('gn').disabled = true; pips(); };
+const pick = (who) => {
+  if (answered) return;
+  answered = true;
+  const right = who === Q[qi][1];
+  if (right) score++;
+  $('gw').className = 'why' + (right ? ' ok' : '');
+  $('gw').innerHTML = `<b>${right ? 'Right.' : 'Not quite.'}</b> ${esc(Q[qi][2])}`;
+  $('gn').disabled = false;
+  $('gn').textContent = qi === Q.length - 1 ? 'Play again' : 'Next';
+  if (qi === Q.length - 1) $('gs').textContent = `${score} of ${Q.length} right`;
+  pips();
+};
+$('aUs').addEventListener('click', () => pick('us'));
+$('aYou').addEventListener('click', () => pick('you'));
+$('gn').addEventListener('click', () => { if (qi === Q.length - 1) { qi = 0; score = 0; } else qi++; ask(); });
+ask();
+}
+
+/* ---- agreement: open the section a link points to ---- */
+const openHash = () => { const t = location.hash && document.querySelector(location.hash); if (t && t.tagName === 'DETAILS') t.open = true; };
+addEventListener('hashchange', openHash); openHash();
+}
+</script>
+</body>
+</html>
