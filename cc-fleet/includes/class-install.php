@@ -50,6 +50,7 @@ class CC_Fleet_Install {
 
 	public static function deactivate() {
 		CC_Fleet_Cron::unschedule();
+		wp_clear_scheduled_hook( CC_Fleet_Feeds::HOOK );
 		flush_rewrite_rules();
 	}
 

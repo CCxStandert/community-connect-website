@@ -222,10 +222,12 @@ class CC_Fleet_Records {
 			image_url varchar(500) NOT NULL DEFAULT '',
 			link varchar(500) NOT NULL DEFAULT '',
 			show_on_site tinyint(1) NOT NULL DEFAULT 0,
+			source varchar(60) NOT NULL DEFAULT '',
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (id),
-			KEY dates (start_date)
+			KEY dates (start_date),
+			KEY source (source)
 		) $c;" );
 		dbDelta( "CREATE TABLE $n (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
