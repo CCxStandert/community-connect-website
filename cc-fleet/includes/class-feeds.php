@@ -238,13 +238,28 @@ class CC_Fleet_Feeds {
 	}
 
 	/** The Instagram business account ID for a Facebook token: saved, or found through the Pages the token can see. */
-	private static function ig_find_id( array $ig ) {
+	private static function ig_find_id( array $ig, array &$errors = array() ) {
 		if ( $ig['ig_id'] ) {
 			return $ig['ig_id'];
 		}
-		foreach ( array( 'me/accounts?fields=instagram_business_account{id,username}&limit=50', 'me?fields=instagram_business_account{id,username}' ) as $q ) {
-			$res = wp_remote_get( 'https://graph.facebook.com/' . $q . '&access_token=' . rawurlencode( $ig['token'] ), array( 'timeout' => 15 ) );
-			$j   = is_wp_error( $res ) ? null : json_decode( wp_remote_retrieve_body( $res ), true );
+		$qs = array(
+			'me?fields=id,username,user_id',                                            // A token issued to the Instagram account itself.
+			'me/accounts?fields=instagram_business_account{id,username}&limit=50',     // Pages the token manages.
+			'me?fields=instagram_business_account{id,username}',
+		);
+		foreach ( $qs as $q ) {
+			$res  = wp_remote_get( 'https://graph.facebook.com/' . $q . '&access_token=' . rawurlencode( $ig['token'] ), array( 'timeout' => 15 ) );
+			$j    = is_wp_error( $res ) ? null : json_decode( wp_remote_retrieve_body( $res ), true );
+			if ( ! empty( $j['error']['message'] ) ) {
+				$errors[] = 'graph.facebook.com: ' . $j['error']['message'];
+				continue;
+			}
+			if ( 0 === strpos( $q, 'me?fields=id,username' ) ) {
+				if ( ! empty( $j['username'] ) && ( ! empty( $j['user_id'] ) || ! empty( $j['id'] ) ) ) {
+					return preg_replace( '/[^0-9]/', '', (string) ( $j['user_id'] ?? $j['id'] ) );
+				}
+				continue;
+			}
 			$rows = isset( $j['data'] ) ? $j['data'] : ( $j ? array( $j ) : array() );
 			foreach ( (array) $rows as $row ) {
 				if ( ! empty( $row['instagram_business_account']['id'] ) ) {
@@ -252,6 +267,7 @@ class CC_Fleet_Feeds {
 				}
 			}
 		}
+		$errors[] = 'graph.facebook.com: no Instagram account linked to this token';
 		return '';
 	}
 
@@ -298,7 +314,7 @@ class CC_Fleet_Feeds {
 		foreach ( $tries as $try ) {
 			list( $api, $endpoint ) = $try;
 			if ( 'find' === $api ) {
-				$found = self::ig_find_id( array_merge( $ig, array( 'ig_id' => '' ) ) );
+				$found = self::ig_find_id( array_merge( $ig, array( 'ig_id' => '' ) ), $errors );
 				if ( ! $found ) {
 					continue;
 				}
