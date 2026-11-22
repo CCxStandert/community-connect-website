@@ -57,7 +57,9 @@
 <!-- /wp:group --><!-- wp:group {"className":"cc-ride cc-ride--ink","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group cc-ride cc-ride--ink"><!-- wp:paragraph {"className":"cc-ride__n"} -->
 <p class="cc-ride__n">03 · Eight Tuesdays to the Cycle Tour</p>
-<!-- /wp:paragraph --><!-- wp:heading {"level":3,"className":"cc-ride__name"} -->
+<!-- /wp:paragraph --><!-- wp:html -->
+<img class="cc-ride__logo" src="<?php echo esc_url( get_theme_file_uri( 'assets/images/far-inverted.svg' ) ); ?>" alt="FAR: Feierabend Runde Cape Town, upside down" width="690" height="112">
+<!-- /wp:html --><!-- wp:heading {"level":3,"className":"cc-ride__name"} -->
 <h3 class="wp-block-heading cc-ride__name">FAR Inverted</h3>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-ride__when"} -->
 <p class="cc-ride__when">Every Tuesday · 19 Jan → 9 Mar 2027</p>
