@@ -6,6 +6,8 @@ WordPress code for community-connect.cc.
 |---|---|
 | `cc-fleet/` | The CC Fleet plugin: bikes, riders, loans, calendar, request form, emails, bike pages. |
 | `community-connect/` | The block theme (Mobile 2027 design). Content and images are edited in Appearance → Editor. |
+| `community-connect/inc/shop/` | The shop (WooCommerce + Yoco): Standert-style shop and product pages, size pills, sponsorship amounts, cart drawer, checkout rules and the one-click store setup (WooCommerce → CC store setup). Only loads when WooCommerce is active. |
+| `community-connect/inc/legal/` | Imprint and privacy policy (created as drafts), the cookie notice and Google Analytics 4 (Settings → General → Measurement ID). |
 | `tools/landing/` | Source of the home-page fragments (`build.py` writes into `cc-fleet/`). |
 | `tools/theme/` | Generator for the theme's templates and patterns. |
 

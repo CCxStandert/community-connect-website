@@ -167,6 +167,8 @@
 					if (res.ok) {
 						var ok = form.querySelector('[data-cc-success]');
 						ok.textContent = res.body.message || 'Request sent.'; ok.hidden = false;
+						// For the site's analytics (theme): a bike request or a waiting-list place went in.
+						document.dispatchEvent(new CustomEvent('cc:bike_request', { detail: { bike: String(data.bike || '').toLowerCase() === 'any' ? 'any' : 'specific', waitlist: !!res.body.waitlist, event: !!data.event_id } }));
 						if (res.body.whatsapp && /^https:\/\/wa\.me\//.test(res.body.whatsapp)) {
 							var wa = document.createElement('a');
 							wa.className = 'cc-wa'; wa.href = res.body.whatsapp; wa.target = '_blank'; wa.rel = 'noopener';
