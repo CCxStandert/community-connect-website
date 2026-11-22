@@ -36,7 +36,15 @@ class CC_Fleet_Landing {
 			return '';
 		}
 		self::enqueue_components();
-		return '<div class="cc-part cc-part--' . esc_attr( $name ) . '">' . file_get_contents( $f ) . '</div>'; // phpcs:ignore
+		$html = (string) file_get_contents( $f ); // phpcs:ignore
+		if ( 'stats' === $name ) {
+			$st   = self::stats();
+			$html = preg_replace_callback( '/(<b id="(sLoans|sRiders|sEvents)">)[^<]*(<\/b>)/', function ( $m ) use ( $st ) {
+				$k = array( 'sLoans' => 'loans', 'sRiders' => 'riders', 'sEvents' => 'events' )[ $m[2] ];
+				return $m[1] . (int) $st[ $k ] . $m[3];
+			}, $html );
+		}
+		return '<div class="cc-part cc-part--' . esc_attr( $name ) . '">' . $html . '</div>';
 	}
 
 	/** Styles + script for the live parts, with their data. Safe to call more than once. */
@@ -136,18 +144,27 @@ class CC_Fleet_Landing {
 			'bikes' => $bikes, 'events' => $events, 'horizon' => CC_Fleet_Loans::horizon(), 'icon' => self::svg( 'icon' ),
 			'api' => esc_url_raw( rest_url( CC_Fleet_Rest::NS ) ), 'live' => true,
 			'img' => CC_FLEET_URL . 'assets/landing/img',
-			'stats' => self::stats( count( $events ) ),
+			'stats' => self::stats(),
 		);
 	}
 
-	/** The three numbers on the home page: loans this year, riders, events coming up. */
-	private static function stats( $events ) {
-		$y = wp_date( 'Y' );
+	/**
+	 * The three numbers on the home page, for the last 365 days (up to today):
+	 * loans that ran in that time, the Connectors who rode them, and the races and rides held.
+	 */
+	public static function stats() {
+		global $wpdb;
+		$to    = CC_Fleet_Settings::today();
+		$from  = wp_date( 'Y-m-d', strtotime( $to . ' -364 days' ) );
+		$loans = CC_Fleet_Loans::table();
+		$ok    = "status IN ('approved','out','returned') AND start_date <= %s AND end_date >= %s";
+		$ev    = CC_Fleet_Records::table( 'events' );
 		return array(
-			'year'   => $y,
-			'loans'  => CC_Fleet_Loans::count( array( 'status' => array( 'approved', 'out', 'returned' ), 'from' => $y . '-01-01', 'to' => $y . '-12-31' ) ),
-			'riders' => CC_Fleet_Riders::count(),
-			'events' => $events,
+			'year'   => wp_date( 'Y' ),
+			'from'   => $from,
+			'loans'  => (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $loans WHERE $ok", $to, $from ) ),
+			'riders' => (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT rider_id) FROM $loans WHERE rider_id > 0 AND $ok", $to, $from ) ),
+			'events' => (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $ev WHERE cancelled = 0 AND start_date <= %s AND COALESCE(end_date, start_date) >= %s", $to, $from ) ),
 		);
 	}
 
