@@ -70,6 +70,9 @@ class CC_Fleet_Install {
 				// this runs on plugins_loaded, so only leave a note and do it on init.
 				update_option( 'cc_fleet_install_landing', 1, false );
 			}
+			if ( $from && $from < 15 ) {
+				self::unquiet_running_imports();
+			}
 			if ( $from && $from < 8 ) {
 				CC_Fleet_Records::migrate_event_cats(); // Events: one type → several categories.
 			}
@@ -211,6 +214,25 @@ class CC_Fleet_Install {
 		}
 		self::log( 'riders', 0, 'phones', $changed . ' phone numbers rewritten in international format' );
 		return $changed;
+	}
+
+	/**
+	 * 0.19.1: imported loans that are still running were marked "reminder sent" with the old history,
+	 * so they got no return reminder and no crew check. Give them back, unless a reminder was logged.
+	 */
+	public static function unquiet_running_imports() {
+		global $wpdb;
+		$loans = CC_Fleet_Loans::table();
+		$log   = self::table( 'log' );
+		$n     = (int) $wpdb->query( $wpdb->prepare(
+			"UPDATE $loans l SET l.reminder_sent = 0, l.check_sent = 0 WHERE l.source = 'import' AND l.reminder_sent = 1 AND l.status IN ('approved','out') AND l.end_date >= %s
+			AND NOT EXISTS ( SELECT 1 FROM $log g WHERE g.object_type = 'loan' AND g.object_id = l.id AND ( g.action LIKE %s OR g.message LIKE %s ) )", // phpcs:ignore
+			CC_Fleet_Settings::today(), '%remind%', '%reminder%'
+		) );
+		if ( $n ) {
+			self::log( 'import', 0, 'reminders back', $n . ' running imported loans get their return reminder again.' );
+		}
+		return $n;
 	}
 
 	public static function log( $type, $id, $action, $message = '' ) {

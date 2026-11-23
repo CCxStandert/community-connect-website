@@ -124,8 +124,11 @@ class CC_Fleet_Import {
 				$res['errors'][] = 'Row ' . ( $i + 2 ) . ': ' . $id->get_error_message();
 				continue;
 			}
-			// History came from elsewhere: no automatic reminder emails for these.
-			$wpdb->update( CC_Fleet_Loans::table(), array( 'reminder_sent' => 1 ), array( 'id' => $id ) );
+			// History came from elsewhere: no automatic reminder emails for loans that are over.
+			// Loans still running keep theirs, like any other loan.
+			if ( ( $r['end_date'] ?? '' ) < CC_Fleet_Settings::today() ) {
+				$wpdb->update( CC_Fleet_Loans::table(), array( 'reminder_sent' => 1 ), array( 'id' => $id ) );
+			}
 			$res['created']++;
 		}
 		CC_Fleet_Install::log( 'import', 0, 'loans', wp_json_encode( array_diff_key( $res, array( 'errors' => 1 ) ) ) );
@@ -188,7 +191,7 @@ class CC_Fleet_Import {
 			}
 			$out['merged']++;
 		}
-		$out['quiet'] = (int) $wpdb->query( "UPDATE $loans SET reminder_sent = 1 WHERE source = 'import' AND reminder_sent = 0" );
+		$out['quiet'] = (int) $wpdb->query( $wpdb->prepare( "UPDATE $loans SET reminder_sent = 1 WHERE source = 'import' AND reminder_sent = 0 AND end_date < %s", CC_Fleet_Settings::today() ) ); // phpcs:ignore
 		CC_Fleet_Install::log( 'import', 0, 'tidy', wp_json_encode( $out ) );
 		return $out;
 	}

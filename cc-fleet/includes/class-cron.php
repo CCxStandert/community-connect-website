@@ -48,7 +48,8 @@ class CC_Fleet_Cron {
 		$days = max( 0, (int) CC_Fleet_Settings::get( 'reminder_days_before' ) );
 		$due  = CC_Fleet_Loans::add_days( $today, $days );
 		foreach ( CC_Fleet_Loans::query( array( 'status' => 'out', 'limit' => 500 ) ) as $l ) {
-			if ( ! $l->reminder_sent && $l->end_date === $due ) {
+			// Due on the reminder day, or a missed one (end date still to come): it goes out now.
+			if ( ! $l->reminder_sent && $l->end_date <= $due && $l->end_date >= $today ) {
 				if ( CC_Fleet_Emails::return_reminder( $l ) ) {
 					global $wpdb;
 					$wpdb->update( CC_Fleet_Loans::table(), array( 'reminder_sent' => 1 ), array( 'id' => $l->id ) );

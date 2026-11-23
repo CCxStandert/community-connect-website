@@ -56,6 +56,12 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.1: Return reminders for imported loans
+
+- The import marked every imported loan as already reminded, so riders still out on a bike never got their "due back" email. Now only loans that had already ended are quietened; a one-off migration un-quietens running ones that never had a reminder.
+- A reminder that was missed (e.g. the 07:00 run didn't happen) still goes out the next morning, as long as the bike isn't due back yet.
+- Dashboard: new "Due back soon" panel (today to two days ahead) with a "Send the reminder now" button.
+
 ## 0.19.0: Pick-up on the confirmation
 
 - The confirmation screen has a Pick-up box: from the rider before (name, until when, number for the crew), or at an address with a contact (name and number) and optional time. Saved on the loan and shown in the email’s details and first step.

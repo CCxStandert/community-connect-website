@@ -225,6 +225,7 @@ class CC_Fleet_Admin {
 		if ( class_exists( 'CC_Fleet_Records_Admin' ) ) {
 			CC_Fleet_Records_Admin::dashboard_panels();
 		}
+		self::due_back_panel( $out, $today );
 		echo '<h2>Overdue</h2>';
 		self::loan_rows( $overdue );
 		echo '<h2>Handoffs in the next 14 days</h2>';
@@ -234,6 +235,28 @@ class CC_Fleet_Admin {
 		printf( '<p class="cc-muted">Calendar feed for your phone: <code>%s</code> · <a href="%s">Run daily jobs now</a></p>',
 			esc_html( CC_Fleet_Ical::url() ), esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cc_fleet_run_daily' ), 'cc_fleet_run_daily' ) ) );
 		echo '</div>';
+	}
+
+	/** Bikes due back today, tomorrow or the day after, with whether the rider has been reminded. */
+	private static function due_back_panel( array $out, $today ) {
+		$soon = array_values( array_filter( $out, function ( $l ) use ( $today ) {
+			return $l->end_date >= $today && $l->end_date <= CC_Fleet_Loans::add_days( $today, 2 );
+		} ) );
+		if ( ! $soon ) {
+			return;
+		}
+		echo '<h2>Due back soon</h2><table class="widefat striped cc-due"><tbody>';
+		foreach ( $soon as $l ) {
+			$r    = CC_Fleet_Riders::get( $l->rider_id );
+			$gap  = (int) round( ( strtotime( $l->end_date ) - strtotime( $today ) ) / DAY_IN_SECONDS );
+			$when = 0 === $gap ? 'today' : ( 1 === $gap ? 'tomorrow' : CC_Fleet_Emails::nice_date( $l->end_date ) );
+			$wa   = $r && $r->phone ? ' · <a href="' . esc_url( CC_Fleet_Phone::wa_link( $r->phone ) ) . '" target="_blank" rel="noopener">WhatsApp</a>' : '';
+			$rem  = $l->reminder_sent ? '<span class="cc-ok">Reminder sent</span>' : '<a class="button button-primary button-small" href="' . esc_url( CC_Fleet_Outbox::prepare_url( $l->id ) ) . '">Send the reminder now</a>' . ( $gap > 0 ? ' <span class="cc-muted">or it goes out tomorrow at 07:00</span>' : '' );
+			printf( '<tr><td><a href="%s"><strong>%s</strong></a>%s</td><td>%s</td><td>Due back <strong>%s</strong></td><td>%s</td></tr>',
+				esc_url( self::url( 'cc-fleet-loan', array( 'id' => $l->id ) ) ), esc_html( $r->name ?? 'Rider' ), $wa, // phpcs:ignore
+				esc_html( CC_Fleet_Bikes::label( $l->bike_id ) ), esc_html( $when ), $rem ); // phpcs:ignore
+		}
+		echo '</tbody></table>';
 	}
 
 	/* ================= Calendar (fleet timeline) ================= */
