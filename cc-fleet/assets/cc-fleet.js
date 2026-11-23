@@ -255,3 +255,22 @@
 		new IntersectionObserver(function (es) { es.forEach(function (e) { bar.classList.toggle('is-away', e.isIntersecting); }); }, { rootMargin: '0px 0px -30% 0px' }).observe(area);
 	}
 })();
+
+/* Phone: a number typed or pasted with + or 00 picks its own country code. */
+(function () {
+	document.querySelectorAll('.cc-phone').forEach(function (box) {
+		var sel = box.querySelector('select'), inp = box.querySelector('input[type=tel]');
+		if (!sel || !inp) return;
+		var codes = {};
+		Array.prototype.forEach.call(sel.options, function (o) { if (o.value) codes[o.value] = true; });
+		inp.addEventListener('input', function () {
+			var v = inp.value.trim(), d = v.replace(/\D/g, '');
+			if (v.charAt(0) !== '+' && d.indexOf('00') !== 0) return;
+			if (d.indexOf('00') === 0) d = d.slice(2);
+			for (var n = 3; n >= 1; n--) {
+				var c = d.slice(0, n);
+				if (d.length > n && codes[c]) { if (sel.value !== c) sel.value = c; return; }
+			}
+		});
+	});
+})();

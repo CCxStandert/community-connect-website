@@ -168,9 +168,9 @@ class CC_Fleet_Frontend {
 				<label for="<?php echo esc_attr( $uid ); ?>-cc"><span>WhatsApp number <span class="cc-req" aria-hidden="true">*</span></span></label>
 				<div class="cc-phone">
 					<?php echo CC_Fleet_Phone::select( 'phone_cc', '27', 'id="' . esc_attr( $uid ) . '-cc" aria-label="Country code" autocomplete="tel-country-code"' ); // phpcs:ignore ?>
-					<input type="tel" name="phone" autocomplete="tel-national" inputmode="tel" placeholder="82 123 4567" required aria-required="true" aria-label="Phone number">
+					<input type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="82 123 4567" required aria-required="true" aria-label="Phone number">
 				</div>
-				<small class="cc-hint">We arrange handoffs on WhatsApp, so use the number that has it.</small>
+				<small class="cc-hint">We arrange handoffs on WhatsApp, so use the number that has it. From abroad? Pick your country, or type the full number starting with +.</small>
 			</div>
 			<p class="cc-error" data-cc-error="phone" hidden></p>
 			<label class="cc-field"><span>Instagram <span class="cc-req" aria-hidden="true">*</span></span><input type="text" name="instagram" placeholder="@yourname, or none" autocapitalize="off" required aria-required="true"></label>
