@@ -56,6 +56,10 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.2: Reminders in the loan history
+
+- The daily return reminder now shows in the loan's History ("email sent reminder"), so you can see when it went out.
+
 ## 0.19.1: Return reminders for imported loans
 
 - The import marked every imported loan as already reminded, so riders still out on a bike never got their "due back" email. Now only loans that had already ended are quietened; a one-off migration un-quietens running ones that never had a reminder.

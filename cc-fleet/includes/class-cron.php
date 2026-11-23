@@ -54,6 +54,7 @@ class CC_Fleet_Cron {
 					global $wpdb;
 					$wpdb->update( CC_Fleet_Loans::table(), array( 'reminder_sent' => 1 ), array( 'id' => $l->id ) );
 					$summary['reminders']++;
+					CC_Fleet_Install::log( 'loan', $l->id, 'email sent', 'reminder' );
 				}
 			}
 		}
