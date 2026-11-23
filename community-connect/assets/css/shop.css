@@ -45,6 +45,13 @@
 .cc-badge { position: absolute; top: 10px; left: 10px; z-index: 1; padding: 5px 10px; border-radius: 999px; background: var(--pink, #FFB1EC); color: var(--ink, #141217); font: 700 12px/1 'Inter Tight', sans-serif; letter-spacing: .02em; }
 .cc-badge--inline { position: static; display: inline-block; }
 .cc-preorder-note { margin: 0; padding: 12px 14px; background: var(--cc-shop-tile); font-size: 14.5px; line-height: 1.4; }
+/* Cards in a row share one set of rows (name, picture, price), so pictures and prices line up. */
+@supports (grid-template-rows: subgrid) {
+	.cc-grid { row-gap: 0; }
+	.cc-grid > li { display: grid; grid-row: span 3; grid-template-rows: subgrid; }
+	.cc-card { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; height: auto; }
+	.cc-card__foot { margin-top: 0; align-self: end; }
+}
 .cc-card__ph { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: var(--cc-shop-tile); font-family: 'Reenie Beanie', cursive; font-size: 26px; }
 .cc-card__foot { margin-top: auto; display: flex; flex-direction: column; gap: 14px; }
 .cc-card__price { display: flex; flex-direction: column; font-size: 16px; }
