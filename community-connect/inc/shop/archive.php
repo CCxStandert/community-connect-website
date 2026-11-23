@@ -74,7 +74,7 @@ function cc_shop_render() {
 /** One product tile: name and subtitle lines on top, the photo, then price and sizes. */
 function cc_shop_card( WC_Product $p ) {
 	$url     = get_permalink( $p->get_id() );
-	$img     = $p->get_image_id();
+	$img     = $p->get_image_id() ?: ( $p->get_gallery_image_ids()[0] ?? 0 ); // a photo added only to the gallery still shows
 	$sponsor = cc_is_sponsorship( $p );
 	$sizes   = cc_size_states( $p );
 	$lines   = cc_product_subtitle_lines( $p );
