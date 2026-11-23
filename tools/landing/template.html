@@ -266,6 +266,8 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 
 /* On Instagram: same width and edges as the other boxes (terms, stats, deal) */.cc-part--ig .iggrid{max-width:1280px;margin:0 auto 28px;border-left:0;border-top:var(--line)}.cc-part--ig .iggrid>li:nth-child(2n){border-right:0}@media(min-width:760px){.cc-part--ig .iggrid{margin-inline:auto}.cc-part--ig .iggrid>li:nth-child(2n){border-right:var(--line)}.cc-part--ig .iggrid>li:nth-child(4n),.cc-part--ig .iggrid>li:last-child{border-right:0}}@media(min-width:980px){.cc-part--ig .iggrid{margin-inline:auto}}@media(min-width:1281px){.cc-part--ig .iggrid{border-left:var(--line);border-right:var(--line)}}@media(min-width:1360px){.cc-part--ig .iggrid{max-width:1280px}}
 .ev__desc{max-width:64ch;margin:10px 0 4px}.ev__desc p{margin:0 0 8px;font-size:14px;line-height:1.45}.ev__desc+ol{margin-top:12px}.ev__more[open]>summary{margin-bottom:2px}
+
+/* Mobile: category pills sit under the event name instead of squeezing it */@media(max-width:759px){.ev{grid-template-columns:96px minmax(0,1fr);align-items:start}.ev>time,.ev>.when{padding-top:3px}.ev .sts{grid-row:auto;grid-column:2;justify-content:flex-start;margin-top:4px}}
 </style>
 </head>
 <body class="cc-landing">
