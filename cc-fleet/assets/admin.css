@@ -141,3 +141,6 @@
 .cc-dates-box__row input[type=date]{min-width:150px}
 .cc-dates-box__f{font-size:12.5px}
 .cc-dates-box__f:last-child{margin-bottom:0}
+.cc-pick label input[type=radio]{margin-right:4px}
+.cc-pick .cc-grow{flex:1 1 260px}
+.cc-pick__addr{margin-left:24px}

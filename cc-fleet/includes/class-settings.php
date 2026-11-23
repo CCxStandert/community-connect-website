@@ -29,6 +29,8 @@ class CC_Fleet_Settings {
 			'race_terms'           => 'Racing is harder on a bike than riding. Any damage that happens while racing, crashes included, is yours to cover: we get it fixed at Woodstock Cycleworks and share the invoice, no markup.',
 			'handoff_notes'        => '',      // Shown in the confirmation email, e.g. the pedals rule.
 			'dropoff_place'        => '',      // Where bikes go back when no next rider is waiting.
+			'base_address'         => '22 Hilyard Street, Woodstock, 7925', // Our base: default pick-up when nobody has the bike before.
+			'base_contact'         => '',      // Who to call at the base, e.g. “Julian · +27 76 223 0218”.
 			'instagram_handle'     => 'cc_x_standert',
 			'whatsapp_number'      => '',      // The crew's WhatsApp, +27…; riders confirm their number by messaging it.
 			'email_style'          => 'html',  // html or text.

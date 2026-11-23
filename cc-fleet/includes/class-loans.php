@@ -323,7 +323,7 @@ class CC_Fleet_Loans {
 		if ( ! $loan ) {
 			return new WP_Error( 'cc_missing', 'Loan not found.' );
 		}
-		$fields = array_intersect_key( $data, array_flip( array( 'bike_id', 'rider_id', 'start_date', 'end_date', 'plan', 'notes', 'handoff_from', 'requested_size', 'event_id', 'handoff_place', 'handoff_time', 'handoff_note', 'race' ) ) );
+		$fields = array_intersect_key( $data, array_flip( array( 'bike_id', 'rider_id', 'start_date', 'end_date', 'plan', 'notes', 'handoff_from', 'requested_size', 'event_id', 'handoff_place', 'handoff_time', 'handoff_note', 'race', 'pickup_mode', 'pickup_place', 'pickup_contact', 'pickup_time' ) ) );
 		$merged = (object) array_merge( (array) $loan, $fields );
 		$valid  = self::validate_range( $merged->start_date, $merged->end_date, false );
 		if ( is_wp_error( $valid ) ) {
@@ -479,6 +479,32 @@ class CC_Fleet_Loans {
 			'SELECT * FROM ' . self::table() . " WHERE bike_id = %d AND id <> %d AND status IN ('approved','out') AND end_date <= %s AND end_date >= %s ORDER BY end_date DESC LIMIT 1",
 			$loan->bike_id, $loan->id, $loan->start_date, self::add_days( $loan->start_date, -self::handoff_window() )
 		) );
+	}
+
+	/**
+	 * Where this rider collects the bike: from the rider before ('rider') or at an address ('address').
+	 * Saved choices win; otherwise the rider before if there is one, and our base when the loan starts
+	 * more than 7 days out with nobody before.
+	 */
+	public static function pickup( $loan ) {
+		$prev  = $loan->bike_id ? self::previous_loan( $loan ) : null;
+		$base  = (string) CC_Fleet_Settings::get( 'base_address' );
+		$mode  = (string) ( $loan->pickup_mode ?? '' );
+		if ( 'rider' === $mode && ! $prev ) {
+			$mode = '';
+		}
+		if ( '' === $mode ) {
+			$far   = $loan->start_date > self::add_days( CC_Fleet_Settings::today(), 7 );
+			$place = $prev ? '' : ( $far ? $base : '' );
+			return array(
+				'mode' => $prev ? 'rider' : 'address', 'place' => $place, 'contact' => $place && $place === $base ? (string) CC_Fleet_Settings::get( 'base_contact' ) : '',
+				'time' => '', 'prev' => $prev, 'saved' => false,
+			);
+		}
+		return array(
+			'mode' => $mode, 'place' => (string) $loan->pickup_place, 'contact' => (string) $loan->pickup_contact,
+			'time' => (string) $loan->pickup_time, 'prev' => $prev, 'saved' => true,
+		);
 	}
 
 	/** The loan this one hands the bike to: the next loan on the same bike starting soon after it ends. */

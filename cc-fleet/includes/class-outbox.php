@@ -229,6 +229,7 @@ class CC_Fleet_Outbox {
 				esc_attr( $loan->start_date ), esc_attr( CC_Fleet_Settings::today() ), esc_attr( $loan->end_date ), esc_attr( CC_Fleet_Settings::today() ) );
 			echo '<p class="cc-dates-box__f"><label><input type="checkbox" name="force" value="1"> Save even if it overlaps another loan</label></p>';
 			echo '<p class="cc-muted cc-dates-box__f">The loan, the calendar and the email’s details, calendar link and return date all follow. Your changes to the text below are kept.</p></div>';
+			self::pickup_box( $loan );
 		}
 		printf( '<p><label>To<br><input type="email" name="to_email" value="%s" class="widefat" required %s></label></p>', esc_attr( $row->to_email ), $open ? '' : 'disabled' );
 		printf( '<p><label>Subject<br><input type="text" name="subject" value="%s" class="widefat" required %s></label></p>', esc_attr( $row->subject ), $open ? '' : 'disabled' );
@@ -277,7 +278,17 @@ class CC_Fleet_Outbox {
 			'to_email' => $to, 'subject' => sanitize_text_field( $in['subject'] ?? $row->subject ) ?: $row->subject,
 			'msg' => wp_json_encode( $msg ), 'updated_at' => current_time( 'mysql' ),
 		), array( 'id' => $id ) );
-		$row = self::get( $id );
+		$row      = self::get( $id );
+		$pick_err = self::save_pickup( $row, $in );
+		if ( 'approved' === $row->type && $row->loan_id && isset( $in['pickup_mode'] ) ) {
+			$wpdb->update( self::table(), array( 'msg' => wp_json_encode( self::rebuild_confirmed( $row ) ) ), array( 'id' => $id ) );
+			$row = self::get( $id );
+		}
+		if ( $pick_err && 'send' === $op ) {
+			self::notice( $pick_err, 'error' );
+			wp_safe_redirect( self::compose_url( $id, $back ) );
+			exit;
+		}
 		switch ( $op ) {
 			case 'dates':
 				self::change_dates( $row, $in, $back );
@@ -311,6 +322,62 @@ class CC_Fleet_Outbox {
 				wp_safe_redirect( self::compose_url( $id, $back ) );
 				exit;
 		}
+	}
+
+	/** Pick-up for a confirmation: from the rider before, or at an address with a contact. */
+	private static function pickup_box( $loan ) {
+		$p    = CC_Fleet_Loans::pickup( $loan );
+		$prev = $p['prev'];
+		$pr   = $prev ? CC_Fleet_Riders::get( $prev->rider_id ) : null;
+		$base = (string) CC_Fleet_Settings::get( 'base_address' );
+		echo '<div class="cc-dates-box cc-pick"><p class="cc-dates-box__h"><strong>Pick-up</strong> <span class="cc-muted">· where the rider collects the bike' . ( $p['saved'] ? '' : ' (suggested, check it)' ) . '</span></p>';
+		if ( $prev ) {
+			printf( '<p><label><input type="radio" name="pickup_mode" value="rider" %s> From the rider before: <strong>%s</strong>, who has it until %s%s</label></p>',
+				checked( 'rider', $p['mode'], false ), esc_html( $pr->name ?? 'another rider' ), esc_html( CC_Fleet_Emails::nice_date( $prev->end_date ) ),
+				$pr && $pr->phone ? ' · ' . esc_html( $pr->phone ) : '' );
+		}
+		printf( '<p><label><input type="radio" name="pickup_mode" value="address" %s> At an address</label></p>', checked( 'address', $p['mode'], false ) );
+		printf( '<div class="cc-pick__addr"><p class="cc-dates-box__row"><label class="cc-grow">Address<br><input type="text" name="pickup_place" value="%s" class="widefat" placeholder="%s" list="cc-pick-places"></label></p>', esc_attr( $p['place'] ), esc_attr( $base ?: 'Street, suburb, postcode' ) );
+		echo '<datalist id="cc-pick-places">' . ( $base ? '<option value="' . esc_attr( $base ) . '">' : '' ) . '</datalist>';
+		printf( '<p class="cc-dates-box__row"><label class="cc-grow">Contact (name and number)<br><input type="text" name="pickup_contact" value="%s" class="widefat" placeholder="e.g. Julian · +27 76 223 0218"></label> <label>When (optional)<br><input type="text" name="pickup_time" value="%s" placeholder="e.g. Sat 9 Jan, 8:00"></label></p></div>', esc_attr( $p['contact'] ), esc_attr( $p['time'] ) );
+		echo '<p class="cc-muted cc-dates-box__f">Saved with “Update preview” or when you send.' . ( $base ? ' Our base: ' . esc_html( $base ) . '.' : '' ) . '</p></div>';
+	}
+
+	/**
+	 * The confirmation rebuilt from the loan as it is now, keeping the crew's text
+	 * (headline, line under it, paragraphs) and the pink note.
+	 */
+	private static function rebuild_confirmed( $row, $note = null ) {
+		$loan  = CC_Fleet_Loans::get( $row->loan_id );
+		$new   = CC_Fleet_Emails::build_confirmed( $loan );
+		$old_t = array_values( self::text_blocks( $row->msg ) );
+		$new_i = array_keys( self::text_blocks( $new ) );
+		if ( count( $old_t ) === count( $new_i ) ) {
+			foreach ( $new_i as $k => $i ) {
+				$new['blocks'][ $i ][1] = $old_t[ $k ][1];
+			}
+		}
+		$new['headline'] = $row->msg['headline'] ?? $new['headline'];
+		$new['subline']  = $row->msg['subline'] ?? $new['subline'];
+		$new             = self::apply_edits( $new, array( 'note' => null === $note ? self::current_note( $row->msg ) : $note ) );
+		if ( ! empty( $row->msg['_asked'] ) ) {
+			$new['_asked'] = $row->msg['_asked'];
+		}
+		return $new;
+	}
+
+	/** Saves the pick-up from the form onto the loan. Returns an error text, or ''. */
+	private static function save_pickup( $row, array $in ) {
+		if ( 'approved' !== $row->type || ! $row->loan_id || ! isset( $in['pickup_mode'] ) ) {
+			return '';
+		}
+		$mode = 'rider' === $in['pickup_mode'] ? 'rider' : 'address';
+		$data = array(
+			'pickup_mode' => $mode, 'pickup_place' => sanitize_text_field( $in['pickup_place'] ?? '' ),
+			'pickup_contact' => sanitize_text_field( $in['pickup_contact'] ?? '' ), 'pickup_time' => sanitize_text_field( $in['pickup_time'] ?? '' ),
+		);
+		CC_Fleet_Loans::update( $row->loan_id, $data, true );
+		return 'address' === $mode && '' === $data['pickup_place'] ? 'Fill in the pick-up address (or choose the rider before) before you send.' : '';
 	}
 
 	/**
@@ -347,24 +414,12 @@ class CC_Fleet_Outbox {
 		}
 		CC_Fleet_Install::log( 'loan', $loan->id, 'dates', sprintf( 'Confirmed for %s → %s (asked %s → %s)', $start, $end, $loan->start_date, $loan->end_date ) );
 		$asked = $row->msg['_asked'] ?? array( $loan->start_date, $loan->end_date );
-		$fresh = CC_Fleet_Loans::get( $loan->id );
-		$new   = CC_Fleet_Emails::build_confirmed( $fresh );
-		// Carry the crew's wording over, paragraph by paragraph.
-		$old_t = array_values( self::text_blocks( $row->msg ) );
-		$new_i = array_keys( self::text_blocks( $new ) );
-		if ( count( $old_t ) === count( $new_i ) ) {
-			foreach ( $new_i as $k => $i ) {
-				$new['blocks'][ $i ][1] = $old_t[ $k ][1];
-			}
-		}
-		$new['headline'] = $row->msg['headline'] ?? $new['headline'];
-		$new['subline']  = $row->msg['subline'] ?? $new['subline'];
-		$note            = self::current_note( $row->msg );
-		$shorter         = $start > $asked[0] || $end < $asked[1];
+		$note    = self::current_note( $row->msg );
+		$shorter = $start > $asked[0] || $end < $asked[1];
 		if ( '' === $note && $shorter ) {
 			$note = sprintf( 'Heads-up: we can confirm the bike for %s, not the whole time you asked for. If that doesn’t work for you, just reply.', CC_Fleet_Emails::nice_date( $start ) . ' → ' . CC_Fleet_Emails::nice_date( $end ) );
 		}
-		$new           = self::apply_edits( $new, array( 'note' => $note ) );
+		$new = self::rebuild_confirmed( $row, $note );
 		$new['_asked'] = $asked;
 		$wpdb->update( self::table(), array( 'msg' => wp_json_encode( $new ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => (int) $row->id ) );
 		self::notice( sprintf( 'Dates changed to %s → %s. The email below now shows them%s. Nothing sent yet.', esc_html( CC_Fleet_Emails::nice_date( $start ) ), esc_html( CC_Fleet_Emails::nice_date( $end ) ), $shorter && '' === self::current_note( $row->msg ) ? ', with a note in the pink box (change or delete it)' : '' ), 'success' );

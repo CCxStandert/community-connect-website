@@ -203,7 +203,8 @@ class CC_Fleet_Emails {
 	public static function build_confirmed( $loan, $old = '' ) {
 		$rider = CC_Fleet_Riders::get( $loan->rider_id );
 		$name  = $rider ? self::first_name( $rider->name ) : '';
-		$prev  = CC_Fleet_Loans::previous_loan( $loan );
+		$pick  = CC_Fleet_Loans::pickup( $loan );
+		$prev  = 'rider' === $pick['mode'] ? $pick['prev'] : null;
 		$from  = '';
 		if ( $prev ) {
 			$p    = CC_Fleet_Riders::get( $prev->rider_id );
@@ -218,6 +219,7 @@ class CC_Fleet_Emails {
 			'race' => ! empty( $loan->race ) ? CC_Fleet_Settings::get( 'race_terms' ) : '', 'event' => self::event_name( $loan ),
 			'pressure' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::line_for_loan( $loan ) : '', 'pressure_note' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::advice( $loan ) : '',
 			'wl' => 'offered' === $old, 'cancel' => CC_Fleet_Waitlist::url( $loan, 'cancel' ),
+			'pick_place' => 'address' === $pick['mode'] ? $pick['place'] : '', 'pick_contact' => 'address' === $pick['mode'] ? $pick['contact'] : '', 'pick_time' => 'address' === $pick['mode'] ? $pick['time'] : '',
 		) );
 	}
 
@@ -329,7 +331,7 @@ class CC_Fleet_Emails {
 			'msg'     => self::msg_reminder( array(
 				'name' => self::first_name( $rider->name ), 'bike' => self::bike_name( $loan ), 'cc' => self::bike_short( $loan ) ?: 'The bike',
 				'due' => self::nice_date( $loan->end_date ), 'next' => $nr ? self::first_name( $nr->name ) : '',
-				'when' => 1 === $gap ? 'tomorrow' : ( 0 === $gap ? 'today' : 'on ' . self::short_date( $loan->end_date ) ), 'dropoff' => CC_Fleet_Settings::get( 'dropoff_place' ),
+				'when' => 1 === $gap ? 'tomorrow' : ( 0 === $gap ? 'today' : 'on ' . self::short_date( $loan->end_date ) ), 'dropoff' => CC_Fleet_Settings::get( 'dropoff_place' ) ?: CC_Fleet_Settings::get( 'base_address' ),
 				'place' => $loan->handoff_place ?? '', 'time' => $loan->handoff_time ?? '', 'hnote' => $loan->handoff_note ?? '',
 				'report' => self::crew_mailto( 'Problem with ' . self::bike_name( $loan ) ), 'extend' => self::crew_mailto( 'One more day with ' . self::bike_name( $loan ) ),
 			) ),
@@ -374,7 +376,7 @@ class CC_Fleet_Emails {
 				'time'      => trim( (string) ( $l->handoff_time ?? '' ) ),
 				'note'      => trim( (string) ( $l->handoff_note ?? '' ) ),
 				'pressure'  => $next && class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::line_for_loan( $next ) : '',
-				'dropoff'   => CC_Fleet_Settings::get( 'dropoff_place' ),
+				'dropoff'   => CC_Fleet_Settings::get( 'dropoff_place' ) ?: CC_Fleet_Settings::get( 'base_address' ),
 				'edited'    => class_exists( 'CC_Fleet_Outbox' ) && CC_Fleet_Outbox::scheduled( $l->id ),
 				'edit'      => admin_url( 'admin.php?page=cc-fleet-loan&id=' . $l->id . '#handoff' ),
 			);
@@ -726,15 +728,20 @@ class CC_Fleet_Emails {
 	}
 
 	public static function msg_confirmed( $f ) {
+		$pick_at = ! $f['from'] && ! empty( $f['pick_place'] );
 		$handoff = $f['from'] ? array(
 			'We’ll put you and ' . $f['from_first'] . ' in touch on WhatsApp to agree a time.',
 			'Check tyres, brakes and gears together at the handoff.',
+			'Wash it before you pass it on. The next rider will thank you.',
+		) : ( $pick_at ? array(
+			'Collect it at ' . $f['pick_place'] . ( ! empty( $f['pick_time'] ) ? ', ' . $f['pick_time'] . '.' : '.' ) . ( ! empty( $f['pick_contact'] ) ? ' ' . ( ! empty( $f['pick_time'] ) ? 'Running late? Message ' : 'Message ' ) . $f['pick_contact'] . ( ! empty( $f['pick_time'] ) ? '.' : ' to agree a time.' ) : ( ! empty( $f['pick_time'] ) ? '' : ' We’ll message you on WhatsApp to agree a time.' ) ),
+			'Check tyres, brakes and gears when you collect it.',
 			'Wash it before you pass it on. The next rider will thank you.',
 		) : array(
 			'We’ll be in touch on WhatsApp to agree where and when you collect it.',
 			'Check tyres, brakes and gears when you collect it.',
 			'Wash it before you pass it on. The next rider will thank you.',
-		);
+		) );
 		$note = array();
 		if ( $f['handoff_notes'] ) {
 			$note[] = $f['handoff_notes'];
@@ -748,8 +755,12 @@ class CC_Fleet_Emails {
 		}
 		$blocks[] = array( 'p', "Hi {$f['name']}," . ( ! empty( $f['wl'] ) ? "\n\nGood things come to those who wait. Here's your bike." : '' ) );
 		$blocks[] = array( 'details', 'Your loan', array(
-			array( 'Bike', $f['bike'] ), array( 'Dates', $f['dates'] ), array( 'Pick-up', $f['from'] ? 'From ' . $f['from'] : 'From the crew' ), array( 'Return', $f['return'] ),
+			array( 'Bike', $f['bike'] ), array( 'Dates', $f['dates'] ), array( 'Pick-up', $f['from'] ? 'From ' . $f['from'] : ( $pick_at ? $f['pick_place'] . ( ! empty( $f['pick_time'] ) ? ' · ' . $f['pick_time'] : '' ) : 'From the crew' ) ),
 		) );
+		if ( $pick_at && ! empty( $f['pick_contact'] ) ) {
+			$blocks[ count( $blocks ) - 1 ][2][] = array( 'Contact', $f['pick_contact'] );
+		}
+		$blocks[ count( $blocks ) - 1 ][2][] = array( 'Return', $f['return'] );
 		$where = trim( ( $f['place'] ?? '' ) . ( ! empty( $f['time'] ) ? ' · ' . $f['time'] : '' ), ' ·' );
 		if ( $where ) {
 			$blocks[ count( $blocks ) - 1 ][2][] = array( 'Handoff', $where );

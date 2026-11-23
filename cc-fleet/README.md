@@ -56,6 +56,12 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.0: Pick-up on the confirmation
+
+- The confirmation screen has a Pick-up box: from the rider before (name, until when, number for the crew), or at an address with a contact (name and number) and optional time. Saved on the loan and shown in the email’s details and first step.
+- Suggested: the rider before when there is one; our base (Settings: “Our base”, default 22 Hilyard Street, Woodstock, 7925) when the loan starts more than 7 days out and nobody has the bike before. Sending with an empty address is stopped.
+- Return reminders use our base when no drop-off place is set.
+
 ## 0.18.0: Confirm other dates
 
 - The “Email to the rider” screen for a confirmation has a Dates box: confirm fewer (or other) days than the rider asked for. The loan and calendar update (with the usual clash and free-day checks), the email’s details, calendar link and return date follow, the crew’s text is kept, and when it’s shorter a note in the pink box says so (editable).
