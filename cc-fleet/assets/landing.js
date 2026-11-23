@@ -231,10 +231,35 @@ const seriesRow = (g) => {
 };
 if ($('evList')) {
   const list = $('evList');
-  list.innerHTML = EVENTS.length ? groupSeries(EVENTS).map((x) => (x.series ? seriesRow(x) : evRow(x))).join('') : '<li class="ev"><div><b>Nothing on the calendar right now.</b><small>Follow along on Instagram.</small></div></li>';
+  // Soonest first (a series by its first date); events without a fixed date go last.
+  const startOf = (x) => (x.series ? x.items[0].start : (x.when ? '9999' : x.start)) || '9999';
+  const rows = groupSeries(EVENTS).sort((p, q) => startOf(p).localeCompare(startOf(q)));
+  list.innerHTML = EVENTS.length ? rows.map((x) => (x.series ? seriesRow(x) : evRow(x))).join('') : '<li class="ev"><div><b>Nothing on the calendar right now.</b><small>Follow along on Instagram.</small></div></li>';
   // Filter buttons for the categories that actually occur.
   const FILTERS = [['all', 'All'], ['group', 'Group rides'], ['race', 'Races'], ['social', 'Social rides'], ['overnight', 'Overnight bikepacking'], ['bikepacking', 'Bikepacking trips'], ['getaway', 'Getaways']]
     .filter(([k]) => k === 'all' || EVENTS.some((e) => catsOf(e).includes(k)));
+  // Only the next 5 show; the rest fold out under one button.
+  const SHOW = 5;
+  let filter = 'all', open = false;
+  const more = document.createElement('button');
+  more.type = 'button'; more.className = 'evs__more max'; more.setAttribute('aria-expanded', 'false');
+  list.after(more);
+  const refresh = () => {
+    let n = 0;
+    list.querySelectorAll('.ev').forEach((li) => {
+      const match = filter === 'all' || (li.dataset.cats || '').split(' ').includes(filter);
+      if (match) n++;
+      li.hidden = !match || (!open && n > SHOW);
+    });
+    more.hidden = n <= SHOW;
+    more.textContent = open ? 'Show fewer' : `Show all ${n} events`;
+    more.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  more.addEventListener('click', () => {
+    open = !open; refresh();
+    if (!open) list.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+  refresh();
   if (FILTERS.length > 2) {
     const bar = document.createElement('div');
     bar.className = 'chips evchips max'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Filter events');
@@ -243,7 +268,7 @@ if ($('evList')) {
     bar.addEventListener('click', (ev) => {
       const b = ev.target.closest('button'); if (!b) return;
       bar.querySelectorAll('button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
-      list.querySelectorAll('.ev').forEach((li) => { li.hidden = b.dataset.k !== 'all' && !(li.dataset.cats || '').split(' ').includes(b.dataset.k); });
+      filter = b.dataset.k; open = false; refresh();
     });
   }
 }

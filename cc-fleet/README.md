@@ -56,6 +56,10 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.3: Next 5 events
+
+- The events list shows the next 5 by date; "Show all N events" folds out the rest. Works with the category filters.
+
 ## 0.19.2: Reminders in the loan history
 
 - The daily return reminder now shows in the loan's History ("email sent reminder"), so you can see when it went out.

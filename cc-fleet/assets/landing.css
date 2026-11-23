@@ -270,3 +270,12 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 /* Event descriptions fold out */.ev__desc{max-width:64ch;margin:10px 0 4px}.ev__desc p{margin:0 0 8px;font-size:14px;line-height:1.45}.ev__desc+ol{margin-top:12px}.ev__more[open]>summary{margin-bottom:2px}
 
 /* Mobile: category pills sit under the event name instead of squeezing it */@media(max-width:759px){.ev{grid-template-columns:96px minmax(0,1fr);align-items:start}.ev>time,.ev>.when{padding-top:3px}.ev .sts{grid-row:auto;grid-column:2;justify-content:flex-start;margin-top:4px}}
+
+/* Events: the next 5, the rest behind one fold-out button (same look as the agreement fold-outs) */
+.evs__more{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:54px;padding:0 16px;border:0;border-bottom:var(--line);background:none;color:var(--ink);font:700 16px/1.2 'Inter Tight',sans-serif;letter-spacing:-.02em;text-align:left;cursor:pointer;box-sizing:border-box}
+.evs__more::after{content:'+';font-size:24px;font-weight:400}
+.evs__more[aria-expanded=true]::after{content:'\2212'}
+.evs__more[hidden]{display:none}
+.evs__more:hover{background:var(--cream)}
+@media(min-width:980px){.evs__more{padding-inline:40px}}
+@media(min-width:1281px){.evs__more.max{border-left:var(--line);border-right:var(--line)}}
