@@ -59,7 +59,7 @@ function cc_legal_create_pages() {
 /** Footer: links to the published legal pages, plus "Cookie preferences" when analytics is set up. */
 add_shortcode( 'cc_legal_links', function () {
 	$links = array();
-	foreach ( array( 'imprint' => 'Imprint', 'privacy-policy' => 'Privacy', 'terms' => 'Shop terms' ) as $slug => $label ) {
+	foreach ( array( 'imprint' => 'Imprint', 'privacy-policy' => 'Privacy', 'terms' => 'Shop terms', 'returns' => 'Returns' ) as $slug => $label ) {
 		$page = get_page_by_path( $slug );
 		if ( $page && 'publish' === $page->post_status ) {
 			$links[] = '<a href="' . esc_url( get_permalink( $page ) ) . '">' . esc_html( $label ) . '</a>';
