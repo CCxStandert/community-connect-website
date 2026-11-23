@@ -307,3 +307,12 @@ footer.foot .fine { text-align: center; font-size: 14px; margin: 0 0 12px; }
 	.cc-landing .cc-cycle-back::after { content: '↑'; position: absolute; top: -2px; left: calc(100% / 12); transform: translateX(-50%); width: 22px; height: 22px; border-radius: 50%; background: var(--wp--preset--color--pink); border: 1.5px solid var(--wp--preset--color--ink); display: flex; align-items: center; justify-content: center; font: 700 12px/1 'Inter Tight', sans-serif; }
 }
 @media (min-width: 1281px) { .cc-landing .cc-cycle-back.max { border-left: 1.5px solid var(--wp--preset--color--ink); border-right: 1.5px solid var(--wp--preset--color--ink); } }
+
+/* Our story page: built from the home page parts; only spacing is added here. */
+.cc-story-end { padding-bottom: 8px; }
+.cc-story-credit { padding-top: 22px; padding-bottom: 40px; }
+.cc-story-credit a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.cc-story-end .sub { max-width: 60ch; }
+@media (min-width: 980px) { .cc-story-credit { padding-top: 28px; padding-bottom: 64px; } }
+.cc-landing .cc-ride > p:not([class]) + p:not([class]) { margin-top: 12px !important; }
+.cc-landing .cc-ride > p:not([class]):has(+ .cc-ride__more) { margin-bottom: 18px !important; }
