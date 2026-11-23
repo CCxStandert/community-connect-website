@@ -14,6 +14,35 @@ class CC_Fleet_Crew {
 		add_filter( 'user_row_actions', array( __CLASS__, 'row_action' ), 10, 2 );
 		add_action( 'admin_post_cc_fleet_crew_invite', array( __CLASS__, 'handle' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'notice' ) );
+
+		// WooCommerce keeps users without edit_posts out of wp-admin (sends them to My account) and hides
+		// the admin bar. Fleet Managers need the dashboard, so let them in and land them on the Fleet Manager.
+		add_filter( 'woocommerce_prevent_admin_access', function ( $prevent ) {
+			return self::current_is_crew() ? false : $prevent;
+		} );
+		add_filter( 'woocommerce_disable_admin_bar', function ( $disable ) {
+			return self::current_is_crew() ? false : $disable;
+		} );
+		add_filter( 'woocommerce_login_redirect', array( __CLASS__, 'login_redirect' ), 20, 2 );
+		add_filter( 'login_redirect', function ( $to, $requested, $user ) {
+			return $user instanceof WP_User ? self::login_redirect( $to, $user ) : $to;
+		}, 20, 3 );
+	}
+
+	private static function current_is_crew() {
+		$u = wp_get_current_user();
+		return $u && $u->exists() && self::is_crew( $u );
+	}
+
+	/** Crew go straight to the Fleet Manager after logging in (also from the shop's My account login). */
+	public static function login_redirect( $to, $user ) {
+		if ( $user instanceof WP_User && self::is_crew( $user ) ) {
+			$path = (string) wp_parse_url( (string) $to, PHP_URL_PATH );
+			if ( '' === $to || false === strpos( $path, '/wp-admin' ) || preg_match( '#/wp-admin/?(index\.php|profile\.php)?$#', $path ) ) {
+				return admin_url( 'admin.php?page=cc-fleet' );
+			}
+		}
+		return $to;
 	}
 
 	public static function is_crew( WP_User $u ) {

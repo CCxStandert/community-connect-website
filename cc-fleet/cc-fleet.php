@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       CC Fleet
  * Description:       Community Connect fleet backend: bikes, riders, loans, availability calendar, request form, workshop log, stock, events calendar, notes, emails and calendar feeds.
- * Version:           0.17.5
+ * Version:           0.17.6
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Community Connect NPC
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CC_FLEET_VERSION', '0.17.5' );
+define( 'CC_FLEET_VERSION', '0.17.6' );
 define( 'CC_FLEET_DB_VERSION', '13' );
 define( 'CC_FLEET_FILE', __FILE__ );
 define( 'CC_FLEET_DIR', plugin_dir_path( __FILE__ ) );
@@ -44,8 +44,8 @@ require_once CC_FLEET_DIR . 'includes/class-feeds.php';
 if ( is_admin() ) {
 	require_once CC_FLEET_DIR . 'includes/class-admin.php';
 	require_once CC_FLEET_DIR . 'includes/class-records-admin.php';
-	require_once CC_FLEET_DIR . 'includes/class-crew.php';
 }
+require_once CC_FLEET_DIR . 'includes/class-crew.php';
 
 register_activation_hook( __FILE__, array( 'CC_Fleet_Install', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'CC_Fleet_Install', 'deactivate' ) );
@@ -72,6 +72,6 @@ add_action( 'plugins_loaded', function () {
 		CC_Fleet_Admin::init();
 		CC_Fleet_Records_Admin::init();
 		CC_Fleet_Outbox::init();
-		CC_Fleet_Crew::init();
 	}
+	CC_Fleet_Crew::init(); // Also on the front end: WooCommerce's login and admin-bar rules.
 } );
