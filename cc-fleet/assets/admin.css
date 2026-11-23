@@ -135,3 +135,9 @@
 .cc-badge--offered { background: #FFB1EC; border-color: #FFB1EC; font-weight: 600; }
 .cc-wl-spot { margin: 12px 0 20px; padding: 4px 14px 10px; border: 1.5px solid #141217; background: #fff; }
 .cc-wl-spot h3 { margin: 10px 0; }
+.cc-dates-box{background:#fbf7ef;border:1px solid #d3c8b4;border-radius:6px;padding:12px 14px;margin:0 0 18px}
+.cc-dates-box p{margin:0 0 8px}
+.cc-dates-box__row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.cc-dates-box__row input[type=date]{min-width:150px}
+.cc-dates-box__f{font-size:12.5px}
+.cc-dates-box__f:last-child{margin-bottom:0}

@@ -199,6 +199,28 @@ class CC_Fleet_Emails {
 		}
 	}
 
+	/** The confirmation ("You're on") for a loan as it is now. Also rebuilt when the crew changes the dates before sending. */
+	public static function build_confirmed( $loan, $old = '' ) {
+		$rider = CC_Fleet_Riders::get( $loan->rider_id );
+		$name  = $rider ? self::first_name( $rider->name ) : '';
+		$prev  = CC_Fleet_Loans::previous_loan( $loan );
+		$from  = '';
+		if ( $prev ) {
+			$p    = CC_Fleet_Riders::get( $prev->rider_id );
+			$from = $p ? self::first_name( $p->name ) . ', ' . self::short_date( $prev->end_date ) : '';
+		}
+		$photo = $loan->bike_id ? get_the_post_thumbnail_url( $loan->bike_id, 'large' ) : '';
+		return self::msg_confirmed( array(
+			'name' => $name, 'bike' => self::bike_name( $loan ), 'dates' => self::dates( $loan ), 'from' => $from, 'from_first' => $from ? strtok( $from, ',' ) : '',
+			'return' => self::nice_date( $loan->end_date ), 'photo' => $photo, 'calendar' => self::calendar_link( $loan ), 'bike_url' => self::bike_url( $loan->bike_id ),
+			'agreement' => CC_Fleet_Landing::agreement_url(), 'handoff_notes' => CC_Fleet_Settings::get( 'handoff_notes' ),
+			'place' => $loan->handoff_place ?? '', 'time' => $loan->handoff_time ?? '', 'hnote' => $loan->handoff_note ?? '',
+			'race' => ! empty( $loan->race ) ? CC_Fleet_Settings::get( 'race_terms' ) : '', 'event' => self::event_name( $loan ),
+			'pressure' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::line_for_loan( $loan ) : '', 'pressure_note' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::advice( $loan ) : '',
+			'wl' => 'offered' === $old, 'cancel' => CC_Fleet_Waitlist::url( $loan, 'cancel' ),
+		) );
+	}
+
 	public static function on_status( $loan_id, $status, $old, $notify ) {
 		if ( 'waiting' === $status || ( in_array( $old, array( 'waiting', 'offered' ), true ) && 'approved' !== $status ) ) {
 			return; // CC_Fleet_Waitlist tells the rider; a yes gets the normal confirmation.
@@ -214,22 +236,7 @@ class CC_Fleet_Emails {
 		$name = self::first_name( $rider->name );
 		switch ( $status ) {
 			case 'approved':
-				$prev = CC_Fleet_Loans::previous_loan( $loan );
-				$from = '';
-				if ( $prev ) {
-					$p    = CC_Fleet_Riders::get( $prev->rider_id );
-					$from = $p ? self::first_name( $p->name ) . ', ' . self::short_date( $prev->end_date ) : '';
-				}
-				$photo = $loan->bike_id ? get_the_post_thumbnail_url( $loan->bike_id, 'large' ) : '';
-				self::send( $rider->email, "You're on — bike confirmed", self::msg_confirmed( array(
-					'name' => $name, 'bike' => self::bike_name( $loan ), 'dates' => self::dates( $loan ), 'from' => $from, 'from_first' => $from ? strtok( $from, ',' ) : '',
-					'return' => self::nice_date( $loan->end_date ), 'photo' => $photo, 'calendar' => self::calendar_link( $loan ), 'bike_url' => self::bike_url( $loan->bike_id ),
-					'agreement' => CC_Fleet_Landing::agreement_url(), 'handoff_notes' => CC_Fleet_Settings::get( 'handoff_notes' ),
-					'place' => $loan->handoff_place ?? '', 'time' => $loan->handoff_time ?? '', 'hnote' => $loan->handoff_note ?? '',
-					'race' => ! empty( $loan->race ) ? CC_Fleet_Settings::get( 'race_terms' ) : '', 'event' => self::event_name( $loan ),
-					'pressure' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::line_for_loan( $loan ) : '', 'pressure_note' => class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::advice( $loan ) : '',
-					'wl' => 'offered' === $old, 'cancel' => CC_Fleet_Waitlist::url( $loan, 'cancel' ),
-				) ), array( 'type' => 'approved', 'loan' => $loan ) );
+				self::send( $rider->email, "You're on — bike confirmed", self::build_confirmed( $loan, $old ), array( 'type' => 'approved', 'loan' => $loan ) );
 				break;
 			case 'declined':
 				$size   = $loan->bike_id ? CC_Fleet_Bikes::get( $loan->bike_id, 'size' ) : $loan->requested_size;

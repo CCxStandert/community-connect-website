@@ -77,6 +77,10 @@ Settings: handoff note, drop-off place, Instagram handle, and Email style (desig
 - Bike page: "Changing parts?" box (date, kind of work, by, cost, note). Saving compares every part field and logs what changed from what to what, with that date; it also goes into the workshop log and updates "Last upgraded". The new **History** box lists all of it, newest first. Untick "Add to the workshop log" for typo fixes.
 - Loan page: **Change the dates** (+1 day, +3 days, +1 week, ends today, or any dates), with a note on what was agreed, a clash check and an optional "new dates" email to the rider. Overdue loans extend from today.
 
+## 0.18.0: Confirm other dates
+
+- The “Email to the rider” screen for a confirmation has a Dates box: confirm fewer (or other) days than the rider asked for. The loan and calendar update (with the usual clash and free-day checks), the email’s details, calendar link and return date follow, the crew’s text is kept, and when it’s shorter a note in the pink box says so (editable).
+
 ## 0.17.2: Brevo check
 
 - Fleet Manager → Newsletter shows whether Brevo answers (list name and contacts), tested on save and every week. The weekly check also keeps the API key in use, as Brevo retires keys after 90 idle days.

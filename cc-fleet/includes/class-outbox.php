@@ -222,6 +222,14 @@ class CC_Fleet_Outbox {
 		echo '<div class="cc-compose-grid"><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="cc-card">';
 		wp_nonce_field( 'cc_fleet_email_draft_' . $row->id );
 		printf( '<input type="hidden" name="action" value="cc_fleet_email_draft"><input type="hidden" name="id" value="%d"><input type="hidden" name="back" value="%s">', (int) $row->id, esc_attr( $back ) );
+		if ( $open && 'approved' === $row->type && $loan && 'approved' === $loan->status ) {
+			$asked = $row->msg['_asked'] ?? null;
+			echo '<div class="cc-dates-box"><p class="cc-dates-box__h"><strong>Dates</strong>' . ( $asked ? ' <span class="cc-muted">· the rider asked for ' . esc_html( CC_Fleet_Emails::nice_date( $asked[0] ) . ' → ' . CC_Fleet_Emails::nice_date( $asked[1] ) ) . '</span>' : ' <span class="cc-muted">· confirm fewer days than asked? Change them here before you send.</span>' ) . '</p>';
+			printf( '<p class="cc-dates-box__row"><label>From<br><input type="date" name="start_date" value="%s" min="%s"></label> <label>Until<br><input type="date" name="end_date" value="%s" min="%s"></label> <button class="button" name="op" value="dates">Change the dates</button></p>',
+				esc_attr( $loan->start_date ), esc_attr( CC_Fleet_Settings::today() ), esc_attr( $loan->end_date ), esc_attr( CC_Fleet_Settings::today() ) );
+			echo '<p class="cc-dates-box__f"><label><input type="checkbox" name="force" value="1"> Save even if it overlaps another loan</label></p>';
+			echo '<p class="cc-muted cc-dates-box__f">The loan, the calendar and the email’s details, calendar link and return date all follow. Your changes to the text below are kept.</p></div>';
+		}
 		printf( '<p><label>To<br><input type="email" name="to_email" value="%s" class="widefat" required %s></label></p>', esc_attr( $row->to_email ), $open ? '' : 'disabled' );
 		printf( '<p><label>Subject<br><input type="text" name="subject" value="%s" class="widefat" required %s></label></p>', esc_attr( $row->subject ), $open ? '' : 'disabled' );
 		printf( '<p><label>Headline<br><input type="text" name="headline" value="%s" class="widefat" %s></label></p>', esc_attr( $row->msg['headline'] ?? '' ), $open ? '' : 'disabled' );
@@ -271,6 +279,9 @@ class CC_Fleet_Outbox {
 		), array( 'id' => $id ) );
 		$row = self::get( $id );
 		switch ( $op ) {
+			case 'dates':
+				self::change_dates( $row, $in, $back );
+				exit;
 			case 'send':
 				if ( self::send_row( $row ) ) {
 					if ( 'reminder' === $row->type && $row->loan_id ) {
@@ -300,6 +311,65 @@ class CC_Fleet_Outbox {
 				wp_safe_redirect( self::compose_url( $id, $back ) );
 				exit;
 		}
+	}
+
+	/**
+	 * Confirm other dates than the rider asked for: update the loan, then rebuild the confirmation
+	 * with the new dates, keeping the crew's text (headline, line, paragraphs, note).
+	 */
+	private static function change_dates( $row, array $in, $back ) {
+		global $wpdb;
+		$here = self::compose_url( $row->id, $back );
+		$loan = $row->loan_id ? CC_Fleet_Loans::get( $row->loan_id ) : null;
+		if ( 'approved' !== $row->type || ! $loan || 'approved' !== $loan->status ) {
+			self::notice( 'The dates can only be changed here before a confirmed bike goes out.', 'warning' );
+			wp_safe_redirect( $here );
+			exit;
+		}
+		$start = sanitize_text_field( $in['start_date'] ?? '' );
+		$end   = sanitize_text_field( $in['end_date'] ?? '' );
+		if ( $start === $loan->start_date && $end === $loan->end_date ) {
+			self::notice( 'Those are already the dates.', 'info' );
+			wp_safe_redirect( $here );
+			exit;
+		}
+		$res = CC_Fleet_Loans::update( $loan->id, array( 'start_date' => $start, 'end_date' => $end ), ! empty( $in['force'] ) );
+		if ( is_wp_error( $res ) ) {
+			$msg = esc_html( $res->get_error_message() );
+			foreach ( (array) ( $res->get_error_data()['conflicts'] ?? array() ) as $cid ) {
+				$c   = CC_Fleet_Loans::get( $cid );
+				$cr  = $c ? CC_Fleet_Riders::get( $c->rider_id ) : null;
+				$msg .= sprintf( '<br>Clashes with %s, %s → %s. Pick other dates, or tick “Save even if it overlaps”.', esc_html( $cr->name ?? 'another rider' ), esc_html( $c->start_date ?? '' ), esc_html( $c->end_date ?? '' ) );
+			}
+			self::notice( $msg, 'error' );
+			wp_safe_redirect( $here );
+			exit;
+		}
+		CC_Fleet_Install::log( 'loan', $loan->id, 'dates', sprintf( 'Confirmed for %s → %s (asked %s → %s)', $start, $end, $loan->start_date, $loan->end_date ) );
+		$asked = $row->msg['_asked'] ?? array( $loan->start_date, $loan->end_date );
+		$fresh = CC_Fleet_Loans::get( $loan->id );
+		$new   = CC_Fleet_Emails::build_confirmed( $fresh );
+		// Carry the crew's wording over, paragraph by paragraph.
+		$old_t = array_values( self::text_blocks( $row->msg ) );
+		$new_i = array_keys( self::text_blocks( $new ) );
+		if ( count( $old_t ) === count( $new_i ) ) {
+			foreach ( $new_i as $k => $i ) {
+				$new['blocks'][ $i ][1] = $old_t[ $k ][1];
+			}
+		}
+		$new['headline'] = $row->msg['headline'] ?? $new['headline'];
+		$new['subline']  = $row->msg['subline'] ?? $new['subline'];
+		$note            = self::current_note( $row->msg );
+		$shorter         = $start > $asked[0] || $end < $asked[1];
+		if ( '' === $note && $shorter ) {
+			$note = sprintf( 'Heads-up: we can confirm the bike for %s, not the whole time you asked for. If that doesn’t work for you, just reply.', CC_Fleet_Emails::nice_date( $start ) . ' → ' . CC_Fleet_Emails::nice_date( $end ) );
+		}
+		$new           = self::apply_edits( $new, array( 'note' => $note ) );
+		$new['_asked'] = $asked;
+		$wpdb->update( self::table(), array( 'msg' => wp_json_encode( $new ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => (int) $row->id ) );
+		self::notice( sprintf( 'Dates changed to %s → %s. The email below now shows them%s. Nothing sent yet.', esc_html( CC_Fleet_Emails::nice_date( $start ) ), esc_html( CC_Fleet_Emails::nice_date( $end ) ), $shorter && '' === self::current_note( $row->msg ) ? ', with a note in the pink box (change or delete it)' : '' ), 'success' );
+		wp_safe_redirect( $here );
+		exit;
 	}
 
 	/** Open the upcoming return reminder for a loan, to read or change it ahead of time. */
