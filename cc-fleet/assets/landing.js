@@ -206,7 +206,10 @@ const pills = (e) => {
   if (!idx.length) idx = l.length ? [0] : [];
   return idx.slice(0, 2).map((i) => `<span class="st${c[i] === 'race' ? ' race' : ''}">${esc(l[i])}</span>`).join('');
 };
-const evRow = (e) => `<li class="ev" data-cats="${esc(catsOf(e).join(' '))}">${e.when ? `<span class="mono when">[${esc(e.when)}]</span>` : `<time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time>`}<div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(e.link) ? 'On Instagram' : (e.when ? 'More' : 'Event page')} <svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>` : ''}</li>`;
+const evLink = (e) => (e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(e.link) ? 'On Instagram' : (e.when ? 'More' : 'Event page')} <svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>` : '');
+// The event's description folds out under "About this event"; paragraphs keep their line breaks.
+const evDesc = (d) => d ? d.split(/\n\s*\n|\n/).map((p) => p.trim()).filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join('') : '';
+const evRow = (e) => `<li class="ev${e.desc ? ' ev--more' : ''}" data-cats="${esc(catsOf(e).join(' '))}">${e.when ? `<span class="mono when">[${esc(e.when)}]</span>` : `<time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time>`}<div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${e.desc ? `<details class="ev__more"><summary>About this event</summary><div class="ev__desc">${evDesc(e.desc)}</div>${evLink(e)}</details>` : evLink(e)}</li>`;
 // A series ("FAR Inverted #1", "#2"…) becomes one row with its dates in a fold-out.
 const ARW = '<svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
 const dayMon = (d) => `${Number(d.slice(8))} ${MON[+d.slice(5, 7) - 1]}`;
@@ -224,7 +227,7 @@ const seriesRow = (g) => {
   const a = g.items[0], z = g.items[g.items.length - 1], cats = [...new Set(g.items.flatMap(catsOf))];
   const range = `${dayMon(a.start)} → ${dayMon(z.end || z.start)} ${(z.end || z.start).slice(0, 4)}`;
   const dates = g.items.map((e) => `<li><time class="mono" datetime="${esc(e.start)}">${esc(span(e))}</time><span>${esc(e.name.replace(g.series, '').replace(/^[\s·–-]+/, ''))}</span></li>`).join('');
-  return `<li class="ev ev--series" data-cats="${esc(cats.join(' '))}"><time class="mono" datetime="${esc(a.start)}">[${esc(range)}]</time><div><b>${esc(g.series)}</b><small>${g.items.length} dates · ${esc(a.where)}</small></div><span class="sts">${pills(a)}</span><details class="ev__more"><summary>All ${g.items.length} dates</summary><ol>${dates}</ol>${a.link ? `<a href="${esc(a.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(a.link) ? 'On Instagram' : 'Event page'} ${ARW}</a>` : ''}</details></li>`;
+  return `<li class="ev ev--series" data-cats="${esc(cats.join(' '))}"><time class="mono" datetime="${esc(a.start)}">[${esc(range)}]</time><div><b>${esc(g.series)}</b><small>${g.items.length} dates · ${esc(a.where)}</small></div><span class="sts">${pills(a)}</span><details class="ev__more"><summary>All ${g.items.length} dates</summary>${a.desc ? `<div class="ev__desc">${evDesc(a.desc)}</div>` : ''}<ol>${dates}</ol>${a.link ? `<a href="${esc(a.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(a.link) ? 'On Instagram' : 'Event page'} ${ARW}</a>` : ''}</details></li>`;
 };
 if ($('evList')) {
   const list = $('evList');

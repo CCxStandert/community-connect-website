@@ -266,3 +266,5 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .ev__more ol li{display:grid;grid-template-columns:120px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid rgba(20,18,23,.18);font-size:14px}
 .ev__more ol .mono{font-size:12px;letter-spacing:.04em;padding-top:1px}
 .ev__more a{display:inline-flex;margin-top:6px;font-size:13px;font-weight:600}
+
+/* Event descriptions fold out */.ev__desc{max-width:64ch;margin:10px 0 4px}.ev__desc p{margin:0 0 8px;font-size:14px;line-height:1.45}.ev__desc+ol{margin-top:12px}.ev__more[open]>summary{margin-bottom:2px}

@@ -137,7 +137,7 @@ class CC_Fleet_Landing {
 			foreach ( CC_Fleet_Frontend::upcoming_events() as $e ) {
 				// Every event ticked "Show on the website": races, social rides, bikepacking…
 				$cats     = CC_Fleet_Records::event_cats( $e );
-				$events[] = array( 'name' => $e->name, 'start' => $e->start_date, 'end' => $e->end_date ?: $e->start_date, 'where' => (string) $e->location, 'cats' => $cats, 'labels' => array_map( function ( $k ) { return CC_Fleet_Records::EVENT_CATS[ $k ]; }, $cats ), 'link' => (string) $e->link, 'when' => (string) ( $e->schedule ?? '' ) );
+				$events[] = array( 'name' => $e->name, 'start' => $e->start_date, 'end' => $e->end_date ?: $e->start_date, 'where' => (string) $e->location, 'cats' => $cats, 'labels' => array_map( function ( $k ) { return CC_Fleet_Records::EVENT_CATS[ $k ]; }, $cats ), 'link' => (string) $e->link, 'when' => (string) ( $e->schedule ?? '' ), 'desc' => trim( wp_strip_all_tags( (string) ( $e->description ?? '' ) ) ) );
 			}
 		}
 		return array(
