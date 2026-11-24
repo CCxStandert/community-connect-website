@@ -56,6 +56,10 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.10: Asset version fix
+
+- The version used for scripts and styles had stayed at 0.19.7, so browsers and Cloudflare kept the old event list and form styles. Now in step with the plugin version.
+
 ## 0.19.9: Event filter in two tiers
 
 - Filter: Bike (All / Road / Gravel) and Type (All / Races / Group rides / Overnight bikepacking), combined. Social rides count as group rides; bikepacking and getaways as overnight.
