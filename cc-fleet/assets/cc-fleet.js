@@ -20,6 +20,12 @@
 	}
 
 	/* ---------- Calendar ---------- */
+	// ?start=YYYY-MM-DD&end=YYYY-MM-DD(&event=ID) on a bike page, from the events list.
+	function linkDates() {
+		var p = new URLSearchParams(location.search), a = p.get('start'), b = p.get('end'), re = /^\d{4}-\d{2}-\d{2}$/;
+		if (!re.test(a || '') || !re.test(b || '') || b < a || a < C.today) return null;
+		return { start: a, end: b, event: /^\d+$/.test(p.get('event') || '') ? p.get('event') : '' };
+	}
 	function Calendar(root) {
 		this.root = root;
 		this.bike = root.getAttribute('data-bike');
@@ -27,6 +33,9 @@
 		this.booked = {};
 		this.view = parse(C.today); this.view.setDate(1);
 		this.start = null; this.end = null;
+		// Came from "Find a bike" on an event: start with those dates picked and that month shown.
+		var q = linkDates();
+		if (q && this.form) { this.start = q.start; this.end = q.end; this.view = parse(q.start); this.view.setDate(1); }
 		this.load();
 	}
 	Calendar.prototype.load = function () {
@@ -149,6 +158,15 @@
 					s.value = iso(a) < (s.min || '') ? s.min : iso(a); e.value = iso(b);
 				}
 			};
+			// From "Find a bike" on an event: dates and event filled in, form brought into view.
+			var q = linkDates();
+			if (q) {
+				var s0 = form.querySelector('[data-cc-start]'), e0 = form.querySelector('[data-cc-end]');
+				if (s0 && e0) { s0.value = q.start; e0.value = q.end; checkLong(); }
+				if (q.event && ev.querySelector('option[value="' + q.event + '"]')) ev.value = q.event;
+				sync();
+				setTimeout(function () { form.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
+			}
 			ev.addEventListener('change', sync); sync();
 		}
 		form.addEventListener('change', function (e) {

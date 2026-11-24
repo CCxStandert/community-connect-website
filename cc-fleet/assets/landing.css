@@ -285,3 +285,10 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .ev .st.surf--road{background:#B9CAD3;color:var(--ink)}
 .ev .st.surf--gravel{background:#DCC89F;color:var(--ink)}
 .ev .st.surf--mtb{background:#7A8B5A;color:#fff}
+
+/* Events: "Find a bike" jumps to the fleet with the event's dates checked */
+.ev__bike{grid-column:2;justify-self:start;margin-top:8px;min-height:36px;padding:0 14px;border:1.5px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);font:600 13px/1 'Inter Tight',sans-serif;letter-spacing:-.01em;white-space:nowrap;cursor:pointer}
+.ev__bike:hover{background:var(--ink);color:var(--paper)}
+.ev__bike--sm{grid-column:auto;margin:0;min-height:28px;padding:0 10px;font-size:12px}
+.ev__more ol li:has(.ev__bike--sm){grid-template-columns:120px 1fr auto;align-items:center}
+@media(min-width:760px){.ev{grid-template-columns:150px minmax(0,1fr) auto auto}.ev>.ev__bike{grid-row:1;grid-column:4;margin:0}.ev__more{grid-column:2/-1}}

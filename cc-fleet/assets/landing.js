@@ -74,7 +74,8 @@ const render = () => {
     const st = free ? (free.has(b.cc) ? 'available' : 'booked') : b.state;
     const chip = free ? (free.has(b.cc) ? 'Free those dates' : 'Booked') : (label[st] || st);
     const ok = fits(b, h);
-    return `<li${show(b) ? '' : ' hidden'}><a class="card${free && !free.has(b.cc) ? ' dim' : ''}" href="${esc(b.url)}"><span class="hd"><span class="brand">${BRAND}</span><span class="st ${esc(st)}">${esc(chip)}</span></span>${pic(b)}<strong>${esc(b.model)} ${esc(b.size)}</strong><small>${esc(b.name)}</small><span class="fit">${b.range ? `${b.range[0]}–${b.range[1]} cm${ok ? ' · <b>fits you</b>' : ''}` : ''}</span></a></li>`;
+    const href = ctx && free && free.has(b.cc) ? `${b.url}${b.url.includes('?') ? '&' : '?'}start=${ctx.a}&end=${ctx.b}${ctx.id ? `&event=${ctx.id}` : ''}#request` : b.url;
+    return `<li${show(b) ? '' : ' hidden'}><a class="card${free && !free.has(b.cc) ? ' dim' : ''}" href="${esc(href)}"><span class="hd"><span class="brand">${BRAND}</span><span class="st ${esc(st)}">${esc(chip)}</span></span>${pic(b)}<strong>${esc(b.model)} ${esc(b.size)}</strong><small>${esc(b.name)}</small><span class="fit">${b.range ? `${b.range[0]}–${b.range[1]} cm${ok ? ' · <b>fits you</b>' : ''}` : ''}</span></a></li>`;
   }).join('');
   const shown = list.filter(show).length;
   if (!free) $('msg').textContent = `${shown} bike${shown === 1 ? '' : 's'}` + (LIVE ? '' : ' · preview, fleet as of 21 Nov 2026');
@@ -89,6 +90,21 @@ const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate(
 const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
 $('d1').min = $('d2').min = iso(tomorrow);
 $('d1').max = $('d2').max = HORIZON;
+// From the events list: check the fleet for an event's dates (pick up two days before, back the day after).
+let ctx = null;
+['d1', 'd2'].forEach((k) => $(k).addEventListener('input', () => { ctx = null; }));
+window.ccFindBike = (e) => {
+  const day = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return iso(x); };
+  let a = day(e.start, -2), b = day(e.end || e.start, 1);
+  if (a < iso(tomorrow)) a = iso(tomorrow);
+  if (b > HORIZON) b = HORIZON;
+  $('d1').value = a; $('d2').value = b;
+  ctx = { id: e.id, name: e.name, a, b };
+  filter = 'all';
+  const box = $('dateForm').closest('section') || $('dateForm');
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('dateForm').requestSubmit();
+};
 $('dateForm').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const a = $('d1').value, b = $('d2').value;
@@ -102,7 +118,9 @@ $('dateForm').addEventListener('submit', async (ev) => {
     if (!r.ok) throw new Error(j.message || 'Those dates don’t work.');
     free = new Set(j.map((x) => x.cc_id));
     render();
-    $('msg').textContent = free.size ? `${free.size} bike${free.size === 1 ? '' : 's'} free ${nice(a)} – ${nice(b)}.` : 'Nothing free on those dates. Try shifting by a few days.';
+    $('msg').textContent = free.size
+      ? (ctx ? `${free.size} bike${free.size === 1 ? '' : 's'} free for ${ctx.name}: pick-up ${nice(a)}, back ${nice(b)}. Tap a bike to request it.` : `${free.size} bike${free.size === 1 ? '' : 's'} free ${nice(a)} – ${nice(b)}.`)
+      : (ctx ? `Every bike is booked around ${ctx.name}. Message us, we may still sort something out.` : 'Nothing free on those dates. Try shifting by a few days.');
   } catch (e) { $('msg').textContent = e.message; }
 });
 render();
@@ -213,7 +231,10 @@ const kindPills = (e) => {
 const evLink = (e) => (e.link ? `<a href="${esc(e.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(e.link) ? 'On Instagram' : (e.when ? 'More' : 'Event page')} <svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></a>` : '');
 // The event's description folds out under "About this event"; paragraphs keep their line breaks.
 const evDesc = (d) => d ? d.split(/\n\s*\n|\n/).map((p) => p.trim()).filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join('') : '';
-const evRow = (e) => `<li class="ev${e.desc ? ' ev--more' : ''}" data-cats="${esc(catsOf(e).join(' '))}">${e.when ? `<span class="mono when">[${esc(e.when)}]</span>` : `<time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time>`}<div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${e.desc ? `<details class="ev__more"><summary>About this event</summary><div class="ev__desc">${evDesc(e.desc)}</div>${evLink(e)}</details>` : evLink(e)}</li>`;
+// "Find a bike": only for events with real dates that are still ahead.
+const bikeBtn = (e) => (!e.when && e.start && (e.end || e.start) >= new Date().toISOString().slice(0, 10) && typeof window.ccFindBike === 'function')
+  ? `<button type="button" class="ev__bike" data-ev="${esc(JSON.stringify({ id: e.id, name: e.name, start: e.start, end: e.end || e.start }))}">Find a bike</button>` : '';
+const evRow = (e) => `<li class="ev${e.desc ? ' ev--more' : ''}" data-cats="${esc(catsOf(e).join(' '))}">${e.when ? `<span class="mono when">[${esc(e.when)}]</span>` : `<time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time>`}<div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${bikeBtn(e)}${e.desc ? `<details class="ev__more"><summary>About this event</summary><div class="ev__desc">${evDesc(e.desc)}</div>${evLink(e)}</details>` : evLink(e)}</li>`;
 // A series ("FAR Inverted #1", "#2"…) becomes one row with its dates in a fold-out.
 const ARW = '<svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
 const dayMon = (d) => `${Number(d.slice(8))} ${MON[+d.slice(5, 7) - 1]}`;
@@ -230,8 +251,9 @@ const groupSeries = (list) => {
 const seriesRow = (g) => {
   const a = g.items[0], z = g.items[g.items.length - 1], cats = [...new Set(g.items.flatMap(catsOf))];
   const range = `${dayMon(a.start)} → ${dayMon(z.end || z.start)} ${(z.end || z.start).slice(0, 4)}`;
-  const dates = g.items.map((e) => `<li><time class="mono" datetime="${esc(e.start)}">${esc(span(e))}</time><span>${esc(e.name.replace(g.series, '').replace(/^[\s·–-]+/, ''))}</span></li>`).join('');
-  return `<li class="ev ev--series" data-cats="${esc(cats.join(' '))}"><time class="mono" datetime="${esc(a.start)}">[${esc(range)}]</time><div><b>${esc(g.series)}</b><small>${g.items.length} dates · ${esc(a.where)}</small></div><span class="sts">${pills(a)}</span><details class="ev__more"><summary>All ${g.items.length} dates</summary>${a.desc ? `<div class="ev__desc">${evDesc(a.desc)}</div>` : ''}<ol>${dates}</ol>${a.link ? `<a href="${esc(a.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(a.link) ? 'On Instagram' : 'Event page'} ${ARW}</a>` : ''}</details></li>`;
+  const dates = g.items.map((e) => `<li><time class="mono" datetime="${esc(e.start)}">${esc(span(e))}</time><span>${esc(e.name.replace(g.series, '').replace(/^[\s·–-]+/, ''))}</span>${bikeBtn(e).replace('class="ev__bike"', 'class="ev__bike ev__bike--sm"')}</li>`).join('');
+  const next = g.items.find((e) => bikeBtn(e));
+  return `<li class="ev ev--series" data-cats="${esc(cats.join(' '))}"><time class="mono" datetime="${esc(a.start)}">[${esc(range)}]</time><div><b>${esc(g.series)}</b><small>${g.items.length} dates · ${esc(a.where)}</small></div><span class="sts">${pills(a)}</span>${next ? bikeBtn(next).replace('>Find a bike<', `>Find a bike · ${esc(dayMon(next.start))}<`) : ''}<details class="ev__more"><summary>All ${g.items.length} dates</summary>${a.desc ? `<div class="ev__desc">${evDesc(a.desc)}</div>` : ''}<ol>${dates}</ol>${a.link ? `<a href="${esc(a.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(a.link) ? 'On Instagram' : 'Event page'} ${ARW}</a>` : ''}</details></li>`;
 };
 if ($('evList')) {
   const list = $('evList');
@@ -242,6 +264,10 @@ if ($('evList')) {
   // Filter buttons for the categories that actually occur.
   const FILTERS = [['all', 'All'], ['road', 'Road'], ['gravel', 'Gravel'], ['group', 'Group rides'], ['race', 'Races'], ['social', 'Social rides'], ['overnight', 'Overnight bikepacking'], ['bikepacking', 'Bikepacking trips'], ['getaway', 'Getaways']]
     .filter(([k]) => k === 'all' || EVENTS.some((e) => catsOf(e).includes(k)));
+  list.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.ev__bike'); if (!btn) return;
+    try { window.ccFindBike(JSON.parse(btn.dataset.ev)); } catch (e) {}
+  });
   // Only the next 5 show; the rest fold out under one button.
   const SHOW = 5;
   let filter = 'all', open = false;

@@ -56,6 +56,11 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.7: Find a bike for an event
+
+- Every dated event (and each date of a series) has a "Find a bike" button: it checks the fleet for pick-up two days before to the day after, scrolls to the fleet and shows which bikes are free.
+- Tapping a free bike opens its page with those dates picked in the calendar and the event chosen in the request form (racing terms shown for races).
+
 ## 0.19.6: Fleet photos
 
 - Kettensäge 56 (CC-12) and 58 (CC-13) had each other's photo; swapped.
