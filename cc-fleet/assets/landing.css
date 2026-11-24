@@ -292,3 +292,32 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .ev__bike--sm{grid-column:auto;margin:0;min-height:28px;padding:0 10px;font-size:12px}
 .ev__more ol li:has(.ev__bike--sm){grid-template-columns:120px 1fr auto;align-items:center}
 @media(min-width:760px){.ev{grid-template-columns:150px minmax(0,1fr) auto auto}.ev>.ev__bike{grid-row:1;grid-column:4;margin:0}.ev__more{grid-column:2/-1}}
+
+/* Events v3: two-tier filter + columns [date · Road/Gravel] [event] [type] [Find a bike] */
+.evfilter{display:grid;gap:10px;margin-top:14px;padding-inline:16px}
+.evfilter__row{display:flex;align-items:center;gap:12px;min-width:0}
+.evfilter__lbl{flex:0 0 40px;font:400 11px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.evfilter .evchips{margin:0;padding:0;flex:1 1 auto;min-width:0;display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;scrollbar-width:none}
+.evfilter .evchips::-webkit-scrollbar{display:none}
+.evfilter .chip{flex:0 0 auto}
+.evfilter+.evs{margin-top:14px}
+.evs__none{margin:0;padding:18px 16px;border-bottom:1px solid var(--ink);font-size:14px;color:var(--muted)}
+@media(min-width:980px){.evfilter{padding-inline:40px}.evs__none{padding-inline:40px}}
+
+.evs .ev{grid-template-columns:96px minmax(0,1fr);column-gap:12px;row-gap:8px;align-items:start}
+.evs .ev>.ev__when{grid-column:1;grid-row:1/span 5;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding-top:3px}
+.evs .ev>.ev__when .st.surf{font-size:11px;padding:3px 9px}
+.evs .ev>.ev__what{grid-column:2;grid-row:1}
+.evs .ev>.sts{grid-column:2;grid-row:auto;justify-content:flex-start}
+.evs .ev>.sts:empty{display:none}
+.evs .ev>.ev__bike{grid-column:2;grid-row:auto;justify-self:start;margin:2px 0 0}
+.evs .ev>a,.evs .ev>.ev__more{grid-column:2;margin-top:0}
+@media(min-width:760px){
+  .evs .ev{grid-template-columns:150px minmax(0,1fr) minmax(150px,220px) 150px;align-items:center;row-gap:6px}
+  .evs .ev>.ev__when{grid-row:1/span 2;align-self:start;padding-top:2px}
+  .evs .ev>.ev__what{grid-column:2;grid-row:1}
+  .evs .ev>.sts{grid-column:3;grid-row:1}
+  .evs .ev>.ev__bike{grid-column:4;grid-row:1;justify-self:end;margin:0}
+  .evs .ev>a,.evs .ev>.ev__more{grid-column:2/-1}
+}
+@media(min-width:980px){.evs .ev{grid-template-columns:170px minmax(0,1fr) minmax(170px,260px) 170px}}

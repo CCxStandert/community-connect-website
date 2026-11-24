@@ -221,7 +221,6 @@ const catsOf = (e) => e.cats || [];
 // Road / gravel / MTB: its own pill first, so every row says what bike it's for.
 const SURF = { road: 'Road', gravel: 'Gravel', mtb: 'MTB' };
 const surfPill = (e) => { const k = catsOf(e).find((x) => SURF[x]); return k ? `<span class="st surf surf--${k}">${SURF[k]}</span>` : ''; };
-const pills = (e) => surfPill(e) + kindPills(e);
 const kindPills = (e) => {
   const l = labelsOf(e), c = catsOf(e);
   let idx = c.map((k, i) => (MAIN.includes(k) ? i : -1)).filter((i) => i >= 0);
@@ -234,7 +233,9 @@ const evDesc = (d) => d ? d.split(/\n\s*\n|\n/).map((p) => p.trim()).filter(Bool
 // "Find a bike": only for events with real dates that are still ahead.
 const bikeBtn = (e) => (!e.when && e.start && (e.end || e.start) >= new Date().toISOString().slice(0, 10) && typeof window.ccFindBike === 'function')
   ? `<button type="button" class="ev__bike" data-ev="${esc(JSON.stringify({ id: e.id, name: e.name, start: e.start, end: e.end || e.start }))}">Find a bike</button>` : '';
-const evRow = (e) => `<li class="ev${e.desc ? ' ev--more' : ''}" data-cats="${esc(catsOf(e).join(' '))}">${e.when ? `<span class="mono when">[${esc(e.when)}]</span>` : `<time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time>`}<div><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${pills(e)}</span>${bikeBtn(e)}${e.desc ? `<details class="ev__more"><summary>About this event</summary><div class="ev__desc">${evDesc(e.desc)}</div>${evLink(e)}</details>` : evLink(e)}</li>`;
+// Row: [date + Road/Gravel] [name, place] [ride type] [Find a bike]
+const whenCol = (dateHtml, e) => `<div class="ev__when">${dateHtml}${surfPill(e)}</div>`;
+const evRow = (e) => `<li class="ev${e.desc ? ' ev--more' : ''}" data-cats="${esc(catsOf(e).join(' '))}">${whenCol(e.when ? `<span class="mono when">[${esc(e.when)}]</span>` : `<time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time>`, e)}<div class="ev__what"><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${kindPills(e)}</span>${bikeBtn(e)}${e.desc ? `<details class="ev__more"><summary>About this event</summary><div class="ev__desc">${evDesc(e.desc)}</div>${evLink(e)}</details>` : evLink(e)}</li>`;
 // A series ("FAR Inverted #1", "#2"…) becomes one row with its dates in a fold-out.
 const ARW = '<svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
 const dayMon = (d) => `${Number(d.slice(8))} ${MON[+d.slice(5, 7) - 1]}`;
@@ -253,7 +254,7 @@ const seriesRow = (g) => {
   const range = `${dayMon(a.start)} → ${dayMon(z.end || z.start)} ${(z.end || z.start).slice(0, 4)}`;
   const dates = g.items.map((e) => `<li><time class="mono" datetime="${esc(e.start)}">${esc(span(e))}</time><span>${esc(e.name.replace(g.series, '').replace(/^[\s·–-]+/, ''))}</span>${bikeBtn(e).replace('class="ev__bike"', 'class="ev__bike ev__bike--sm"')}</li>`).join('');
   const next = g.items.find((e) => bikeBtn(e));
-  return `<li class="ev ev--series" data-cats="${esc(cats.join(' '))}"><time class="mono" datetime="${esc(a.start)}">[${esc(range)}]</time><div><b>${esc(g.series)}</b><small>${g.items.length} dates · ${esc(a.where)}</small></div><span class="sts">${pills(a)}</span>${next ? bikeBtn(next).replace('>Find a bike<', `>Find a bike · ${esc(dayMon(next.start))}<`) : ''}<details class="ev__more"><summary>All ${g.items.length} dates</summary>${a.desc ? `<div class="ev__desc">${evDesc(a.desc)}</div>` : ''}<ol>${dates}</ol>${a.link ? `<a href="${esc(a.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(a.link) ? 'On Instagram' : 'Event page'} ${ARW}</a>` : ''}</details></li>`;
+  return `<li class="ev ev--series" data-cats="${esc(cats.join(' '))}">${whenCol(`<time class="mono" datetime="${esc(a.start)}">[${esc(range)}]</time>`, a)}<div class="ev__what"><b>${esc(g.series)}</b><small>${g.items.length} dates · ${esc(a.where)}</small></div><span class="sts">${kindPills(a)}</span>${next ? bikeBtn(next).replace('>Find a bike<', `>Find a bike · ${esc(dayMon(next.start))}<`) : ''}<details class="ev__more"><summary>All ${g.items.length} dates</summary>${a.desc ? `<div class="ev__desc">${evDesc(a.desc)}</div>` : ''}<ol>${dates}</ol>${a.link ? `<a href="${esc(a.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(a.link) ? 'On Instagram' : 'Event page'} ${ARW}</a>` : ''}</details></li>`;
 };
 if ($('evList')) {
   const list = $('evList');
@@ -262,26 +263,39 @@ if ($('evList')) {
   const rows = groupSeries(EVENTS).sort((p, q) => startOf(p).localeCompare(startOf(q)));
   list.innerHTML = EVENTS.length ? rows.map((x) => (x.series ? seriesRow(x) : evRow(x))).join('') : '<li class="ev"><div><b>Nothing on the calendar right now.</b><small>Follow along on Instagram.</small></div></li>';
   // Filter buttons for the categories that actually occur.
-  const FILTERS = [['all', 'All'], ['road', 'Road'], ['gravel', 'Gravel'], ['group', 'Group rides'], ['race', 'Races'], ['social', 'Social rides'], ['overnight', 'Overnight bikepacking'], ['bikepacking', 'Bikepacking trips'], ['getaway', 'Getaways']]
-    .filter(([k]) => k === 'all' || EVENTS.some((e) => catsOf(e).includes(k)));
+  // Two filters that combine: the bike (Road / Gravel) and the kind of event.
+  const TIERS = [
+    { key: 'surf', label: 'Bike', opts: [['road', 'Road', ['road']], ['gravel', 'Gravel', ['gravel', 'mtb']]] },
+    { key: 'type', label: 'Type', opts: [['race', 'Races', ['race']], ['group', 'Group rides', ['group', 'social']], ['overnight', 'Overnight bikepacking', ['overnight', 'bikepacking', 'getaway']]] },
+  ].map((t) => ({ ...t, opts: t.opts.filter(([, , ks]) => EVENTS.some((e) => catsOf(e).some((c) => ks.includes(c)))) }))
+   .filter((t) => t.opts.length > 1);
+  const pick = { surf: '', type: '' };
   list.addEventListener('click', (ev) => {
     const btn = ev.target.closest('.ev__bike'); if (!btn) return;
     try { window.ccFindBike(JSON.parse(btn.dataset.ev)); } catch (e) {}
   });
   // Only the next 5 show; the rest fold out under one button.
   const SHOW = 5;
-  let filter = 'all', open = false;
+  let open = false;
+  const matches = (li) => {
+    const cats = (li.dataset.cats || '').split(' ');
+    return TIERS.every((t) => { const o = t.opts.find(([k]) => k === pick[t.key]); return !o || cats.some((c) => o[2].includes(c)); });
+  };
   const more = document.createElement('button');
   more.type = 'button'; more.className = 'evs__more max'; more.setAttribute('aria-expanded', 'false');
   list.after(more);
+  const empty = document.createElement('p');
+  empty.className = 'evs__none max'; empty.hidden = true; empty.textContent = 'Nothing on the calendar for that combination yet.';
+  list.after(empty);
   const refresh = () => {
     let n = 0;
     list.querySelectorAll('.ev').forEach((li) => {
-      const match = filter === 'all' || (li.dataset.cats || '').split(' ').includes(filter);
+      const match = matches(li);
       if (match) n++;
       li.hidden = !match || (!open && n > SHOW);
     });
     more.hidden = n <= SHOW;
+    if (empty) empty.hidden = n > 0;
     more.textContent = open ? 'Show fewer' : `Show all ${n} events`;
     more.setAttribute('aria-expanded', open ? 'true' : 'false');
   };
@@ -290,15 +304,16 @@ if ($('evList')) {
     if (!open) list.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
   refresh();
-  if (FILTERS.length > 2) {
+  if (TIERS.length) {
     const bar = document.createElement('div');
-    bar.className = 'chips evchips max'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Filter events');
-    bar.innerHTML = FILTERS.map(([k, l], i) => `<button type="button" class="chip${i ? '' : ' on'}" data-k="${k}" aria-pressed="${i ? 'false' : 'true'}">${esc(l)}</button>`).join('');
+    bar.className = 'evfilter max'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Filter events');
+    bar.innerHTML = TIERS.map((t) => `<div class="evfilter__row"><span class="evfilter__lbl">${esc(t.label)}</span><div class="chips evchips" data-tier="${t.key}"><button type="button" class="chip on" data-k="" aria-pressed="true">All</button>${t.opts.map(([k, l]) => `<button type="button" class="chip" data-k="${k}" aria-pressed="false">${esc(l)}</button>`).join('')}</div></div>`).join('');
     list.before(bar);
     bar.addEventListener('click', (ev) => {
       const b = ev.target.closest('button'); if (!b) return;
-      bar.querySelectorAll('button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
-      filter = b.dataset.k; open = false; refresh();
+      const row = b.closest('[data-tier]');
+      row.querySelectorAll('button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      pick[row.dataset.tier] = b.dataset.k; open = false; refresh();
     });
   }
 }

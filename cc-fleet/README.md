@@ -56,6 +56,11 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.9: Event filter in two tiers
+
+- Filter: Bike (All / Road / Gravel) and Type (All / Races / Group rides / Overnight bikepacking), combined. Social rides count as group rides; bikepacking and getaways as overnight.
+- Rows: date with the Road/Gravel pill under it · event · type pills · Find a bike. On phones: date + Road/Gravel on the left, everything else stacked on the right.
+
 ## 0.19.8: Pedals
 
 - Request form asks: "I need pedals: Shimano SPD (clip-in)" or "I’ll bring my own pedals" (required).

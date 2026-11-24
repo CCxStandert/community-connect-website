@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       CC Fleet
  * Description:       Community Connect fleet backend: bikes, riders, loans, availability calendar, request form, workshop log, stock, events calendar, notes, emails and calendar feeds.
- * Version:           0.19.8
+ * Version:           0.19.9
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Community Connect NPC
