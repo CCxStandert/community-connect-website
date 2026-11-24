@@ -56,6 +56,10 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.6: Fleet photos
+
+- Kettensäge 56 (CC-12) and 58 (CC-13) had each other's photo; swapped.
+
 ## 0.19.5: Wording
 
 - Numbers: "Connectors on our bikes" now reads "Riders on our bikes".

@@ -49,7 +49,7 @@ if (!reduce && slideEls.length > 1) setInterval(() => { if (!heroPaused && !docu
 if ($('list')) {
 const COLORS = { 'CC-03': ['#CFC8BB', 0], 'CC-04': ['#BDB8AE', 0], 'CC-05': ['#4E6F3A', 0], 'CC-06': ['#E8C33A', 0], 'CC-07': ['#EF6AA9', 0], 'CC-08': ['#2A2830', 1], 'CC-09': ['#2F5C45', 0], 'CC-11': ['#B9783A', 0], 'CC-12': ['#D9CBD3', 0], 'CC-13': ['#D9CBD3', 0] };
 const BRAND = CFG.brand || '<span class="mono">Standert</span>'; // Our own SVG, from the server. Bike IDs stay internal.
-const PHOTOS = { 'CC-12': 'cc-12.webp', 'CC-13': 'cc-13.webp' };
+const PHOTOS = { 'CC-12': 'cc-13.webp', 'CC-13': 'cc-12.webp' };
 let bikes = FALLBACK.map((b) => ({ ...b })), free = null, filter = 'all';
 const fits = (b, h) => b.range && h >= b.range[0] - 2 && h <= b.range[1] + 2;
 const label = { available: 'Available', out: 'Out riding', workshop: 'Workshop', booked: 'Booked', reserved: 'Raffle bike' };
