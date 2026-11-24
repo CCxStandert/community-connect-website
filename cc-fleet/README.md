@@ -56,6 +56,10 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.5: Wording
+
+- Numbers: "Connectors on our bikes" now reads "Riders on our bikes".
+
 ## 0.19.4: Road or gravel on every event
 
 - Each event row starts with a filled Road / Gravel / MTB pill (from its categories); Road and Gravel filters added.

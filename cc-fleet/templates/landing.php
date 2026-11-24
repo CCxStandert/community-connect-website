@@ -91,7 +91,7 @@ defined( 'ABSPATH' ) || exit;
 
 <!--cc:stats--><section class="stats max" aria-label="In numbers">
   <div><b id="sLoans">115</b><span>loans in <span id="sYear">2026</span></span></div>
-  <div><b id="sRiders">102</b><span>Connectors</span></div>
+  <div><b id="sRiders">102</b><span>Riders</span></div>
   <div><b id="sEvents">19</b><span>races &amp; events</span></div>
 </section><!--/cc:stats-->
 
