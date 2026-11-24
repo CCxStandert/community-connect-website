@@ -200,7 +200,11 @@ const span = (e) => {
 const MAIN = ['race', 'group', 'social', 'overnight', 'bikepacking', 'getaway'];
 const labelsOf = (e) => e.labels || (e.type ? [/ride|getaway/i.test(e.type) ? 'Ride' : 'Race'] : []);
 const catsOf = (e) => e.cats || [];
-const pills = (e) => {
+// Road / gravel / MTB: its own pill first, so every row says what bike it's for.
+const SURF = { road: 'Road', gravel: 'Gravel', mtb: 'MTB' };
+const surfPill = (e) => { const k = catsOf(e).find((x) => SURF[x]); return k ? `<span class="st surf surf--${k}">${SURF[k]}</span>` : ''; };
+const pills = (e) => surfPill(e) + kindPills(e);
+const kindPills = (e) => {
   const l = labelsOf(e), c = catsOf(e);
   let idx = c.map((k, i) => (MAIN.includes(k) ? i : -1)).filter((i) => i >= 0);
   if (!idx.length) idx = l.length ? [0] : [];
@@ -232,11 +236,11 @@ const seriesRow = (g) => {
 if ($('evList')) {
   const list = $('evList');
   // Soonest first (a series by its first date); events without a fixed date go last.
-  const startOf = (x) => (x.series ? x.items[0].start : (x.when ? '9999' : x.start)) || '9999';
+  const startOf = (x) => (x.series ? x.items[0].start : x.start) || '9999';
   const rows = groupSeries(EVENTS).sort((p, q) => startOf(p).localeCompare(startOf(q)));
   list.innerHTML = EVENTS.length ? rows.map((x) => (x.series ? seriesRow(x) : evRow(x))).join('') : '<li class="ev"><div><b>Nothing on the calendar right now.</b><small>Follow along on Instagram.</small></div></li>';
   // Filter buttons for the categories that actually occur.
-  const FILTERS = [['all', 'All'], ['group', 'Group rides'], ['race', 'Races'], ['social', 'Social rides'], ['overnight', 'Overnight bikepacking'], ['bikepacking', 'Bikepacking trips'], ['getaway', 'Getaways']]
+  const FILTERS = [['all', 'All'], ['road', 'Road'], ['gravel', 'Gravel'], ['group', 'Group rides'], ['race', 'Races'], ['social', 'Social rides'], ['overnight', 'Overnight bikepacking'], ['bikepacking', 'Bikepacking trips'], ['getaway', 'Getaways']]
     .filter(([k]) => k === 'all' || EVENTS.some((e) => catsOf(e).includes(k)));
   // Only the next 5 show; the rest fold out under one button.
   const SHOW = 5;

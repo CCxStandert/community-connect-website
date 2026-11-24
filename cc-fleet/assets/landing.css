@@ -279,3 +279,9 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .evs__more:hover{background:var(--cream)}
 @media(min-width:980px){.evs__more{padding-inline:40px}}
 @media(min-width:1281px){.evs__more.max{border-left:var(--line);border-right:var(--line)}}
+
+/* Surface pill (Road / Gravel / MTB): filled, so it reads apart from the outlined kind pills */
+.ev .st.surf{border-color:transparent;font-weight:600}
+.ev .st.surf--road{background:#B9CAD3;color:var(--ink)}
+.ev .st.surf--gravel{background:#DCC89F;color:var(--ink)}
+.ev .st.surf--mtb{background:#7A8B5A;color:#fff}

@@ -56,6 +56,11 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.4: Road or gravel on every event
+
+- Each event row starts with a filled Road / Gravel / MTB pill (from its categories); Road and Gravel filters added.
+- Events sort by their start date, including ones shown with a text date (e.g. "date TBC").
+
 ## 0.19.3: Next 5 events
 
 - The events list shows the next 5 by date; "Show all N events" folds out the rest. Works with the category filters.
