@@ -412,3 +412,37 @@ add_action( 'init', function () {
 		'content' => '<!-- wp:quote {"className":"cc-pquote"} --><blockquote class="wp-block-quote cc-pquote"><!-- wp:paragraph --><p>A line someone said on the ride.</p><!-- /wp:paragraph --><cite>Name</cite></blockquote><!-- /wp:quote -->',
 	) );
 } );
+
+/* ---------- While no project is public: no links, no overview page ---------- */
+
+function cc_projects_public() {
+	static $n = null;
+	if ( null === $n ) {
+		$n = (int) ( wp_count_posts( CC_PROJECT )->publish ?? 0 );
+	}
+	return $n > 0;
+}
+
+// Menu and footer links to /projects/ disappear until a project is published.
+add_filter( 'render_block', function ( $html, $block ) {
+	if ( cc_projects_public() || false === strpos( $html, '/projects/' ) ) {
+		return $html;
+	}
+	if ( 'core/navigation-link' === $block['blockName'] && '/projects/' === ( $block['attrs']['url'] ?? '' ) ) {
+		return '';
+	}
+	if ( 'core/paragraph' === $block['blockName'] && preg_match( '~^\s*<p><a href="/projects/">[^<]*</a></p>\s*$~', $html ) ) {
+		return '';
+	}
+	return $html;
+}, 10, 2 );
+
+// The overview page is a 404 for visitors until then (logged-in editors still see it).
+add_action( 'template_redirect', function () {
+	if ( is_post_type_archive( CC_PROJECT ) && ! cc_projects_public() && ! current_user_can( 'edit_posts' ) ) {
+		global $wp_query;
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
+	}
+} );
