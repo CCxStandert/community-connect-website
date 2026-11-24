@@ -17,6 +17,8 @@ require_once get_theme_file_path( 'inc/legal/consent.php' );
 require_once get_theme_file_path( 'inc/seo/seo.php' );
 // Auto crop: a focus point per photo, used wherever photos are cropped to fit (see inc/media/focus.php).
 require_once get_theme_file_path( 'inc/media/focus.php' );
+// Projects: films, races, repaints, field trips (see inc/projects/projects.php).
+require_once get_theme_file_path( 'inc/projects/projects.php' );
 
 // The shop: only when WooCommerce is active, so the site never depends on it (see inc/shop/shop.php).
 if ( class_exists( 'WooCommerce' ) ) {
@@ -37,6 +39,7 @@ add_action( 'after_setup_theme', function () {
 add_action( 'wp_enqueue_scripts', function () {
 	wp_enqueue_style( 'community-connect', get_theme_file_uri( 'assets/css/theme.css' ), array(), CC_THEME_VERSION );
 	wp_enqueue_script( 'community-connect', get_theme_file_uri( 'assets/js/theme.js' ), array(), CC_THEME_VERSION, true );
+	wp_enqueue_style( 'cc-projects', get_theme_file_uri( 'assets/css/projects.css' ), array( 'community-connect' ), CC_THEME_VERSION );
 	// The plugin's styles for its live parts (fleet grid, events, game…) are reused everywhere.
 	if ( defined( 'CC_FLEET_URL' ) ) {
 		wp_enqueue_style( 'cc-landing', CC_FLEET_URL . 'assets/landing.css', array(), defined( 'CC_FLEET_VERSION' ) ? CC_FLEET_VERSION : null );
