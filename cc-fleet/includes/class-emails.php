@@ -179,7 +179,7 @@ class CC_Fleet_Emails {
 		$rider = CC_Fleet_Riders::get( $loan->rider_id );
 		if ( $rider && $rider->email ) {
 			self::send( $rider->email, 'We got your bike request', self::msg_received( array(
-				'name' => self::first_name( $rider->name ), 'bike' => self::bike_name( $loan ), 'dates' => self::dates( $loan ), 'plan' => $loan->plan,
+				'name' => self::first_name( $rider->name ), 'bike' => self::bike_name( $loan ), 'dates' => self::dates( $loan ), 'plan' => $loan->plan, 'pedals' => CC_Fleet_Loans::pedals_label( $loan ),
 				'whatsapp' => 'yes' === $rider->whatsapp ? '' : self::whatsapp_confirm_link( $loan->id ),
 			) ), array( 'type' => 'request_received', 'loan' => $loan ) );
 		}
@@ -376,6 +376,7 @@ class CC_Fleet_Emails {
 				'time'      => trim( (string) ( $l->handoff_time ?? '' ) ),
 				'note'      => trim( (string) ( $l->handoff_note ?? '' ) ),
 				'pressure'  => $next && class_exists( 'CC_Fleet_Pressure' ) ? CC_Fleet_Pressure::line_for_loan( $next ) : '',
+				'pedals'    => $next ? CC_Fleet_Loans::pedals_label( $next ) : '',
 				'dropoff'   => CC_Fleet_Settings::get( 'dropoff_place' ) ?: CC_Fleet_Settings::get( 'base_address' ),
 				'edited'    => class_exists( 'CC_Fleet_Outbox' ) && CC_Fleet_Outbox::scheduled( $l->id ),
 				'edit'      => admin_url( 'admin.php?page=cc-fleet-loan&id=' . $l->id . '#handoff' ),
@@ -397,6 +398,9 @@ class CC_Fleet_Emails {
 			);
 			if ( $it['note'] ) {
 				$rows[] = array( 'Note', $it['note'] );
+			}
+			if ( ! empty( $it['pedals'] ) ) {
+				$rows[] = array( 'Pedals for ' . strtok( $it['next'], ' ' ), $it['pedals'] );
 			}
 			if ( ! empty( $it['pressure'] ) ) {
 				$rows[] = array( 'Tyres for ' . strtok( $it['next'], ' ' ), $it['pressure'] );
@@ -836,7 +840,7 @@ class CC_Fleet_Emails {
 		if ( $f['instagram'] ) {
 			$rows[] = array( 'Instagram', '@' . ltrim( $f['instagram'], '@' ) );
 		}
-		$rows   = array_merge( $rows, array( array( 'Bike', $f['bike'] ), array( 'Dates', $f['dates'] ), array( 'Plan', $f['plan'] ?: '—' ), array( 'History', $f['history'] ) ) );
+		$rows   = array_merge( $rows, array( array( 'Bike', $f['bike'] ), array( 'Dates', $f['dates'] ), array( 'Plan', $f['plan'] ?: '—' ) ), ! empty( $f['pedals'] ) ? array( array( 'Pedals', $f['pedals'] ) ) : array(), array( array( 'History', $f['history'] ) ) );
 		if ( ! empty( $f['race'] ) ) {
 			$rows[] = array( 'Event', ( $f['event'] ?: 'A race we don’t list' ) . ' · racing terms accepted' );
 		}

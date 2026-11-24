@@ -179,3 +179,11 @@
 .cc-bike-card__id { display: flex; align-items: center; min-height: 22px; }
 .cc-bike--27 .cc-bike__brand { margin: 0 0 10px; }
 .cc-bike--27 .cc-bike__brand .cc-brand { height: 15px; }
+
+/* Pedals choice in the request form */
+.cc-pedals { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 0; }
+.cc-pedals legend { padding: 0; margin-bottom: 8px; font-weight: 600; }
+.cc-pedals .cc-check input { accent-color: #141217; }
+.cc-request .cc-pedals label.cc-check { display: flex !important; flex-direction: row !important; align-items: center; gap: 10px; font-size: 15px; }
+.cc-request .cc-pedals input[type="radio"] { -webkit-appearance: radio; appearance: auto; width: 20px !important; min-width: 20px; height: 20px !important; min-height: 0 !important; padding: 0 !important; margin: 0; border: 0; flex: 0 0 20px; }
+.cc-request .cc-pedals label.cc-check span { flex: 1 1 auto; }

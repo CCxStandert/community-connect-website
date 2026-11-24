@@ -300,6 +300,7 @@ class CC_Fleet_Loans {
 			'race'           => empty( $data['race'] ) ? 0 : 1,
 			'handoff_from'   => ! empty( $data['handoff_from'] ) ? (int) $data['handoff_from'] : null,
 			'requested_size' => sanitize_text_field( $data['requested_size'] ?? '' ),
+			'pedals'         => in_array( $data['pedals'] ?? '', array( 'need', 'own' ), true ) ? $data['pedals'] : '',
 			'token'          => wp_generate_password( 32, false ),
 			'created_at'     => $now,
 			'updated_at'     => $now,
@@ -323,7 +324,7 @@ class CC_Fleet_Loans {
 		if ( ! $loan ) {
 			return new WP_Error( 'cc_missing', 'Loan not found.' );
 		}
-		$fields = array_intersect_key( $data, array_flip( array( 'bike_id', 'rider_id', 'start_date', 'end_date', 'plan', 'notes', 'handoff_from', 'requested_size', 'event_id', 'handoff_place', 'handoff_time', 'handoff_note', 'race', 'pickup_mode', 'pickup_place', 'pickup_contact', 'pickup_time' ) ) );
+		$fields = array_intersect_key( $data, array_flip( array( 'bike_id', 'rider_id', 'start_date', 'end_date', 'plan', 'notes', 'handoff_from', 'requested_size', 'event_id', 'handoff_place', 'handoff_time', 'handoff_note', 'race', 'pickup_mode', 'pickup_place', 'pickup_contact', 'pickup_time', 'pedals' ) ) );
 		$merged = (object) array_merge( (array) $loan, $fields );
 		$valid  = self::validate_range( $merged->start_date, $merged->end_date, false );
 		if ( is_wp_error( $valid ) ) {
@@ -514,5 +515,11 @@ class CC_Fleet_Loans {
 			'SELECT * FROM ' . self::table() . " WHERE bike_id = %d AND id <> %d AND status IN ('approved','out') AND start_date >= %s AND start_date <= %s ORDER BY start_date ASC LIMIT 1",
 			$loan->bike_id, $loan->id, $loan->end_date, self::add_days( $loan->end_date, self::handoff_window() )
 		) );
+	}
+
+	/** "Needs SPD pedals" / "Brings own pedals" / '' — what the rider said about pedals. */
+	public static function pedals_label( $loan ) {
+		$p = (string) ( $loan->pedals ?? '' );
+		return 'need' === $p ? 'Needs SPD pedals' : ( 'own' === $p ? 'Brings own pedals' : '' );
 	}
 }

@@ -180,6 +180,12 @@ class CC_Fleet_Frontend {
 			<label class="cc-field"><span>Your weight (kg) <small class="cc-opt">optional</small></span><input type="number" name="weight" inputmode="numeric" min="30" max="200"></label>
 			<p class="cc-hint">Only used to set your tyre pressure at handoff.</p>
 			<p class="cc-error" data-cc-error="weight" hidden></p>
+			<fieldset class="cc-field cc-field--wide cc-pedals"><legend>Pedals <span class="cc-req" aria-hidden="true">*</span></legend>
+				<label class="cc-check"><input type="radio" name="pedals" value="need" required> <span>I need pedals: Shimano SPD (clip-in)</span></label>
+				<label class="cc-check"><input type="radio" name="pedals" value="own"> <span>I’ll bring my own pedals</span></label>
+				<small class="cc-hint">We lend Shimano SPD clip-in pedals. Riding flats or another system? Bring your own and we’ll fit them at the handoff.</small>
+			</fieldset>
+			<p class="cc-error" data-cc-error="pedals" hidden></p>
 			<?php $events = self::upcoming_events(); ?>
 			<label class="cc-field cc-field--wide"><span>Riding an event?</span>
 				<select name="event_id" data-cc-event>

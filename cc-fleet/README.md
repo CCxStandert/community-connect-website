@@ -56,6 +56,11 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.19.8: Pedals
+
+- Request form asks: "I need pedals: Shimano SPD (clip-in)" or "I’ll bring my own pedals" (required).
+- Saved on the loan (new column, DB 16); shown in the dashboard request list, on the loan page (editable), in the crew's new-request email and in the day-before handoff check for the next rider.
+
 ## 0.19.7: Find a bike for an event
 
 - Every dated event (and each date of a series) has a "Find a bike" button: it checks the fleet for pick-up two days before to the day after, scrolls to the fleet and shows which bikes are free.

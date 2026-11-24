@@ -182,7 +182,7 @@ class CC_Fleet_Admin {
 				self::bike_cell( $l ), self::rider_cell( $l ),
 				esc_url( self::url( 'cc-fleet-loan', array( 'id' => $l->id ) ) ), esc_html( $l->start_date ), esc_html( $l->end_date ), $days, 1 === $days ? '' : 's',
 				CC_Fleet_Loans::status_badge( $l ), $clash ? '<br><span class="cc-warn">Clashes with an approved loan</span>' : '',
-				esc_html( wp_trim_words( (string) $l->plan, 12 ) ),
+				( CC_Fleet_Loans::pedals_label( $l ) ? '<b>' . esc_html( CC_Fleet_Loans::pedals_label( $l ) ) . '</b> · ' : '' ) . esc_html( wp_trim_words( (string) $l->plan, 12 ) ),
 				$actions ? '<td class="cc-actions">' . self::status_buttons( $l ) . '</td>' : '' );
 		}
 		echo '</tbody></table>';
@@ -427,6 +427,8 @@ class CC_Fleet_Admin {
 		}
 		echo '</td></tr>';
 		printf( '<tr><th><label for="cc-plan">Plan</label></th><td><textarea id="cc-plan" name="plan" rows="3" class="large-text">%s</textarea></td></tr>', esc_textarea( $v['plan'] ) );
+		$pd = (string) ( $loan->pedals ?? '' );
+		printf( '<tr><th><label for="cc-pedals">Pedals</label></th><td><select id="cc-pedals" name="pedals"><option value=""%s>— Not asked —</option><option value="need"%s>Needs Shimano SPD pedals</option><option value="own"%s>Brings own pedals</option></select></td></tr>', selected( $pd, '', false ), selected( $pd, 'need', false ), selected( $pd, 'own', false ) );
 		$ev_now = (int) ( $loan->event_id ?? ( $_GET['event_id'] ?? 0 ) );
 		echo '<tr><th><label for="cc-event">Event</label></th><td><select id="cc-event" name="event_id"><option value="0">— Not for an event —</option>';
 		foreach ( CC_Fleet_Records::query( 'events', array( 'from' => CC_Fleet_Loans::add_days( $v['start_date'] ?: CC_Fleet_Settings::today(), -60 ), 'order' => 'ASC', 'limit' => 60 ) ) as $ev ) {
@@ -596,6 +598,7 @@ class CC_Fleet_Admin {
 			'start_date' => sanitize_text_field( $in['start_date'] ?? '' ), 'end_date' => sanitize_text_field( $in['end_date'] ?? '' ),
 			'plan' => sanitize_textarea_field( $in['plan'] ?? '' ), 'notes' => sanitize_textarea_field( $in['notes'] ?? '' ),
 			'event_id' => (int) ( $in['event_id'] ?? 0 ),
+			'pedals' => in_array( $in['pedals'] ?? '', array( 'need', 'own' ), true ) ? $in['pedals'] : '',
 		);
 		if ( $id ) {
 			$res = CC_Fleet_Loans::update( $id, $data, $force );

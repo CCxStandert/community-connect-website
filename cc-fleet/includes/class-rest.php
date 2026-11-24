@@ -178,6 +178,10 @@ class CC_Fleet_Rest {
 		if ( $height < 120 || $height > 220 ) {
 			$errors['height'] = 'Your height in cm helps us pick the right size (120–220).';
 		}
+		$pedals = sanitize_key( (string) ( $p['pedals'] ?? '' ) );
+		if ( ! in_array( $pedals, array( 'need', 'own' ), true ) ) {
+			$errors['pedals'] = 'Tell us if you need pedals or bring your own.';
+		}
 		$plan = trim( sanitize_textarea_field( $p['plan'] ?? '' ) );
 		if ( strlen( $plan ) < 3 ) {
 			$errors['plan'] = 'Tell us briefly what you’re planning.';
@@ -251,7 +255,7 @@ class CC_Fleet_Rest {
 		$loan_id = CC_Fleet_Loans::create( array(
 			'bike_id' => $bike_id, 'rider_id' => $rider_id, 'start_date' => $start, 'end_date' => $end,
 			'status' => $join ? 'waiting' : 'requested', 'plan' => ( $event ? '[' . $event->name . '] ' : ( -1 === $event_id ? '[Race] ' : ( $other_ride ? '[Event] ' : '' ) ) ) . $plan, 'source' => 'web',
-			'event_id' => max( 0, $event_id ), 'race' => $is_race ? 1 : 0,
+			'event_id' => max( 0, $event_id ), 'race' => $is_race ? 1 : 0, 'pedals' => $pedals,
 			'requested_size' => $bike_id ? CC_Fleet_Bikes::get( $bike_id, 'size' ) : $size,
 			'notes'          => CC_Fleet_Loans::days_between( $start, $end ) + 1 > CC_Fleet_Frontend::usual_days() ? sprintf( 'Longer than the usual %d days (%d days): check the reason in the plan.', CC_Fleet_Frontend::usual_days(), CC_Fleet_Loans::days_between( $start, $end ) + 1 ) : '',
 		) );

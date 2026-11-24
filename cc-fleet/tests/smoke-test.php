@@ -98,7 +98,7 @@ $call = function ( $method, $route, $params = array() ) {
 	$req = new WP_REST_Request( $method, '/cc/v1' . $route );
 	// Requests made before the form required everything get valid defaults; tests that check a field pass it explicitly (null = leave it out).
 	if ( 'POST' === $method && '/requests' === $route && empty( $params['_raw'] ) ) {
-		$params = array_merge( array( 'phone' => '082 555 0101', 'phone_cc' => '27', 'instagram' => 'none', 'height' => 175, 'plan' => 'Test ride', 'consent' => 1 ), $params );
+		$params = array_merge( array( 'phone' => '082 555 0101', 'phone_cc' => '27', 'instagram' => 'none', 'height' => 175, 'plan' => 'Test ride', 'consent' => 1, 'pedals' => 'need' ), $params );
 	}
 	unset( $params['_raw'] );
 	$params = array_filter( $params, function ( $v ) { return null !== $v; } );
@@ -117,7 +117,9 @@ cc_t( 'Availability lists booked ranges', 200 === $av->get_status() && count( $a
 cc_t( 'Availability has no names', false === strpos( wp_json_encode( $avd ), 'Test Rider' ) );
 cc_t( 'Availability is not cacheable', 'no-store, max-age=0' === ( $av->get_headers()['Cache-Control'] ?? '' ) );
 $mails = array();
-$ok = $call( 'POST', '/requests', array( 'bike' => 'CC-05', 'start' => $d( 20 ), 'end' => $d( 23 ), 'name' => 'Naledi K', 'email' => 'naledi@example.org', 'phone' => '0821234567', 'instagram' => '@naledi', 'height' => 168, 'plan' => 'Cederberg overnighter', 'agree' => 1, 'consent' => 1, 't' => time() - 30 ) );
+$ok = $call( 'POST', '/requests', array( 'bike' => 'CC-05', 'start' => $d( 20 ), 'end' => $d( 23 ), 'name' => 'Naledi K', 'email' => 'naledi@example.org', 'phone' => '0821234567', 'instagram' => '@naledi', 'height' => 168, 'plan' => 'Cederberg overnighter', 'agree' => 1, 'consent' => 1, 'pedals' => 'own', 't' => time() - 30 ) );
+$ok_l = $wpdb->get_row( 'SELECT * FROM ' . CC_Fleet_Loans::table() . ' ORDER BY id DESC LIMIT 1' );
+cc_t( 'Pedals choice saved on the loan', $ok_l && 'own' === $ok_l->pedals && 'Brings own pedals' === CC_Fleet_Loans::pedals_label( $ok_l ) );
 cc_t( 'Valid request → 201', 201 === $ok->get_status(), wp_json_encode( $ok->get_data() ) );
 cc_t( 'Rider + crew both emailed', 2 === count( $mails ) && 'naledi@example.org' === $mails[0]['to'] && in_array( 'crew@example.org', (array) $mails[1]['to'], true ) );
 $crew_mail = $mails[1]['message'] ?? '';
@@ -467,4 +469,9 @@ if ( file_exists( '/home/claude/events2027/cc-events-2027.csv' ) ) { // Local co
 	$imp = CC_Fleet_Records::import_csv( 'events', CC_Fleet_Import::read_rows( '/home/claude/events2027/cc-events-2027.csv' ) );
 	cc_t( '2027 events CSV imports', ! is_wp_error( $imp ) && ( $imp['created'] ?? 0 ) + ( $imp['skipped'] ?? 0 ) >= 8, wp_json_encode( $imp ) );
 }
+echo "\nPedals\n";
+$np = $call( 'POST', '/requests', array( 'bike' => 'CC-05', 'start' => $d( 150 ), 'end' => $d( 151 ), 'name' => 'No Pedals', 'email' => 'nop@example.org', 'agree' => 1, 'pedals' => '', 't' => time() - 30 ) );
+cc_t( 'Request without a pedals choice → 400 on pedals', 400 === $np->get_status() && isset( $np->get_data()['data']['fields']['pedals'] ) );
+
+
 echo "\n" . $GLOBALS['cc_pass'] . ' passed, ' . $GLOBALS['cc_fail'] . " failed (incl. backend-only checks)\n";

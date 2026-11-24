@@ -140,6 +140,7 @@ class CC_Fleet_Install {
 			source varchar(20) NOT NULL DEFAULT 'web',
 			handoff_from bigint(20) unsigned DEFAULT NULL,
 			requested_size varchar(10) NOT NULL DEFAULT '',
+			pedals varchar(8) NOT NULL DEFAULT '',
 			token varchar(40) NOT NULL DEFAULT '',
 			reminder_sent tinyint(1) NOT NULL DEFAULT 0,
 			event_id bigint(20) unsigned NOT NULL DEFAULT 0,

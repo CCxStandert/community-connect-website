@@ -54,7 +54,7 @@ $tall   = $rider( 'Tall Tom', 200 );
 echo "Joining\n";
 $booked = CC_Fleet_Loans::create( array( 'bike_id' => $b12, 'rider_id' => $thandi, 'start_date' => $d( 10 ), 'end_date' => $d( 13 ), 'status' => 'approved' ) );
 $req    = new WP_REST_Request( 'POST', '/cc/v1/requests' );
-$base   = array( 'name' => 'Naledi Khumalo', 'email' => 'naledi@example.org', 'phone' => '82 555 0101', 'phone_cc' => '27', 'instagram' => 'none', 'height' => 180, 'plan' => 'Overnighter to Greyton', 'agree' => 1, 'consent' => 1, 'bike' => 'CC-12', 'start' => $d( 10 ), 'end' => $d( 12 ) );
+$base   = array( 'name' => 'Naledi Khumalo', 'email' => 'naledi@example.org', 'phone' => '82 555 0101', 'phone_cc' => '27', 'instagram' => 'none', 'height' => 180, 'plan' => 'Overnighter to Greyton', 'agree' => 1, 'consent' => 1, 'pedals' => 'need', 'bike' => 'CC-12', 'start' => $d( 10 ), 'end' => $d( 12 ) );
 $req->set_body_params( $base );
 $r = rest_do_request( $req );
 cc_w( 'Booked bike: 409 that offers the waiting list', 409 === $r->get_status() && ! empty( $r->as_error()->get_error_data()['waitlist'] ), wp_json_encode( $r->get_data() ) );
