@@ -463,3 +463,6 @@ html.dp-open{overflow:hidden}
   .stat__icon{height:72px}
 }
 @media(min-width:980px){.stats{padding:0}.stat{padding:40px}}
+.stats .stat__k{font-size:11px}.stats .stat__l{font-size:14px}.stats .stat__hand{font-size:26px}
+.stats .stat>p:empty{display:none}
+@media(min-width:760px){.stats .stat__l{font-size:15px}.stats .stat__hand{font-size:30px}}
