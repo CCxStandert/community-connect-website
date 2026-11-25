@@ -33,6 +33,7 @@ class CC_Fleet_Emails {
 	private static $bypass = false;
 
 	private static function send( $to, $subject, array $msg, $context = array() ) {
+		$msg = self::with_my_rides( $msg, $context );
 		if ( ! self::$bypass && class_exists( 'CC_Fleet_Outbox' ) && CC_Fleet_Outbox::should_hold( $context ) && ! empty( $to ) ) {
 			self::$held = CC_Fleet_Outbox::hold( $to, $subject, $msg, $context );
 			if ( self::$held ) {
@@ -70,6 +71,36 @@ class CC_Fleet_Emails {
 		remove_filter( 'wp_mail_from_name', $name_filter, 5 );
 		remove_action( 'phpmailer_init', $alt );
 		return $sent;
+	}
+
+	/** Rider emails about a loan get a "See your booking" button to their My rides page. */
+	private static function with_my_rides( array $msg, $context ) {
+		$loan = $context['loan'] ?? null;
+		if ( 'crew' === ( $msg['footer'] ?? 'rider' ) || ! is_object( $loan ) || ! class_exists( 'CC_Fleet_Me' ) || ! empty( $msg['my_rides'] ) ) {
+			return $msg;
+		}
+		$rider = CC_Fleet_Riders::get( $loan->rider_id );
+		$url   = $rider ? CC_Fleet_Me::url( $rider ) : '';
+		if ( ! $url ) {
+			return $msg;
+		}
+		$open             = in_array( $loan->status, array( 'requested', 'waiting', 'approved', 'out' ), true );
+		$msg['blocks'][]  = array( 'buttons', array( array( $open ? 'See your booking' : 'Your rides', $url, true ) ) );
+		$msg['blocks'][]  = array( 'small', 'Your private link: bookings, pick-up details and faster requests next time. Don’t forward it.' );
+		$msg['my_rides']  = 1;
+		return $msg;
+	}
+
+	/** "Email me my link" from the My rides page. */
+	public static function my_rides_link( $rider, $url ) {
+		return self::send_now( $rider->email, 'Your Community Connect link', array(
+			'kicker' => 'My rides', 'headline' => 'Here’s your link, ' . self::first_name( $rider->name ) . '.', 'subline' => 'Bookings, pick-up details, faster requests.',
+			'preheader' => 'Tap to see your bookings', 'footer' => 'rider', 'my_rides' => 1,
+			'blocks' => array(
+				array( 'buttons', array( array( 'Open my rides', $url, true ) ) ),
+				array( 'small', 'The link signs you in on the device you open it on, for 30 days. Didn’t ask for this? Ignore it; nothing changes.' ),
+			),
+		), array( 'type' => 'my_rides_link' ) );
 	}
 
 	/** Send exactly this message now, skipping the review step (used by the compose screen). */

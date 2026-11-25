@@ -15,7 +15,7 @@
 	function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
 	function api(path, opts) {
-		return fetch(C.api.replace(/\/$/, '') + path, Object.assign({ headers: { 'Accept': 'application/json' }, credentials: 'omit' }, opts || {}))
+		return fetch(C.api.replace(/\/$/, '') + path, Object.assign({ headers: { 'Accept': 'application/json' }, credentials: 'same-origin' }, opts || {}))
 			.then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; }); });
 	}
 
@@ -129,6 +129,52 @@
 	};
 
 	/* ---------- Request form ---------- */
+	/* ---------- Returning riders: details filled in, agreement remembered ---------- */
+	var STORE = 'cc_rider', FIELDS = ['name', 'email', 'phone', 'phone_cc', 'instagram', 'height', 'weight', 'pedals'];
+	function readLocal() { try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) { return null; } }
+	function Who(form) {
+		var box = form.querySelector('[data-cc-who]'), sum = form.querySelector('[data-cc-who-sum]'), back = form.querySelector('[data-cc-back]');
+		var agreeBox = form.querySelector('[data-cc-agree-box]'), agreed = form.querySelector('[data-cc-agreed]'), remember = form.querySelector('[data-cc-remember]');
+		var setVal = function (k, v) {
+			if (v == null || v === '') return;
+			if (k === 'pedals') { var r = form.querySelector('input[name=pedals][value="' + v + '"]'); if (r) r.checked = true; return; }
+			var i = form.querySelector('[name="' + k + '"]'); if (i && (!i.value || i.tagName === 'SELECT')) i.value = v;
+		};
+		var fill = function (d, signedIn) {
+			FIELDS.forEach(function (k) { setVal(k, d[k]); });
+			var ok = ['name', 'email', 'phone', 'instagram', 'height'].every(function (k) { var i = form.querySelector('[name="' + k + '"]'); return i && i.value; });
+			if (!ok || !box || !sum) return;
+			sum.querySelector('[data-cc-who-name]').textContent = d.name;
+			sum.querySelector('[data-cc-who-meta]').textContent = [d.email, d.height ? d.height + ' cm' : ''].filter(Boolean).join(' · ');
+			box.hidden = true; sum.hidden = false; if (back) back.hidden = true;
+			if (remember) remember.checked = true;
+			if (signedIn && d.agreed && agreeBox && agreed) {
+				agreeBox.hidden = true;
+				agreeBox.querySelectorAll('input').forEach(function (i) { i.required = false; });
+				agreed.textContent = 'You accepted the borrowing agreement' + (d.agreed_on ? ' on ' + d.agreed_on : '') + '. Same deal as always.';
+				agreed.hidden = false;
+			}
+		};
+		if (sum) sum.querySelector('[data-cc-who-edit]').addEventListener('click', function () { box.hidden = false; sum.hidden = true; var n = form.querySelector('[name=name]'); if (n) n.focus(); });
+		var local = readLocal();
+		if (local) fill(local, false);
+		if (C.api) api('/me').then(function (res) { if (res.ok && res.body && res.body.signed_in) fill(res.body, true); }).catch(function () {});
+		if (/[?&]again=1/.test(location.search)) setTimeout(function () { form.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
+		return {
+			// A problem with a collapsed field (e.g. an old phone number): open the details again.
+			reveal: function (fields) {
+				if (box && box.hidden && ['name', 'email', 'phone', 'instagram', 'height', 'weight'].some(function (k) { return fields[k]; })) { box.hidden = false; sum.hidden = true; }
+				if (agreeBox && agreeBox.hidden && (fields.agree || fields.consent)) { agreeBox.hidden = false; if (agreed) agreed.hidden = true; }
+			},
+			saved: function (data) {
+				try {
+					if (remember && remember.checked) { var keep = {}; FIELDS.forEach(function (k) { if (data[k]) keep[k] = data[k]; }); localStorage.setItem(STORE, JSON.stringify(keep)); }
+					else localStorage.removeItem(STORE);
+				} catch (e) {}
+			}
+		};
+	}
+
 	function RequestForm(form) {
 		var t = form.querySelector('[data-cc-t]'); if (t) t.value = Math.floor(Date.now() / 1000);
 		// Longer than the usual loan: allowed, but ask for a reason in the plan.
@@ -173,6 +219,7 @@
 			var hid = form.querySelector('input[name=waitlist]');
 			if (hid && e.target && e.target !== hid && /start|end|bike|size/.test(e.target.name || '')) hid.value = '';
 		});
+		var who = Who(form);
 		form.addEventListener('submit', function (ev) {
 			ev.preventDefault();
 			form.querySelectorAll('[data-cc-error]').forEach(function (e) { e.hidden = true; });
@@ -195,10 +242,12 @@
 						}
 						Array.prototype.forEach.call(form.elements, function (e) { if (e !== ok) e.disabled = true; });
 						btn.textContent = 'Sent ✓';
+						who.saved(data);
 						ok.scrollIntoView({ behavior: 'smooth', block: 'center' });
 						return;
 					}
 					var fields = (res.body.data && res.body.data.fields) || {};
+					who.reveal(fields);
 					var shown = false;
 					Object.keys(fields).forEach(function (k) {
 						var e = form.querySelector('[data-cc-error="' + k + '"]') || form.querySelector('[data-cc-error="form"]');

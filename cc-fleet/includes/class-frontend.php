@@ -160,6 +160,9 @@ class CC_Fleet_Frontend {
 			<p class="cc-hint cc-usual"><?php echo esc_html( self::usual_note() ); ?></p>
 			<p class="cc-long" data-cc-long hidden></p>
 			<p class="cc-required-note"><span class="cc-req" aria-hidden="true">*</span> Everything is needed so we can reach you and hand the bike over.</p>
+			<div class="cc-who__sum" data-cc-who-sum hidden><p><span class="cc-who__k">Requesting as</span> <b data-cc-who-name></b><small data-cc-who-meta></small></p><button type="button" class="cc-who__edit" data-cc-who-edit>Change</button></div>
+			<p class="cc-back" data-cc-back>Ridden with us before? <a href="<?php echo esc_url( class_exists( 'CC_Fleet_Me' ) ? CC_Fleet_Me::page_url() : home_url( '/' ) ); ?>">Email me a link</a> and we’ll fill this in for you.</p>
+			<div class="cc-who" data-cc-who>
 			<label class="cc-field"><span>Your name <span class="cc-req" aria-hidden="true">*</span></span><input type="text" name="name" autocomplete="name" required aria-required="true"></label>
 			<p class="cc-error" data-cc-error="name" hidden></p>
 			<label class="cc-field"><span>Email <span class="cc-req" aria-hidden="true">*</span></span><input type="email" name="email" autocomplete="email" inputmode="email" required aria-required="true"></label>
@@ -180,6 +183,7 @@ class CC_Fleet_Frontend {
 			<label class="cc-field"><span>Your weight (kg) <small class="cc-opt">optional</small></span><input type="number" name="weight" inputmode="numeric" min="30" max="200"></label>
 			<p class="cc-hint">Only used to set your tyre pressure at handoff.</p>
 			<p class="cc-error" data-cc-error="weight" hidden></p>
+			</div>
 			<fieldset class="cc-field cc-field--wide cc-pedals"><legend>Pedals <span class="cc-req" aria-hidden="true">*</span></legend>
 				<label class="cc-check"><input type="radio" name="pedals" value="need" required> <span>I need pedals: Shimano SPD (clip-in)</span></label>
 				<label class="cc-check"><input type="radio" name="pedals" value="own"> <span>I’ll bring my own pedals</span></label>
@@ -204,13 +208,17 @@ class CC_Fleet_Frontend {
 			</div>
 			<label class="cc-field cc-field--wide"><span>The plan <span class="cc-req" aria-hidden="true">*</span></span><textarea name="plan" rows="3" placeholder="Gravel ride, bikepacking trip, a Tuesday loop…" required aria-required="true"></textarea></label>
 			<p class="cc-error" data-cc-error="plan" hidden></p>
+			<div class="cc-agree-box" data-cc-agree-box>
 			<label class="cc-check"><input type="checkbox" name="agree" value="1" required aria-required="true"> <span>I'll look after the bike and accept the <?php $ag = CC_Fleet_Landing::agreement_url(); echo $ag ? '<a href="' . esc_url( $ag ) . '" target="_blank" rel="noopener">borrowing agreement</a>' : 'borrowing agreement'; ?>. <span class="cc-req" aria-hidden="true">*</span></span></label>
 			<p class="cc-error" data-cc-error="agree" hidden></p>
 			<label class="cc-check"><input type="checkbox" name="consent" value="1" required aria-required="true"> <span>Community Connect may store my details to arrange this and future loans<?php echo $s['privacy_url'] ? ' (<a href="' . esc_url( $s['privacy_url'] ) . '" target="_blank" rel="noopener">privacy</a>)' : ''; ?>. <span class="cc-req" aria-hidden="true">*</span></span></label>
 			<p class="cc-error" data-cc-error="consent" hidden></p>
+			</div>
+			<p class="cc-agreed" data-cc-agreed hidden></p>
 			<div class="cc-hp" aria-hidden="true"><label for="<?php echo esc_attr( $uid ); ?>">Website</label><input id="<?php echo esc_attr( $uid ); ?>" type="text" name="website" tabindex="-1" autocomplete="off"></div>
 			<input type="hidden" name="t" value="" data-cc-t>
 			<p class="cc-error cc-error--form" data-cc-error="form" hidden></p>
+			<label class="cc-check cc-remember" data-cc-remember-row><input type="checkbox" name="remember" value="1" data-cc-remember> <span>Remember my details on this device, so next time is quicker</span></label>
 			<div class="cc-request__bar">
 				<button type="submit" class="cc-button">Request <?php echo $any ? 'a bike' : 'this bike'; ?></button>
 			</div>

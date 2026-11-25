@@ -56,6 +56,15 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.20.0: My rides + faster re-requests
+
+- **My rides** (/my-rides/): a rider's private page, no account or password. Every rider email about a loan has a "See your booking" button with their private link; opening it signs them in on that device for 30 days. Links work until 30 days after their last loan.
+- Shows upcoming bookings (status, pick-up place/contact/time or "from the rider before", where to return it, pedals, plan), with Add to calendar (.ics), WhatsApp the crew, Change dates (sent to the crew, never automatic) and Cancel (requests cancel straight away; confirmed bookings send the crew a message). Past rides with "Ride it again".
+- Signed out: "Email me my link" (same answer for any address; rate-limited).
+- Request form: "Remember my details on this device"; returning riders see "Requesting as …" instead of the fields (Change to edit), pedals pre-picked. Signed in with the current agreement accepted: the agreement and consent ticks are replaced by a line saying when they accepted. Bump `CC_Fleet_Me::AGREEMENT` when the agreement changes.
+- DB 17: riders get access_token, access_until, agreed_version, agreed_at.
+- tests/me-test.php (21 checks).
+
 ## 0.19.10: Asset version fix
 
 - The version used for scripts and styles had stayed at 0.19.7, so browsers and Cloudflare kept the old event list and form styles. Now in step with the plugin version.

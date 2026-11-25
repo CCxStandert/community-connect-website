@@ -70,6 +70,9 @@ class CC_Fleet_Install {
 				// this runs on plugins_loaded, so only leave a note and do it on init.
 				update_option( 'cc_fleet_install_landing', 1, false );
 			}
+			if ( class_exists( 'CC_Fleet_Me' ) ) {
+				CC_Fleet_Me::ensure_page(); // My rides page (once).
+			}
 			if ( $from && $from < 15 ) {
 				self::unquiet_running_imports();
 			}
@@ -122,10 +125,15 @@ class CC_Fleet_Install {
 			whatsapp varchar(12) NOT NULL DEFAULT '',
 			notes text NULL,
 			consent_at datetime DEFAULT NULL,
+			access_token varchar(40) NOT NULL DEFAULT '',
+			access_until date DEFAULT NULL,
+			agreed_version varchar(20) NOT NULL DEFAULT '',
+			agreed_at datetime DEFAULT NULL,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (id),
-			KEY email (email)
+			KEY email (email),
+			KEY access_token (access_token)
 		) $c;" );
 
 		dbDelta( "CREATE TABLE $loans (

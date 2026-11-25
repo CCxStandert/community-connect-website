@@ -186,10 +186,13 @@ class CC_Fleet_Rest {
 		if ( strlen( $plan ) < 3 ) {
 			$errors['plan'] = 'Tell us briefly what you’re planning.';
 		}
-		if ( empty( $p['agree'] ) ) {
+		// Signed in through their My rides link with the current agreement already accepted: no need to tick it again.
+		$me    = class_exists( 'CC_Fleet_Me' ) ? CC_Fleet_Me::current() : null;
+		$known = $me && 0 === strcasecmp( trim( (string) $me->email ), trim( (string) ( $p['email'] ?? '' ) ) ) && CC_Fleet_Me::agreed( $me );
+		if ( empty( $p['agree'] ) && ! $known ) {
 			$errors['agree'] = 'Please accept the borrowing agreement.';
 		}
-		if ( empty( $p['consent'] ) ) {
+		if ( empty( $p['consent'] ) && ! $known ) {
 			$errors['consent'] = 'We need to store your details to arrange the loan.';
 		}
 		// Riding an event: an event from the calendar, or "other" for a race we don't list.
@@ -248,6 +251,9 @@ class CC_Fleet_Rest {
 			'phone' => $phone, 'instagram' => $insta,
 			'height_cm' => $height, 'weight_kg' => $weight ?: null, 'consent' => true,
 		) );
+		if ( ! empty( $p['agree'] ) && class_exists( 'CC_Fleet_Me' ) ) {
+			CC_Fleet_Me::mark_agreed( $rider_id ); // Remember which agreement they accepted.
+		}
 		$dupe = $join ? CC_Fleet_Waitlist::find_duplicate( $rider_id, $bike_id, '', $start, $end ) : 0;
 		if ( $dupe ) {
 			return new WP_REST_Response( array( 'ok' => true, 'waitlist' => true, 'message' => "You’re already on the waiting list for these dates, {$name}. We’ll email you if it frees up." ), 200 );

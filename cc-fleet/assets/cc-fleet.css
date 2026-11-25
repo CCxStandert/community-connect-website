@@ -187,3 +187,18 @@
 .cc-request .cc-pedals label.cc-check { display: flex !important; flex-direction: row !important; align-items: center; gap: 10px; font-size: 15px; }
 .cc-request .cc-pedals input[type="radio"] { -webkit-appearance: radio; appearance: auto; width: 20px !important; min-width: 20px; height: 20px !important; min-height: 0 !important; padding: 0 !important; margin: 0; border: 0; flex: 0 0 20px; }
 .cc-request .cc-pedals label.cc-check span { flex: 1 1 auto; }
+
+/* Returning riders */
+.cc-request .cc-who__sum { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1.5px solid #141217; border-radius: 14px; background: #fff; }
+.cc-request .cc-who__sum[hidden], .cc-request .cc-who[hidden], .cc-request [data-cc-agree-box][hidden], .cc-request .cc-back[hidden] { display: none; }
+.cc-request .cc-who__sum p { margin: 0; display: grid; gap: 2px; }
+.cc-request .cc-who__k { font: 400 11px/1.2 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; color: #5B5560; }
+.cc-request .cc-who__sum b { font-size: 17px; }
+.cc-request .cc-who__sum small { font-size: 13px; color: #5B5560; word-break: break-all; }
+.cc-request .cc-who__edit { flex: 0 0 auto; min-height: 36px; padding: 0 14px; border: 1.5px solid #141217; border-radius: 999px; background: transparent; font: 600 13px/1 inherit; cursor: pointer; }
+.cc-request .cc-who { display: contents; }
+.cc-request .cc-back { margin: 0; font-size: 14px; }
+.cc-request .cc-back a, .cc-request .cc-agreed a { font-weight: 600; }
+.cc-request .cc-agree-box { display: contents; }
+.cc-request .cc-agreed { margin: 0; padding: 10px 14px; border-radius: 10px; background: #EDE3E8; font-size: 14px; }
+.cc-request .cc-remember span { font-size: 14px; }
