@@ -12,6 +12,18 @@
 	addEventListener('hashchange', openHash);
 	openHash();
 
+	// Photo slides and covers: a click anywhere on the picture follows its title's link.
+	document.querySelectorAll('.cc-cover').forEach(function (cover) {
+		var link = cover.querySelector('.cc-hero-title a[href]');
+		if (!link) return;
+		cover.classList.add('is-linked');
+		cover.addEventListener('click', function (e) {
+			if (e.target.closest('a, button')) return; // real links and buttons do their own thing
+			if (window.getSelection && String(window.getSelection())) return; // selecting text
+			link.click();
+		});
+	});
+
 	// Ride types: on phones each one folds to its number and name; tap to open it.
 	var mq = matchMedia('(max-width: 759px)');
 	document.querySelectorAll('.cc-rides').forEach(function (list) {
