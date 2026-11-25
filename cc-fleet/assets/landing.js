@@ -119,7 +119,8 @@ const render = () => {
     const href = free ? `${b.url}${b.url.includes('?') ? '&' : '?'}start=${sel.a}&end=${sel.b}${ctx && ctx.id ? `&event=${ctx.id}` : ''}#request` : b.url;
     const inner = `<span class="hd"><span class="brand">${BRAND}</span><span class="st ${esc(st)}">${esc(chip)}</span></span>${pic(b)}<strong>${esc(b.model)} ${esc(b.size)}</strong><small>${esc(b.name)}</small><span class="fit">${b.range ? `${b.range[0]}–${b.range[1]} cm${ok && !soon(b) ? ' · <b>fits you</b>' : ''}` : ''}</span>${availHtml(b)}`;
     const dim = free === false || soon(b);
-    return `<li${shown(b) ? '' : ' hidden'}>${soon(b) ? `<div class="card soon dim">${inner}</div>` : `<a class="card${dim ? ' dim' : ''}" href="${esc(href)}">${inner}</a>`}</li>`;
+    const calBtn = cal && info(b) && info(b).bookable ? `<button type="button" class="card__cal" data-cal="${esc(b.cc)}">Check availability</button>` : '';
+    return `<li${shown(b) ? '' : ' hidden'}>${soon(b) ? `<div class="card soon dim">${inner}</div>` : `<div class="card${dim ? ' dim' : ''}"><a class="card__lnk" href="${esc(href)}" aria-label="${esc(b.model)} ${esc(b.size)}, ${esc(b.name)}"></a>${inner}${calBtn}</div>`}</li>`;
   }).join('');
   const nShown = list.filter((b) => shown(b) && !soon(b)).length;
   const nSoon = list.filter((b) => shown(b) && soon(b)).length;
@@ -143,28 +144,32 @@ const WD = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 // The picker is built here, not in the page HTML (WordPress would wrap its lines in paragraphs).
 const dp = $('avail') ? Object.assign(document.createElement('div'), { className: 'dp', id: 'dp', hidden: true }) : null;
-if (dp) { dp.innerHTML = '<div class="dp__in" role="dialog" aria-modal="true" aria-labelledby="dpT"><div class="dp__hd"><div class="dp__tt"><h3 id="dpT">Select dates</h3><p id="dpHint">Pick the day you collect the bike.</p></div><div class="avail__box dp__sel"><span class="avail__f" id="dpA"><span class="mono">Pick-up</span><b>Add date</b></span><span class="avail__f" id="dpB"><span class="mono">Return</span><b>Add date</b></span></div><button type="button" class="dp__x" id="dpX" aria-label="Close">×</button></div><div class="dp__cal"><button type="button" class="dp__nav" id="dpPrev" aria-label="Earlier months">‹</button><div class="dp__months" id="dpMonths"></div><button type="button" class="dp__nav" id="dpNext" aria-label="Later months">›</button></div><div class="dp__ft"><p class="dp__key"><span class="k off"></span>No bike free &nbsp; <span class="k sel"></span>Your dates</p><button type="button" class="avail__clear" id="dpClear">Clear dates</button><button type="button" class="pillbtn ink" id="dpDone">Close</button></div></div>'; document.body.appendChild(dp); }
+if (dp) { dp.innerHTML = '<div class="dp__in" role="dialog" aria-modal="true" aria-labelledby="dpT"><div class="dp__hd"><div class="dp__tt"><h3 id="dpT">Select dates</h3><p id="dpHint">Pick the day you collect the bike.</p></div><div class="avail__box dp__sel"><span class="avail__f" id="dpA"><span class="mono">Pick-up</span><b>Add date</b></span><span class="avail__f" id="dpB"><span class="mono">Return</span><b>Add date</b></span></div><button type="button" class="dp__x" id="dpX" aria-label="Close">×</button></div><div class="dp__cal"><button type="button" class="dp__nav" id="dpPrev" aria-label="Earlier months">‹</button><div class="dp__months" id="dpMonths"></div><button type="button" class="dp__nav" id="dpNext" aria-label="Later months">›</button></div><div class="dp__ft"><p class="dp__key"><span class="k off"></span><span id="dpKeyOff">No bike free</span> &nbsp; <span class="k sel"></span>Your dates</p><button type="button" class="avail__clear" id="dpClear">Clear dates</button><button type="button" class="pillbtn ink" id="dpDone">Close</button></div></div>'; document.body.appendChild(dp); }
 const wide = matchMedia('(min-width: 760px)');
 let m0 = null, lastFocus = null;
-const pool = () => bikes.filter((b) => shown(b) && !soon(b));
+// The picker works for the whole fleet (the box above the grid) or for one bike (its card's button).
+let pbike = null, bsel = { a: null, b: null };
+const P = () => (pbike ? bsel : sel);
+const setP = (v) => { if (pbike) bsel = v; else sel = v; };
+const pHas = () => !!(P().a && P().b);
+const pool = () => (pbike ? [pbike] : bikes.filter((b) => shown(b) && !soon(b)));
 const nFree = (d) => pool().filter((b) => freeOn(b, d)).length;
 const nRange = (a, z) => pool().filter((b) => freeRange(b, a, z)).length;
 const dlen = (a, z) => Math.round((new Date(z + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5) + 1;
 const nice = (d) => { const x = new Date(d + 'T12:00:00'); return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][x.getDay()]} ${x.getDate()} ${MON[x.getMonth()]}`; };
 const fields = () => {
-  [['availA', 'dpA', sel.a], ['availB', 'dpB', sel.b]].forEach(([f1, f2, v]) => {
-    [f1, f2].forEach((id) => { const el = $(id); if (!el) return; el.querySelector('b').textContent = v ? nice(v) : 'Add date'; el.classList.toggle('has', !!v); });
-  });
-  if ($('dpA')) { $('dpA').classList.toggle('is-on', !sel.a || !!sel.b); $('dpB').classList.toggle('is-on', !!sel.a && !sel.b); }
+  const put = (id, v) => { const el = $(id); if (!el) return; el.querySelector('b').textContent = v ? nice(v) : 'Add date'; el.classList.toggle('has', !!v); };
+  put('availA', sel.a); put('availB', sel.b); put('dpA', P().a); put('dpB', P().b);
+  if ($('dpA')) { $('dpA').classList.toggle('is-on', !P().a || !!P().b); $('dpB').classList.toggle('is-on', !!P().a && !P().b); }
   if ($('availGo')) $('availGo').textContent = hasRange() ? 'Change dates' : 'Check availability';
   if ($('availClear')) $('availClear').hidden = !sel.a;
 };
 const days = () => { fields(); if (dp && !dp.hidden) months(); };
 const dayState = (d) => {
   if (!cal || d < cal.earliest || d > cal.latest) return { off: true, out: true };
-  if (sel.a && !sel.b && d >= sel.a) {
-    const ok = (!cal.max_days || dlen(sel.a, d) <= cal.max_days) && nRange(sel.a, d) > 0;
-    return { off: !ok, n: ok ? nRange(sel.a, d) : 0 };
+  if (P().a && !P().b && d >= P().a) {
+    const ok = (!cal.max_days || dlen(P().a, d) <= cal.max_days) && nRange(P().a, d) > 0;
+    return { off: !ok, n: ok ? nRange(P().a, d) : 0 };
   }
   const n = nFree(d);
   return { off: n === 0, n };
@@ -172,7 +177,7 @@ const dayState = (d) => {
 const months = () => {
   if (!cal) return;
   const first = cal.today.slice(0, 7), last = cal.latest.slice(0, 7);
-  if (!m0) m0 = (sel.a || cal.earliest).slice(0, 7);
+  if (!m0) m0 = (P().a || cal.earliest).slice(0, 7);
   const count = wide.matches ? 2 : 1;
   const addM = (ym, k) => { const [y, m] = ym.split('-').map(Number); const t = new Date(y, m - 1 + k, 1); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}`; };
   if (m0 < first) m0 = first;
@@ -187,23 +192,28 @@ const months = () => {
     for (let n = 1; n <= dim; n++) {
       const d = `${ym}-${pad(n)}`;
       const st = dayState(d);
-      const z = sel.b || sel.a;
-      const cls = ['dp__d', st.out ? 'is-out' : (st.off ? 'is-off' : ''), d === sel.a ? 'is-a' : '', sel.b && d === sel.b ? 'is-b' : '', sel.a && sel.b && d > sel.a && d < sel.b ? 'is-in' : '', d === cal.today ? 'is-today' : ''].filter(Boolean).join(' ');
+      const z = P().b || P().a;
+      const cls = ['dp__d', st.out ? 'is-out' : (st.off ? 'is-off' : ''), d === P().a ? 'is-a' : '', P().b && d === P().b ? 'is-b' : '', P().a && P().b && d > P().a && d < P().b ? 'is-in' : '', d === cal.today ? 'is-today' : ''].filter(Boolean).join(' ');
       const lab = `${nice(d)}${st.off ? ', not available' : `, ${st.n} bike${st.n === 1 ? '' : 's'} free`}`;
-      cells += `<button type="button" class="${cls}" data-d="${d}"${st.off ? ' disabled' : ''} aria-label="${lab}"${d === sel.a || d === z ? ' aria-pressed="true"' : ''}>${n}</button>`;
+      cells += `<button type="button" class="${cls}" data-d="${d}"${st.off ? ' disabled' : ''} aria-label="${lab}"${d === P().a || d === z ? ' aria-pressed="true"' : ''}>${n}</button>`;
     }
     html += `<div class="dp__m"><h4>${MONTHS[m - 1]} ${y}</h4><div class="dp__g">${WD.map((w) => `<span class="dp__w">${w}</span>`).join('')}${cells}</div></div>`;
   }
   $('dpMonths').innerHTML = html;
   $('dpPrev').disabled = m0 <= first;
   $('dpNext').disabled = addM(m0, count - 1) >= last;
-  $('dpHint').textContent = !sel.a ? 'Pick the day you collect the bike.' : (!sel.b ? `Now your return day. Loans go up to ${cal.max_days || 7} days.` : `${nRange(sel.a, sel.b)} bike${nRange(sel.a, sel.b) === 1 ? '' : 's'} free ${short(sel.a, sel.b)}.`);
-  const n = hasRange() ? nRange(sel.a, sel.b) : 0;
-  $('dpDone').textContent = hasRange() ? (n ? `Show ${n} bike${n === 1 ? '' : 's'}` : 'Close') : 'Close';
+  $('dpT').textContent = pbike ? `${pbike.model} ${pbike.size}` : 'Select dates';
+  $('dpKeyOff').textContent = pbike ? 'Taken' : 'No bike free';
+  $('dpHint').textContent = !P().a ? (pbike ? `${pbike.name}. Pick the day you collect it.` : 'Pick the day you collect the bike.') : (!P().b ? `Now your return day. Loans go up to ${cal.max_days || 7} days.` : (pbike ? `Free ${short(P().a, P().b)}.` : `${nRange(P().a, P().b)} bike${nRange(P().a, P().b) === 1 ? '' : 's'} free ${short(P().a, P().b)}.`));
+  const n = pHas() ? nRange(P().a, P().b) : 0;
+  $('dpDone').textContent = pHas() && n ? (pbike ? 'Request these dates' : `Show ${n} bike${n === 1 ? '' : 's'}`) : 'Close';
 };
-const openDp = (e) => {
+const openDp = (e, bike) => {
   if (!dp || !cal) return;
-  lastFocus = e && e.currentTarget || document.activeElement;
+  lastFocus = e && (e.currentTarget && e.currentTarget !== document ? e.currentTarget : e.target) || document.activeElement;
+  pbike = bike || null;
+  // A bike's own calendar starts from the fleet dates when that bike is free for them.
+  bsel = pbike && hasRange() && freeRange(pbike, sel.a, sel.b) ? { ...sel } : { a: null, b: null };
   m0 = null; dp.hidden = false; document.documentElement.classList.add('dp-open');
   months(); fields();
   setTimeout(() => { const f = dp.querySelector('.dp__d.is-a, .dp__d:not([disabled])'); if (f) f.focus(); }, 30);
@@ -214,22 +224,35 @@ const closeDp = () => {
   if (lastFocus && lastFocus.focus) lastFocus.focus();
 };
 const pick = (d) => {
-  ctx = null;
-  if (!sel.a || sel.b || d < sel.a) sel = { a: d, b: null };
-  else sel.b = d;
-  render(); months();
+  if (!P().a || P().b || d < P().a) setP({ a: d, b: null });
+  else setP({ a: P().a, b: d });
+  if (!pbike) { ctx = null; render(); } else fields();
+  months();
 };
 if (dp) {
-  document.querySelectorAll('[data-dp]').forEach((b) => b.addEventListener('click', openDp));
+  document.querySelectorAll('[data-dp]').forEach((b) => b.addEventListener('click', (e) => openDp(e)));
+  $('list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-cal]'); if (!b) return;
+    e.preventDefault();
+    const bike = bikes.find((x) => x.cc === b.dataset.cal);
+    if (bike) openDp(e, bike);
+  });
   $('dpMonths').addEventListener('click', (e) => { const el = e.target.closest('.dp__d'); if (el && !el.disabled) pick(el.dataset.d); });
   const shift = (k) => { const [y, m] = m0.split('-').map(Number); const t = new Date(y, m - 1 + k, 1); m0 = `${t.getFullYear()}-${pad(t.getMonth() + 1)}`; months(); };
   $('dpPrev').addEventListener('click', () => shift(-1));
   $('dpNext').addEventListener('click', () => shift(1));
   $('dpX').addEventListener('click', closeDp);
-  $('dpDone').addEventListener('click', () => { closeDp(); if (hasRange()) { const l = $('list'); if (l) l.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); } });
-  const clear = () => { sel = { a: null, b: null }; ctx = null; render(); months(); };
-  $('dpClear').addEventListener('click', clear);
-  $('availClear').addEventListener('click', clear);
+  $('dpDone').addEventListener('click', () => {
+    if (pbike && pHas() && nRange(P().a, P().b)) { // straight to this bike's request, dates filled in
+      location.href = `${pbike.url}${pbike.url.includes('?') ? '&' : '?'}start=${P().a}&end=${P().b}#request`;
+      return;
+    }
+    const go = !pbike && hasRange();
+    closeDp();
+    if (go) { const l = $('list'); if (l) l.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
+  });
+  $('dpClear').addEventListener('click', () => { setP({ a: null, b: null }); if (!pbike) { ctx = null; render(); } else fields(); months(); });
+  $('availClear').addEventListener('click', () => { sel = { a: null, b: null }; ctx = null; render(); });
   dp.addEventListener('click', (e) => { if (e.target === dp) closeDp(); });
   document.addEventListener('keydown', (e) => {
     if (dp.hidden) return;
