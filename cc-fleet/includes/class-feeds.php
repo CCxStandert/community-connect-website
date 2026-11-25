@@ -156,7 +156,20 @@ class CC_Fleet_Feeds {
 	public static function strava_sync() {
 		global $wpdb;
 		$s    = self::strava();
-		$list = self::strava_get( '/clubs/' . rawurlencode( $s['club_id'] ) . '/group_events', array( 'upcoming' => 'true', 'per_page' => 50 ) );
+		// Strava's "upcoming=true" filter answers with an empty list (Nov 2026), so fetch them all,
+		// page by page, and keep the ones with a date from today on (below).
+		$list = array();
+		for ( $page = 1; $page <= 6; $page++ ) {
+			$chunk = self::strava_get( '/clubs/' . rawurlencode( $s['club_id'] ) . '/group_events', array( 'per_page' => 100, 'page' => $page ) );
+			if ( is_wp_error( $chunk ) ) {
+				$list = $list ? $list : $chunk;
+				break;
+			}
+			$list = array_merge( $list, (array) $chunk );
+			if ( count( (array) $chunk ) < 100 ) {
+				break;
+			}
+		}
 		$s    = self::strava(); // Re-read: the request may have refreshed the token.
 		if ( is_wp_error( $list ) ) {
 			$s['last'] = current_time( 'mysql' );
@@ -185,7 +198,7 @@ class CC_Fleet_Feeds {
 				}
 			}
 			if ( ! $next ) {
-				$res['skipped']++;
+				$res['past'] = ( $res['past'] ?? 0 ) + 1; // Already happened: nothing to show.
 				continue;
 			}
 			$src   = 'strava:' . $ev['id'];
@@ -220,7 +233,7 @@ class CC_Fleet_Feeds {
 			}
 		}
 		$s['last']        = current_time( 'mysql' );
-		$s['last_result'] = sprintf( '%d new, %d updated, %d skipped', $res['created'], $res['updated'], $res['skipped'] ) . ( ! empty( $res['hidden'] ) ? ', ' . $res['hidden'] . ' no longer on Strava (hidden)' : '' );
+		$s['last_result'] = sprintf( '%d new, %d updated, %d skipped, %d past', $res['created'], $res['updated'], $res['skipped'], $res['past'] ?? 0 ) . ( ! empty( $res['hidden'] ) ? ', ' . $res['hidden'] . ' no longer on Strava (hidden)' : '' );
 		self::strava_save( $s );
 		return $res;
 	}
@@ -535,7 +548,7 @@ class CC_Fleet_Feeds {
 				printf( '<option value="%s"%s>%s</option>', esc_attr( $c['id'] ), selected( (string) $s['club_id'], (string) $c['id'], false ), esc_html( $c['name'] . ( ! empty( $c['url'] ) ? ' (' . $c['url'] . ')' : '' ) ) );
 			}
 			echo '</select></td></tr>';
-			printf( '<tr><th>Last check</th><td>%s %s</td></tr>', esc_html( $s['last'] ? wp_date( 'j M, H:i', strtotime( $s['last'] ) ) : 'not yet' ), esc_html( $s['last_result'] ? '· ' . $s['last_result'] : '' ) );
+			printf( '<tr><th>Last check</th><td>%s %s</td></tr>', esc_html( $s['last'] ? mysql2date( 'j M, H:i', $s['last'] ) : 'not yet' ), esc_html( $s['last_result'] ? '· ' . $s['last_result'] : '' ) );
 		}
 		echo '</table>';
 
