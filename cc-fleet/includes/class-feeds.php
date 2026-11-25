@@ -24,6 +24,14 @@ class CC_Fleet_Feeds {
 			}
 		} );
 		add_shortcode( 'cc_instagram', array( __CLASS__, 'sc_instagram' ) );
+		// Admin-only diagnostic: what Strava actually answers for the club (no tokens in the output).
+		add_action( 'rest_api_init', function () {
+			register_rest_route( 'cc/v1', '/admin/strava-check', array(
+				'methods'             => 'GET',
+				'permission_callback' => function () { return current_user_can( 'manage_options' ); },
+				'callback'            => array( __CLASS__, 'strava_check' ),
+			) );
+		} );
 		if ( is_admin() ) {
 			add_action( 'admin_menu', array( __CLASS__, 'menu' ), 40 );
 			foreach ( array( 'save', 'strava_connect', 'strava_callback', 'strava_disconnect', 'sync', 'ig_disconnect' ) as $a ) {
@@ -215,6 +223,32 @@ class CC_Fleet_Feeds {
 		$s['last_result'] = sprintf( '%d new, %d updated, %d skipped', $res['created'], $res['updated'], $res['skipped'] ) . ( ! empty( $res['hidden'] ) ? ', ' . $res['hidden'] . ' no longer on Strava (hidden)' : '' );
 		self::strava_save( $s );
 		return $res;
+	}
+
+	public static function strava_check() {
+		$s   = self::strava();
+		$id  = rawurlencode( $s['club_id'] );
+		$sum = function ( $r ) {
+			if ( is_wp_error( $r ) ) {
+				return 'Error: ' . $r->get_error_message();
+			}
+			if ( ! is_array( $r ) ) {
+				return $r;
+			}
+			if ( isset( $r['id'] ) && isset( $r['name'] ) ) {
+				return array( 'id' => $r['id'], 'name' => $r['name'], 'private' => $r['private'] ?? null, 'member' => $r['membership'] ?? null, 'admin' => $r['admin'] ?? null );
+			}
+			return array_map( function ( $e ) {
+				return is_array( $e ) ? array_intersect_key( $e, array_flip( array( 'id', 'title', 'private', 'upcoming_occurrences', 'club_id', 'resource_state', 'frequency', 'start_datetime' ) ) ) : $e;
+			}, $r );
+		};
+		return array(
+			'club_id'          => $s['club_id'],
+			'club'             => $sum( self::strava_get( '/clubs/' . $id ) ),
+			'events_upcoming'  => $sum( self::strava_get( '/clubs/' . $id . '/group_events', array( 'upcoming' => 'true', 'per_page' => 50 ) ) ),
+			'events_all'       => $sum( self::strava_get( '/clubs/' . $id . '/group_events', array( 'per_page' => 50 ) ) ),
+			'scope_asked'      => 'read',
+		);
 	}
 
 	private static function strava_level( $l ) {
