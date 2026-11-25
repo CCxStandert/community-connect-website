@@ -56,6 +56,16 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.21.0: Rider-to-rider handoffs
+
+- Confirming a loan with pick-up "straight from the rider before" links the two loans (loans.handoff_from). On a loan page, "Hand straight to …" links the next confirmed rider; "Unlink" undoes it.
+- Both riders get an intro email: the other's first name, a WhatsApp button, the swap window, and what to check (tyre pressure for the next rider's weight, pedals). In review mode it goes right after the crew sends the confirmation.
+- Numbers are only shared when both riders agreed: the request consent now reads "…and share my first name and WhatsApp number with the rider I hand the bike to or get it from" (riders.share_ok). Otherwise the crew gets both numbers to connect them. Agreement version bumped to 2026-11b, so signed-in riders tick it once more.
+- Dashboard: "Rider-to-rider handoffs" with one "Handed over" button: closes the first loan (returned) and marks the bike out with the next rider. Also on the loan page.
+- Changed dates or a cancellation that break the chain unlink the pair, tell the crew, and tell the next rider we'll confirm a pick-up.
+- My rides shows "Straight from Thandi…" / "Hand it straight to Luke…" with a WhatsApp button.
+- DB 18. tests/handoff-test.php (15 checks).
+
 ## 0.20.0: My rides + faster re-requests
 
 - **My rides** (/my-rides/): a rider's private page, no account or password. Every rider email about a loan has a "See your booking" button with their private link; opening it signs them in on that device for 30 days. Links work until 30 days after their last loan.

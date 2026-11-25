@@ -332,7 +332,7 @@ class CC_Fleet_Outbox {
 		$base = (string) CC_Fleet_Settings::get( 'base_address' );
 		echo '<div class="cc-dates-box cc-pick"><p class="cc-dates-box__h"><strong>Pick-up</strong> <span class="cc-muted">· where the rider collects the bike' . ( $p['saved'] ? '' : ' (suggested, check it)' ) . '</span></p>';
 		if ( $prev ) {
-			printf( '<p><label><input type="radio" name="pickup_mode" value="rider" %s> From the rider before: <strong>%s</strong>, who has it until %s%s</label></p>',
+			printf( '<p><label><input type="radio" name="pickup_mode" value="rider" %s> Straight from the rider before: <strong>%s</strong>, who has it until %s%s <span class="cc-muted">· we introduce them, you press “Handed over” when it’s done</span></label></p>',
 				checked( 'rider', $p['mode'], false ), esc_html( $pr->name ?? 'another rider' ), esc_html( CC_Fleet_Emails::nice_date( $prev->end_date ) ),
 				$pr && $pr->phone ? ' · ' . esc_html( $pr->phone ) : '' );
 		}

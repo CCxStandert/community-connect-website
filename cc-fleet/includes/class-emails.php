@@ -731,9 +731,49 @@ class CC_Fleet_Emails {
 		return self::send( $admin, $subject, self::msg_wl_crew_note( array( 'headline' => $headline, 'lines' => $lines, 'link' => $link, 'label' => $label ) ), array( 'type' => 'wl_crew_note' ) );
 	}
 
+	/**
+	 * Rider-to-rider handoff intro. $role 'give' (has the bike, hands it on) or 'get' (receives it).
+	 * $share: both agreed to share name + WhatsApp; otherwise the crew connects them.
+	 */
+	public static function handoff_intro( $to, $other, $loan, $role, $bike, $window, array $check, $share ) {
+		if ( ! $to || ! $to->email ) {
+			return false;
+		}
+		$first = self::first_name( $to->name );
+		$them  = self::first_name( $other->name );
+		$give  = 'give' === $role;
+		$wa    = $share && $other->phone ? CC_Fleet_Phone::wa_link( $other->phone, 'Hi ' . $them . ', it’s ' . $first . ' from Community Connect, about handing over ' . $bike . '.' ) : '';
+		$rows  = array( array( 'Bike', $bike ), array( $give ? 'Hand it to' : 'Get it from', $them . ( $share && $other->phone ? ' · ' . $other->phone : '' ) ), array( 'When', $window ) );
+		foreach ( $check as $c ) {
+			$rows[] = array( 'Check', $c );
+		}
+		$blocks = array(
+			array( 'p', $give
+				? "{$them} has {$bike} after you, so you hand it straight over: no trip to our base. Agree a time and place that suits you both."
+				: "{$bike} comes straight from {$them}, who has it until then. Agree a time and place that suits you both." ),
+			array( 'details', 'The handover', $rows ),
+		);
+		$blocks[] = $wa ? array( 'buttons', array( array( 'WhatsApp ' . $them, $wa, true ) ) ) : array( 'callout', array( 'We’ll put you in touch on WhatsApp shortly.' ), 'cream' );
+		$blocks[] = array( 'small', $give ? 'Hand it over clean-ish, with anything that came with it. Something wrong with the bike? Tell us before the handover.' : 'Have a quick look together: brakes, tyres, gears. Anything off? Tell us right away, before you ride.' );
+		return self::send( $to->email, ( $give ? 'Hand ' . $bike . ' to ' . $them : 'Your bike comes from ' . $them ), array(
+			'kicker' => 'Rider to rider', 'headline' => $give ? "Hand it straight to {$them}." : "Meet {$them}.", 'subline' => $window,
+			'preheader' => $give ? 'Hand ' . $bike . ' to ' . $them : $bike . ' comes from ' . $them, 'blocks' => $blocks, 'footer' => 'rider',
+		), array( 'type' => 'handoff_intro', 'loan' => $loan ) );
+	}
+
+	/** The receiving rider: the handover from the rider before is off; we'll confirm a pick-up. */
+	public static function handoff_off( $loan, $rider ) {
+		return self::send( $rider->email, 'Change of plan for your pick-up', array(
+			'kicker' => 'Pick-up', 'headline' => 'Change of plan, ' . self::first_name( $rider->name ) . '.', 'subline' => self::dates( $loan ),
+			'preheader' => 'Your bike won’t come from the rider before',
+			'blocks' => array( array( 'p', 'Your bike won’t come straight from the rider before after all. Your booking still stands: we’ll confirm where to pick it up shortly.' ) ),
+			'footer' => 'rider',
+		), array( 'type' => 'handoff_off', 'loan' => $loan ) );
+	}
+
 	public static function msg_wl_crew_note( $f ) {
 		return array(
-			'kicker' => 'Crew · waiting list', 'headline' => $f['headline'], 'subline' => '',
+			'kicker' => 'Crew', 'headline' => $f['headline'], 'subline' => '',
 			'preheader' => $f['lines'][0] ?? '',
 			'blocks' => array( array( 'p', implode( "\n\n", $f['lines'] ) ), array( 'buttons', array( array( $f['label'], $f['link'], true ) ) ) ),
 			'footer' => 'crew',

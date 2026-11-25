@@ -211,7 +211,7 @@ class CC_Fleet_Frontend {
 			<div class="cc-agree-box" data-cc-agree-box>
 			<label class="cc-check"><input type="checkbox" name="agree" value="1" required aria-required="true"> <span>I'll look after the bike and accept the <?php $ag = CC_Fleet_Landing::agreement_url(); echo $ag ? '<a href="' . esc_url( $ag ) . '" target="_blank" rel="noopener">borrowing agreement</a>' : 'borrowing agreement'; ?>. <span class="cc-req" aria-hidden="true">*</span></span></label>
 			<p class="cc-error" data-cc-error="agree" hidden></p>
-			<label class="cc-check"><input type="checkbox" name="consent" value="1" required aria-required="true"> <span>Community Connect may store my details to arrange this and future loans<?php echo $s['privacy_url'] ? ' (<a href="' . esc_url( $s['privacy_url'] ) . '" target="_blank" rel="noopener">privacy</a>)' : ''; ?>. <span class="cc-req" aria-hidden="true">*</span></span></label>
+			<label class="cc-check"><input type="checkbox" name="consent" value="1" required aria-required="true"> <span>Community Connect may store my details to arrange this and future loans, and share my first name and WhatsApp number with the rider I hand the bike to or get it from<?php echo $s['privacy_url'] ? ' (<a href="' . esc_url( $s['privacy_url'] ) . '" target="_blank" rel="noopener">privacy</a>)' : ''; ?>. <span class="cc-req" aria-hidden="true">*</span></span></label>
 			<p class="cc-error" data-cc-error="consent" hidden></p>
 			</div>
 			<p class="cc-agreed" data-cc-agreed hidden></p>

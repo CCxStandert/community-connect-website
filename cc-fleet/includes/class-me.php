@@ -20,7 +20,7 @@ class CC_Fleet_Me {
 	const COOKIE    = 'cc_rides';
 	const PAGE_SLUG = 'my-rides';
 	/** Bump when the borrowing agreement changes, so everyone ticks it again. */
-	const AGREEMENT = '2026-11';
+	const AGREEMENT = '2026-11b'; // b: consent now includes sharing first name + WhatsApp with the rider before/after.
 
 	public static function init() {
 		add_action( 'rest_api_init', array( __CLASS__, 'routes' ) );
@@ -156,6 +156,12 @@ class CC_Fleet_Me {
 	public static function mark_agreed( $rider_id ) {
 		global $wpdb;
 		$wpdb->update( CC_Fleet_Riders::table(), array( 'agreed_version' => self::AGREEMENT, 'agreed_at' => current_time( 'mysql' ) ), array( 'id' => (int) $rider_id ) );
+	}
+
+	/** Ticked the consent that includes sharing first name + WhatsApp with the rider before/after. */
+	public static function mark_share( $rider_id ) {
+		global $wpdb;
+		$wpdb->update( CC_Fleet_Riders::table(), array( 'share_ok' => current_time( 'mysql' ) ), array( 'id' => (int) $rider_id ) );
 	}
 
 	/* ---------- REST ---------- */
@@ -435,6 +441,30 @@ class CC_Fleet_Me {
 		if ( $l->plan ) {
 			$rows[] = array( 'Your plan', wp_trim_words( $l->plan, 30 ) );
 		}
+		// Rider-to-rider: who it comes from / goes to, with a WhatsApp button when both agreed to share.
+		$partner = array();
+		if ( class_exists( 'CC_Fleet_Handoff' ) ) {
+			$me  = CC_Fleet_Riders::get( $l->rider_id );
+			$giv = 'approved' === $l->status ? CC_Fleet_Handoff::giver( $l ) : null;
+			$rec = CC_Fleet_Handoff::receiver( $l );
+			foreach ( array( array( $giv, 'Pick-up', 'Straight from %s, until %s. Agree a time together.', 'end_date' ), array( $rec, 'Return', 'Hand it straight to %s, who has it from %s. Agree a time together.', 'start_date' ) ) as $x ) {
+				if ( ! $x[0] ) {
+					continue;
+				}
+				$o    = CC_Fleet_Riders::get( $x[0]->rider_id );
+				$name = $o ? strtok( $o->name, ' ' ) : 'the other rider';
+				foreach ( $rows as $i => $row ) {
+					if ( $row[0] === $x[1] ) {
+						unset( $rows[ $i ] );
+					}
+				}
+				array_unshift( $rows, array( $x[1], sprintf( $x[2], $name, self::fmt( $x[0]->{$x[3]} ) ) ) );
+				if ( $o && $o->phone && CC_Fleet_Handoff::may_share( $o ) && CC_Fleet_Handoff::may_share( $me ) ) {
+					$partner[] = array( 'WhatsApp ' . $name, CC_Fleet_Phone::wa_link( $o->phone, 'Hi ' . $name . ', it’s ' . strtok( $me->name, ' ' ) . ' from Community Connect, about the handover of ' . self::bike_label( $l ) . '.' ) );
+				}
+			}
+			$rows = array_values( $rows );
+		}
 		$can_change = in_array( $l->status, array( 'requested', 'waiting', 'approved' ), true );
 		$wa_link    = $wa ? 'https://wa.me/' . $wa . '?text=' . rawurlencode( 'Hi! About my bike ' . self::bike_label( $l ) . ', ' . self::dates( $l ) . ': ' ) : '';
 		ob_start();
@@ -454,6 +484,7 @@ class CC_Fleet_Me {
 					<?php if ( in_array( $l->status, array( 'approved', 'out' ), true ) ) : ?>
 					<a class="cc-me__btn" href="<?php echo esc_url( rest_url( CC_Fleet_REST::NS . '/me/loans/' . $l->id . '/calendar' ) ); ?>">Add to calendar</a>
 					<?php endif; ?>
+					<?php foreach ( $partner as $pb ) : ?><a class="cc-me__btn cc-me__btn--fill" href="<?php echo esc_url( $pb[1] ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $pb[0] ); ?></a><?php endforeach; ?>
 					<?php if ( $wa_link ) : ?><a class="cc-me__btn" href="<?php echo esc_url( $wa_link ); ?>" target="_blank" rel="noopener">WhatsApp the crew</a><?php endif; ?>
 					<?php if ( $can_change ) : ?><button type="button" class="cc-me__btn" data-act="change">Change dates</button><?php endif; ?>
 					<?php if ( 'out' !== $l->status ) : ?><button type="button" class="cc-me__btn cc-me__btn--quiet" data-act="cancel"><?php echo in_array( $l->status, array( 'approved' ), true ) ? 'Ask to cancel' : 'Cancel request'; ?></button><?php endif; ?>

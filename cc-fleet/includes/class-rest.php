@@ -254,6 +254,9 @@ class CC_Fleet_Rest {
 		if ( ! empty( $p['agree'] ) && class_exists( 'CC_Fleet_Me' ) ) {
 			CC_Fleet_Me::mark_agreed( $rider_id ); // Remember which agreement they accepted.
 		}
+		if ( ! empty( $p['consent'] ) && class_exists( 'CC_Fleet_Me' ) ) {
+			CC_Fleet_Me::mark_share( $rider_id ); // The consent includes sharing name + WhatsApp for handoffs.
+		}
 		$dupe = $join ? CC_Fleet_Waitlist::find_duplicate( $rider_id, $bike_id, '', $start, $end ) : 0;
 		if ( $dupe ) {
 			return new WP_REST_Response( array( 'ok' => true, 'waitlist' => true, 'message' => "You’re already on the waiting list for these dates, {$name}. We’ll email you if it frees up." ), 200 );

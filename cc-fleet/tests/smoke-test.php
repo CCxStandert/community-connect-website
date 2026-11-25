@@ -229,7 +229,7 @@ $first = array_key_first( array_filter( $draft->msg['blocks'], function ( $b ) {
 $edited = $ap->invoke( null, $draft->msg, array( 'headline' => 'You’re on, Next!', 'block' => array( $first => "Hi Next,\n\nSo happy this worked out." ), 'note' => 'Meet at 8:00 at the shop door.' ) );
 $wpdb->update( CC_Fleet_Outbox::table(), array( 'msg' => wp_json_encode( $edited ), 'subject' => 'Bike confirmed (edited)' ), array( 'id' => $draft->id ) );
 $sent = CC_Fleet_Outbox::send_row( CC_Fleet_Outbox::get( $draft->id ) );
-$m = end( $mails );
+$m = null; foreach ( $mails as $mm ) { if ( 'Bike confirmed (edited)' === $mm['subject'] ) { $m = $mm; } }
 cc_t( 'Edited email goes out with the changes', $sent && $m && 'Bike confirmed (edited)' === $m['subject'] && false !== strpos( $m['message'], 'So happy this worked out' ) && false !== strpos( $m['message'], 'Meet at 8:00' ) );
 cc_t( 'Sent draft no longer waiting', 'sent' === CC_Fleet_Outbox::get( $draft->id )->status );
 $again = $ap->invoke( null, $edited, array( 'note' => 'Changed note' ) );

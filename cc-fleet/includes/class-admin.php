@@ -226,6 +226,7 @@ class CC_Fleet_Admin {
 			CC_Fleet_Records_Admin::dashboard_panels();
 		}
 		self::due_back_panel( $out, $today );
+		CC_Fleet_Handoff::dashboard_panel();
 		echo '<h2>Overdue</h2>';
 		self::loan_rows( $overdue );
 		echo '<h2>Handoffs in the next 14 days</h2>';
@@ -397,6 +398,7 @@ class CC_Fleet_Admin {
 			self::dates_panel( $loan );
 		}
 		if ( $loan && in_array( $loan->status, array( 'approved', 'out' ), true ) ) {
+			CC_Fleet_Handoff::loan_panel( $loan );
 			self::handoff_panel( $loan );
 			self::pressure_panel( $loan );
 		}

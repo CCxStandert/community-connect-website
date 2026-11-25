@@ -16,7 +16,7 @@ me_t( 'My rides page exists', (bool) get_page_by_path( 'my-rides' ) );
 $cols = $wpdb->get_col( 'SHOW COLUMNS FROM ' . CC_Fleet_Riders::table() );
 me_t( 'Rider columns added', ! array_diff( array( 'access_token', 'access_until', 'agreed_version', 'agreed_at' ), $cols ) );
 
-$o = get_option( 'cc_fleet_settings' ); $o['review_rider_emails'] = 0; update_option( 'cc_fleet_settings', $o );
+$o = get_option( 'cc_fleet_settings' ); $keep_review = $o['review_rider_emails'] ?? 0; $o['review_rider_emails'] = 0; $keep_rate = $o['rate_limit_per_hour'] ?? 5; $o['rate_limit_per_hour'] = 500; update_option( 'cc_fleet_settings', $o );
 $free = CC_Fleet_Loans::available_bikes( $d( 160 ), $d( 179 ) );
 $bike = $free ? ( is_object( $free[0] ) ? $free[0]->ID : (int) $free[0] ) : 0;
 $cc = CC_Fleet_Bikes::get( $bike, 'cc_id' );
@@ -49,7 +49,7 @@ me_t( '/me returns details for the form', ! empty( $me['signed_in'] ) && 'Thandi
 $r2 = $call( 'POST', '/requests', array_merge( $base, array( 'agree' => '', 'consent' => '', 'start' => $d( 175 ), 'end' => $d( 176 ) ) ) );
 me_t( 'Signed in + agreed: request goes through without ticking again', ! empty( $r2->get_data()['ok'] ), wp_json_encode( $r2->get_data() ) );
 $other = $call( 'POST', '/requests', array_merge( $base, array( 'agree' => '', 'consent' => '', 'email' => 'someone-else@example.org', 'start' => $d( 178 ), 'end' => $d( 179 ) ) ) );
-me_t( 'Signed in but a different email: agreement required', 400 === $other->get_status() );
+me_t( 'Signed in but a different email: agreement required', isset( $other->get_data()['data']['fields']['agree'] ), wp_json_encode( $other->get_data() ) );
 
 echo "Page\n";
 $html = do_shortcode( '[cc_my_rides]' );
@@ -75,11 +75,11 @@ me_t( 'Confirmed card shows pick-up + calendar', false !== strpos( $html, 'Pick-
 echo "Email me my link\n";
 unset( $_COOKIE[ CC_Fleet_Me::COOKIE ] );
 $GLOBALS['me_mail'] = array();
-delete_transient( 'cc_me_em_' . md5( strtolower( $email ) ) );
+delete_transient( 'cc_me_em_' . md5( strtolower( $email ) ) ); delete_transient( 'cc_me_ip_' . substr( md5( (string) ( $_SERVER['REMOTE_ADDR'] ?? '' ) ), 0, 12 ) );
 $lk = $call( 'POST', '/me/link', array( 'email' => $email ) );
 $unk = $call( 'POST', '/me/link', array( 'email' => 'nobody-' . time() . '@example.org' ) );
 me_t( 'Same answer for known and unknown address', $lk->get_data()['message'] === $unk->get_data()['message'] );
-me_t( 'Link email sent only to the known rider', 1 === count( $GLOBALS['me_mail'] ) && false !== strpos( $GLOBALS['me_mail'][0]['message'], '/my-rides/?k=' ) );
+me_t( 'Link email sent only to the known rider', 1 === count( $GLOBALS['me_mail'] ) && false !== strpos( $GLOBALS['me_mail'][0]['message'], '/my-rides/?k=' ), wp_json_encode( wp_list_pluck( $GLOBALS['me_mail'], 'subject' ) ) );
 
 echo "Expiry\n";
 $wpdb->update( CC_Fleet_Riders::table(), array( 'access_until' => $d( -40 ) ), array( 'id' => $rider->id ) );
@@ -89,4 +89,5 @@ me_t( 'Link expires 30 days after the last loan', null === CC_Fleet_Me::rider_fo
 // Clean up.
 $wpdb->delete( CC_Fleet_Loans::table(), array( 'rider_id' => $rider->id ) );
 $wpdb->delete( CC_Fleet_Riders::table(), array( 'id' => $rider->id ) );
+$o = get_option( 'cc_fleet_settings' ); $o['review_rider_emails'] = $keep_review; $o['rate_limit_per_hour'] = $keep_rate; update_option( 'cc_fleet_settings', $o );
 echo "\n" . $GLOBALS['me_pass'] . ' passed, ' . $GLOBALS['me_fail'] . " failed\n";
