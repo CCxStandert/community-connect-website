@@ -141,7 +141,9 @@ const render = () => {
    free are struck through; once a pick-up day is set, return days that no single bike can cover are too. */
 const WD = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const dp = $('dp');
+// The picker is built here, not in the page HTML (WordPress would wrap its lines in paragraphs).
+const dp = $('avail') ? Object.assign(document.createElement('div'), { className: 'dp', id: 'dp', hidden: true }) : null;
+if (dp) { dp.innerHTML = '<div class="dp__in" role="dialog" aria-modal="true" aria-labelledby="dpT"><div class="dp__hd"><div class="dp__tt"><h3 id="dpT">Select dates</h3><p id="dpHint">Pick the day you collect the bike.</p></div><div class="avail__box dp__sel"><span class="avail__f" id="dpA"><span class="mono">Pick-up</span><b>Add date</b></span><span class="avail__f" id="dpB"><span class="mono">Return</span><b>Add date</b></span></div><button type="button" class="dp__x" id="dpX" aria-label="Close">×</button></div><div class="dp__cal"><button type="button" class="dp__nav" id="dpPrev" aria-label="Earlier months">‹</button><div class="dp__months" id="dpMonths"></div><button type="button" class="dp__nav" id="dpNext" aria-label="Later months">›</button></div><div class="dp__ft"><p class="dp__key"><s>12</s> no bike free · <i></i> one or two left</p><button type="button" class="avail__clear" id="dpClear">Clear dates</button><button type="button" class="pillbtn ink" id="dpDone">Close</button></div></div>'; document.body.appendChild(dp); }
 const wide = matchMedia('(min-width: 760px)');
 let m0 = null, lastFocus = null;
 const pool = () => bikes.filter((b) => shown(b) && !soon(b));
@@ -218,7 +220,6 @@ const pick = (d) => {
   render(); months();
 };
 if (dp) {
-  document.body.appendChild(dp); // out of the section, so the overlay always covers the page
   document.querySelectorAll('[data-dp]').forEach((b) => b.addEventListener('click', openDp));
   $('dpMonths').addEventListener('click', (e) => { const el = e.target.closest('.dp__d'); if (el && !el.disabled) pick(el.dataset.d); });
   const shift = (k) => { const [y, m] = m0.split('-').map(Number); const t = new Date(y, m - 1 + k, 1); m0 = `${t.getFullYear()}-${pad(t.getMonth() + 1)}`; months(); };
