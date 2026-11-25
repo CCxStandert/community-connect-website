@@ -56,8 +56,7 @@ defined( 'ABSPATH' ) || exit;
     <div class="chips" role="group" aria-label="Filter bikes" id="chips"></div>
     <div class="avail" id="avail">
       <div class="avail__box">
-        <button type="button" class="avail__f" id="availA" data-dp><span class="mono">Pick-up</span><b>Add date</b></button>
-        <button type="button" class="avail__f" id="availB" data-dp><span class="mono">Return</span><b>Add date</b></button>
+        <button type="button" class="avail__f" id="availA" data-dp><span class="mono">Pick-up</span><b>Add date</b></button><button type="button" class="avail__f" id="availB" data-dp><span class="mono">Return</span><b>Add date</b></button>
       </div>
       <button type="button" class="pillbtn ink avail__go" id="availGo" data-dp>Check availability</button>
       <button type="button" class="avail__clear" id="availClear" hidden>Clear dates</button>

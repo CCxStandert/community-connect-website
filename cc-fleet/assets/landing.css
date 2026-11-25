@@ -368,7 +368,8 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .avail[hidden]{display:none}
 .avail__box{display:grid;grid-template-columns:1fr 1fr;border:var(--line);border-radius:14px;background:var(--paper);overflow:hidden}
 .avail__f{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 14px;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
-.avail__f+.avail__f{border-left:1px solid var(--ink)}
+.avail__box>:not(.avail__f){display:none}
+.avail__f+.avail__f,.avail__box>br+.avail__f,.avail__box>p+.avail__f{border-left:1px solid var(--ink)}
 .avail__f .mono{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .avail__f b{font-weight:400;font-size:16px;color:var(--muted)}
 .avail__f.has b{font-weight:600;color:var(--ink)}
