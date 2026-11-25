@@ -108,7 +108,9 @@ const render = () => {
   $('fitMsg').textContent = nFit ? `Probably size ${sizes.join(' or ')}: ${nFit} bike${nFit === 1 ? '' : 's'} fit${nFit === 1 ? 's' : ''}.` : 'Nothing in the fleet fits that height yet. Message us anyway.';
   $('chips').innerHTML = chipsHtml();
   // Bookable bikes first (by number), the ones still on their way at the end.
-  const list = [...bikes].sort((a, b) => (soon(a) - soon(b)) || a.cc.localeCompare(b.cc));
+  // With dates picked, the bikes free for all of them come first (then taken, then coming soon).
+  const rank = (b) => (soon(b) ? 2 : (hasRange() && cal && !freeRange(b, sel.a, sel.b) ? 1 : 0));
+  const list = [...bikes].sort((a, b) => (rank(a) - rank(b)) || a.cc.localeCompare(b.cc));
   $('list').innerHTML = list.map((b) => {
     const ok = fits(b, h);
     const free = hasRange() && cal ? freeRange(b, sel.a, sel.b) : null;
