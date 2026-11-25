@@ -110,6 +110,6 @@ add_action( 'after_switch_theme', function () {
  */
 add_action( 'wp_head', function () {
 	if ( is_front_page() ) {
-		printf( '<link rel="preload" as="image" href="%s" type="image/webp" fetchpriority="high">' . "\n", esc_url( get_theme_file_uri( 'assets/images/hero-ghc.webp' ) ) );
+		printf( '<link rel="preload" as="image" href="%s" type="image/webp" fetchpriority="high">' . "\n", esc_url( get_theme_file_uri( 'assets/images/hero-ghc-2026.webp' ) ) );
 	}
 }, 1 );

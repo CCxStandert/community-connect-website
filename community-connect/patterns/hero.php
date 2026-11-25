@@ -7,7 +7,7 @@
  */
 ?>
 <!-- wp:group {"className":"slides","anchor":"slides","align":"full","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
-<div class="wp-block-group alignfull slides" id="slides"><!-- wp:group {"className":"cc-cover cc-slide","style":{"background":{"backgroundImage":{"url":"<?php echo esc_url( get_theme_file_uri( 'assets/images/hero-ghc.webp' ) ); ?>","source":"file","title":""},"backgroundSize":"cover","backgroundPosition":"50% 50%"},"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+<div class="wp-block-group alignfull slides" id="slides"><!-- wp:group {"className":"cc-cover cc-slide","style":{"background":{"backgroundImage":{"url":"<?php echo esc_url( get_theme_file_uri( 'assets/images/hero-ghc-2026.webp' ) ); ?>","source":"file","title":""},"backgroundSize":"cover","backgroundPosition":"50% 50%"},"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group cc-cover cc-slide"><!-- wp:paragraph {"className":"is-style-pill-tag"} -->
 <p class="is-style-pill-tag">Free to borrow</p>
 <!-- /wp:paragraph --><!-- wp:heading {"level":1,"className":"cc-hero-title"} -->
