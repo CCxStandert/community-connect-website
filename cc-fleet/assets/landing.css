@@ -363,16 +363,17 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
   .chips{gap:5px}
 }
 
-/* ---- Fleet: "Check availability" (Pick-up | Return + date picker), availability on every card ---- */
+/* ---- Fleet: "Check availability" (Pick-up | Return + date picker) in the site's own style:
+   square hairline boxes, mono labels, pink = taken like the bike calendar, ink = your dates ---- */
 .avail{display:grid;gap:10px;margin-top:14px}
 .avail[hidden]{display:none}
-.avail__box{display:grid;grid-template-columns:1fr 1fr;border:var(--line);border-radius:14px;background:var(--paper);overflow:hidden}
-.avail__f{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 14px;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.avail__box{display:grid;grid-template-columns:1fr 1fr;border:var(--line);background:var(--paper)}
 .avail__box>:not(.avail__f){display:none}
-.avail__f+.avail__f,.avail__box>br+.avail__f,.avail__box>p+.avail__f{border-left:1px solid var(--ink)}
-.avail__f .mono{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.avail__f{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.avail__f+.avail__f{border-left:var(--line)}
+.avail__f .mono{font-size:11px;letter-spacing:.1em;text-transform:uppercase}
 .avail__f b{font-weight:400;font-size:16px;color:var(--muted)}
-.avail__f.has b{font-weight:600;color:var(--ink)}
+.avail__f.has b{font-weight:700;color:var(--ink)}
 button.avail__f:hover{background:var(--cream)}
 .avail__go{width:100%}
 .avail__clear{justify-self:start;padding:0;border:0;background:none;color:var(--ink);font:600 13px/1.2 'Inter Tight',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
@@ -380,44 +381,42 @@ button.avail__f:hover{background:var(--cream)}
 @media(min-width:760px){.avail{grid-template-columns:minmax(0,420px) auto auto;align-items:center;justify-content:start;gap:14px}.avail__go{width:auto}}
 /* the picker */
 html.dp-open{overflow:hidden}
-.dp{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,18,23,.45)}
+.dp{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,18,23,.5)}
 .dp[hidden]{display:none}
-.dp__in{width:100%;max-height:92vh;overflow:auto;background:var(--paper);border-radius:18px 18px 0 0;padding:20px 16px 16px;box-shadow:0 -10px 40px rgba(0,0,0,.2)}
-@media(min-width:760px){.dp{align-items:center}.dp__in{width:min(760px,94vw);border-radius:18px;padding:28px 28px 20px}}
-.dp__hd{position:relative;display:grid;gap:14px;padding-right:36px}
-@media(min-width:760px){.dp__hd{grid-template-columns:1fr minmax(0,320px);align-items:start}}
-.dp__tt h3{margin:0;font:700 24px/1.1 'Inter Tight',sans-serif;letter-spacing:-.03em}
-.dp__tt p{margin:6px 0 0;font-size:14px;color:var(--muted)}
+.dp__in{width:100%;max-height:92vh;overflow:auto;background:var(--paper);border-top:var(--line);padding:18px 16px 16px}
+@media(min-width:760px){.dp{align-items:center}.dp__in{width:min(780px,94vw);border:var(--line);padding:24px 24px 18px}}
+.dp__hd{position:relative;display:grid;gap:14px;padding-right:40px}
+@media(min-width:760px){.dp__hd{grid-template-columns:1fr minmax(0,320px);align-items:end}}
+.dp__tt h3{margin:0;font:800 26px/1 'Inter Tight',sans-serif;letter-spacing:-.045em}
+.dp__tt p{margin:8px 0 0;font-size:14px}
+.dp__sel{width:100%}
 .dp__sel .avail__f{cursor:default}
-.dp__sel .avail__f.is-on{box-shadow:inset 0 0 0 2px var(--ink);border-radius:12px}
-.dp__x{position:absolute;top:-6px;right:-6px;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--ink);font:400 28px/1 'Inter Tight',sans-serif;cursor:pointer}
-.dp__x:hover{background:var(--cream)}
+.dp__sel .avail__f.is-on{background:var(--sand)}
+.dp__x{position:absolute;top:-8px;right:-8px;width:44px;height:44px;border:0;background:none;color:var(--ink);font:400 30px/1 'Inter Tight',sans-serif;cursor:pointer}
 .dp__cal{position:relative;margin-top:18px}
-.dp__months{display:grid;gap:28px}
-@media(min-width:760px){.dp__months{grid-template-columns:1fr 1fr;gap:40px}}
-.dp__m h4{margin:0 0 12px;text-align:center;font:600 16px/36px 'Inter Tight',sans-serif}
-.dp__nav{position:absolute;top:0;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--ink);font:400 26px/1 'Inter Tight',sans-serif;cursor:pointer;z-index:1}
-.dp__nav:hover:not(:disabled){background:var(--cream)}
+.dp__months{display:grid;gap:22px}
+@media(min-width:760px){.dp__months{grid-template-columns:1fr 1fr;gap:28px}}
+.dp__m h4{margin:0 0 8px;text-align:center;font:700 16px/44px 'Inter Tight',sans-serif;letter-spacing:-.02em}
+.dp__nav{position:absolute;top:0;width:44px;height:44px;border:0;background:none;color:var(--ink);font:400 26px/1 'Inter Tight',sans-serif;cursor:pointer;z-index:1}
 .dp__nav:disabled{opacity:.25;cursor:default}
 #dpPrev{left:0}#dpNext{right:0}
-.dp__g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px}
-.dp__w{padding:4px 0 8px;text-align:center;font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;color:var(--muted);text-transform:uppercase}
-.dp__d{position:relative;height:44px;border:0;background:transparent;color:var(--ink);font:600 15px/1 'Inter Tight',sans-serif;cursor:pointer;border-radius:999px}
-.dp__d:hover:not(:disabled){box-shadow:inset 0 0 0 1.5px var(--ink)}
-.dp__d.is-off{color:rgba(20,18,23,.3);font-weight:400;text-decoration:line-through;cursor:default}
-.dp__d.is-low::after{content:'';position:absolute;left:50%;bottom:6px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:#E0518F}
-.dp__d.is-today{text-decoration:underline;text-underline-offset:4px}
-.dp__d.is-today.is-off{text-decoration:line-through}
-.dp__d.is-in{background:var(--cream);border-radius:0}
-.dp__d.is-a,.dp__d.is-b{background:var(--ink);color:var(--paper)}
-.dp__d.is-a.is-low::after,.dp__d.is-b.is-low::after{background:var(--pink)}
+.dp__g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.dp__w{padding:4px 0;text-align:center;font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;text-transform:uppercase;color:var(--muted)}
+.dp__d{min-height:38px;padding:0;border:1px solid rgba(20,18,23,.55);background:transparent;color:var(--ink);font:400 13px/1 'IBM Plex Mono',ui-monospace,monospace;cursor:pointer}
+.dp__d:hover:not(:disabled){border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.dp__d.is-off{background:var(--pink);border-color:var(--pink);cursor:default}
+.dp__d.is-out{opacity:.3;border-color:transparent;background:none}
+.dp__d.is-today{font-weight:700}
+.dp__d.is-in{background:var(--ink);border-color:var(--ink);color:var(--paper);opacity:.75}
+.dp__d.is-a,.dp__d.is-b{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .dp__d:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.dp__ft{display:flex;align-items:center;gap:16px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(20,18,23,.15)}
-.dp__key{flex:1;margin:0;font-size:12px;color:var(--muted)}
-.dp__key s{color:rgba(20,18,23,.4)}
-.dp__key i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#E0518F;vertical-align:middle;margin:0 2px}
-.dp__ft .pillbtn{height:44px}
-@media(max-width:759px){.dp__key{flex-basis:100%;order:3}.dp__ft{flex-wrap:wrap;justify-content:space-between}}
+.dp__ft{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;margin-top:16px;padding-top:14px;border-top:var(--line)}
+.dp__key{flex:1 1 100%;margin:0;font-size:12px}
+.dp__key .k{display:inline-block;width:10px;height:10px;margin:0 4px 0 0;vertical-align:-1px;border:1px solid var(--ink)}
+.dp__key .k.off{background:var(--pink);border-color:var(--pink)}
+.dp__key .k.sel{background:var(--ink)}
+#dpDone{margin-left:auto}
+@media(min-width:760px){.dp__key{flex:1 1 auto}}
 /* On each card: "Free from 3 Dec" + the next 14 days (pink = taken, like the bike calendar) */
 .card .av{display:flex;flex-direction:column;gap:6px;margin-top:2px}
 .card .av__t{font-size:12.5px;line-height:1.3}
@@ -434,5 +433,3 @@ html.dp-open{overflow:hidden}
 /* Race tags carry the racing-terms colour, not the filter colour */
 .st.race,.ev .st.race{background:var(--ochre);border-color:var(--ochre);color:#fff}
 @media(max-width:759px){.evs .ev>.sts .st.race{background:none;color:var(--ochre);font-weight:700}}
-#dpDone{margin-left:auto}
-.dp__sel{width:100%}

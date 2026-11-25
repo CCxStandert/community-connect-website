@@ -143,7 +143,7 @@ const WD = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 // The picker is built here, not in the page HTML (WordPress would wrap its lines in paragraphs).
 const dp = $('avail') ? Object.assign(document.createElement('div'), { className: 'dp', id: 'dp', hidden: true }) : null;
-if (dp) { dp.innerHTML = '<div class="dp__in" role="dialog" aria-modal="true" aria-labelledby="dpT"><div class="dp__hd"><div class="dp__tt"><h3 id="dpT">Select dates</h3><p id="dpHint">Pick the day you collect the bike.</p></div><div class="avail__box dp__sel"><span class="avail__f" id="dpA"><span class="mono">Pick-up</span><b>Add date</b></span><span class="avail__f" id="dpB"><span class="mono">Return</span><b>Add date</b></span></div><button type="button" class="dp__x" id="dpX" aria-label="Close">×</button></div><div class="dp__cal"><button type="button" class="dp__nav" id="dpPrev" aria-label="Earlier months">‹</button><div class="dp__months" id="dpMonths"></div><button type="button" class="dp__nav" id="dpNext" aria-label="Later months">›</button></div><div class="dp__ft"><p class="dp__key"><s>12</s> no bike free · <i></i> one or two left</p><button type="button" class="avail__clear" id="dpClear">Clear dates</button><button type="button" class="pillbtn ink" id="dpDone">Close</button></div></div>'; document.body.appendChild(dp); }
+if (dp) { dp.innerHTML = '<div class="dp__in" role="dialog" aria-modal="true" aria-labelledby="dpT"><div class="dp__hd"><div class="dp__tt"><h3 id="dpT">Select dates</h3><p id="dpHint">Pick the day you collect the bike.</p></div><div class="avail__box dp__sel"><span class="avail__f" id="dpA"><span class="mono">Pick-up</span><b>Add date</b></span><span class="avail__f" id="dpB"><span class="mono">Return</span><b>Add date</b></span></div><button type="button" class="dp__x" id="dpX" aria-label="Close">×</button></div><div class="dp__cal"><button type="button" class="dp__nav" id="dpPrev" aria-label="Earlier months">‹</button><div class="dp__months" id="dpMonths"></div><button type="button" class="dp__nav" id="dpNext" aria-label="Later months">›</button></div><div class="dp__ft"><p class="dp__key"><span class="k off"></span>No bike free &nbsp; <span class="k sel"></span>Your dates</p><button type="button" class="avail__clear" id="dpClear">Clear dates</button><button type="button" class="pillbtn ink" id="dpDone">Close</button></div></div>'; document.body.appendChild(dp); }
 const wide = matchMedia('(min-width: 760px)');
 let m0 = null, lastFocus = null;
 const pool = () => bikes.filter((b) => shown(b) && !soon(b));
@@ -161,7 +161,7 @@ const fields = () => {
 };
 const days = () => { fields(); if (dp && !dp.hidden) months(); };
 const dayState = (d) => {
-  if (!cal || d < cal.earliest || d > cal.latest) return { off: true };
+  if (!cal || d < cal.earliest || d > cal.latest) return { off: true, out: true };
   if (sel.a && !sel.b && d >= sel.a) {
     const ok = (!cal.max_days || dlen(sel.a, d) <= cal.max_days) && nRange(sel.a, d) > 0;
     return { off: !ok, n: ok ? nRange(sel.a, d) : 0 };
@@ -188,7 +188,7 @@ const months = () => {
       const d = `${ym}-${pad(n)}`;
       const st = dayState(d);
       const z = sel.b || sel.a;
-      const cls = ['dp__d', st.off ? 'is-off' : '', !st.off && st.n > 0 && st.n <= 2 ? 'is-low' : '', d === sel.a ? 'is-a' : '', sel.b && d === sel.b ? 'is-b' : '', sel.a && sel.b && d > sel.a && d < sel.b ? 'is-in' : '', d === cal.today ? 'is-today' : ''].filter(Boolean).join(' ');
+      const cls = ['dp__d', st.out ? 'is-out' : (st.off ? 'is-off' : ''), d === sel.a ? 'is-a' : '', sel.b && d === sel.b ? 'is-b' : '', sel.a && sel.b && d > sel.a && d < sel.b ? 'is-in' : '', d === cal.today ? 'is-today' : ''].filter(Boolean).join(' ');
       const lab = `${nice(d)}${st.off ? ', not available' : `, ${st.n} bike${st.n === 1 ? '' : 's'} free`}`;
       cells += `<button type="button" class="${cls}" data-d="${d}"${st.off ? ' disabled' : ''} aria-label="${lab}"${d === sel.a || d === z ? ' aria-pressed="true"' : ''}>${n}</button>`;
     }
