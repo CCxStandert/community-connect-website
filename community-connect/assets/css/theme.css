@@ -97,7 +97,7 @@ header.top { position: sticky; top: 0; z-index: 20; }
 .cc-welcome .cc-crumb span { color: var(--wp--preset--color--ink, #141217); }
 .cc-welcome .cc-welcome-text { font-size: 19px; line-height: 1.32; letter-spacing: -.01em; margin: 0; max-width: 40ch; }
 .cc-welcome .cc-welcome-text a { color: inherit; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
-.cc-welcome .cc-welcome-text a { transition: background-color .15s ease; border-radius: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.cc-welcome .cc-welcome-text a { transition: background-color .15s ease; border-radius: 0; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .cc-welcome .cc-welcome-text a:hover, .cc-welcome .cc-welcome-text a:focus-visible { background: var(--wp--preset--color--pink); text-decoration-color: transparent; box-shadow: 0 0 0 3px var(--wp--preset--color--pink); }
 @media (min-width: 980px) {
 	.cc-welcome { padding: 40px 40px 56px; }
@@ -345,3 +345,8 @@ footer.foot .fine { text-align: center; font-size: 14px; margin: 0 0 12px; }
 @media (min-width: 980px) { .cc-story-credit { padding-top: 28px; padding-bottom: 64px; } }
 .cc-landing .cc-ride > p:not([class]) + p:not([class]) { margin-top: 12px !important; }
 .cc-landing .cc-ride > p:not([class]):has(+ .cc-ride__more) { margin-bottom: 18px !important; }
+
+/* Photo slides: the whole picture is the link (the title's link stretches over it) */
+.cc-cover .cc-hero-title a::after { content: ''; position: absolute; inset: 0; z-index: 1; }
+.cc-cover .cc-hero-title a:focus-visible { outline: none; }
+.cc-cover:has(.cc-hero-title a:focus-visible) { outline: 3px solid var(--wp--preset--color--pink); outline-offset: -3px; }

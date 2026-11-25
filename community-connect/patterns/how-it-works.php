@@ -11,9 +11,9 @@
 <div class="wp-block-group cc-cover cc-photo"><!-- wp:heading {"className":"cc-photo-title","anchor":"how"} -->
 <h2 class="wp-block-heading cc-photo-title" id="how">How it works</h2>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-l2"} -->
-<p class="cc-l2">Six steps, mostly on your phone.</p>
+<p class="cc-l2">Responsible sharing.</p>
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"is-style-hand-note"} -->
-<p class="is-style-hand-note">one free day between loans x</p>
+<p class="is-style-hand-note">treat it like your own x</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --><!-- wp:group {"className":"row max cc-cycle","anchor":"how-steps","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group row max cc-cycle" id="how-steps"><!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
