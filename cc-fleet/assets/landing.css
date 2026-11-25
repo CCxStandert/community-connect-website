@@ -434,3 +434,5 @@ html.dp-open{overflow:hidden}
 /* Race tags carry the racing-terms colour, not the filter colour */
 .st.race,.ev .st.race{background:var(--ochre);border-color:var(--ochre);color:#fff}
 @media(max-width:759px){.evs .ev>.sts .st.race{background:none;color:var(--ochre);font-weight:700}}
+#dpDone{margin-left:auto}
+.dp__sel{width:100%}
