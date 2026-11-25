@@ -40,7 +40,7 @@
 <!-- /wp:paragraph --><!-- wp:heading {"level":3,"className":"cc-ride__name"} -->
 <h3 class="wp-block-heading cc-ride__name">BLOCKHOUSE</h3>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-ride__when"} -->
-<p class="cc-ride__when">Friday mornings · sunrise at the Blockhouse</p>
+<p class="cc-ride__when">Every other Friday · sunrise at the Blockhouse</p>
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"cc-ride__tags"} -->
 <p class="cc-ride__tags"><span>Social</span><span>Hill climb</span><span>Gravel or MTB</span></p>
 <!-- /wp:paragraph --><!-- wp:paragraph -->

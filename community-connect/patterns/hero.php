@@ -21,7 +21,7 @@
 <div class="wp-block-group cc-cover cc-slide"><!-- wp:paragraph {"className":"is-style-pill-tag"} -->
 <p class="is-style-pill-tag">New project</p>
 <!-- /wp:paragraph --><!-- wp:heading {"className":"cc-hero-title"} -->
-<h2 class="wp-block-heading cc-hero-title"><a href="#fleet">Gravel Hearts Club</a></h2>
+<h2 class="wp-block-heading cc-hero-title"><a href="/shop/koos-gravel-hearts-club-tee/">Gravel Hearts Club</a></h2>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-l2"} -->
 <p class="cc-l2">Cute and Dirty</p>
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"is-style-hand-note"} -->

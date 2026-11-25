@@ -55,7 +55,7 @@ class CC_Fleet_Landing {
 		}
 		$done = true;
 		if ( ! self::theme_active() ) {
-			wp_enqueue_style( 'cc-landing-fonts', 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=EB+Garamond:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Reenie+Beanie&display=swap', array(), null ); // phpcs:ignore
+			wp_enqueue_style( 'cc-landing-fonts', 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Reenie+Beanie&display=swap', array(), null ); // phpcs:ignore
 		}
 		wp_enqueue_style( 'cc-landing', CC_FLEET_URL . 'assets/landing.css', array(), CC_FLEET_VERSION );
 		wp_enqueue_script( 'cc-landing', CC_FLEET_URL . 'assets/landing.js', array(), CC_FLEET_VERSION, true );
@@ -116,7 +116,7 @@ class CC_Fleet_Landing {
 				wp_dequeue_style( $h );
 			}
 		}
-		wp_enqueue_style( 'cc-landing-fonts', 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700;800&family=EB+Garamond:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Reenie+Beanie&display=swap', array(), null ); // phpcs:ignore
+		wp_enqueue_style( 'cc-landing-fonts', 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&family=Reenie+Beanie&display=swap', array(), null ); // phpcs:ignore
 		wp_enqueue_style( 'cc-landing', CC_FLEET_URL . 'assets/landing.css', array( 'cc-landing-fonts' ), CC_FLEET_VERSION );
 		wp_enqueue_script( 'cc-landing', CC_FLEET_URL . 'assets/landing.js', array(), CC_FLEET_VERSION, true );
 		wp_add_inline_script( 'cc-landing', 'window.CCLanding=' . wp_json_encode( self::data() ) . ';', 'before' );

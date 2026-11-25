@@ -223,3 +223,8 @@ html.cc-locked { overflow: hidden; }
 	.cc-woo .form-row-first, .cc-woo .form-row-last { display: inline-block; width: calc(50% - 8px); vertical-align: top; }
 	.cc-woo .form-row-first { margin-right: 12px; }
 }
+
+/* Category pills on phones: same compact chip as the fleet and event filters */
+@media (max-width: 759px) {
+	.cc-pill { height: 30px; padding: 0 11px; border-width: 1.2px; font: 500 11px/1 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; }
+}

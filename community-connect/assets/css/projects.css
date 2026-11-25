@@ -3,7 +3,7 @@
 	--ink: #141217; --paper: #F4EEE4; --sand: #D3C8B4; --pink: #FFB1EC; --ochre: #A56C12; --cream: #EDE3E8; --muted: #5B5560;
 	--line: 1.5px solid var(--ink);
 	--mono: 400 11px/1.3 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-	--serif: 'EB Garamond', Georgia, serif;
+	--serif: 'Inter Tight', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	--sans: 'Inter Tight', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 .cc-bg--pink { background: var(--pink); color: var(--ink); }

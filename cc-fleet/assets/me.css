@@ -6,7 +6,7 @@
 .cc-me__crumb { margin: 0 0 10px; font: var(--mono); letter-spacing: .04em; color: var(--muted); }
 .cc-me__crumb span { color: var(--ink); }
 .cc-me__h1 { margin: 0 0 8px; font: 800 clamp(40px, 8vw, 88px)/.95 'Inter Tight', sans-serif; letter-spacing: -.045em; }
-.cc-me__lede { margin: 0; max-width: 52ch; font: 400 clamp(19px, 2.2vw, 24px)/1.3 'EB Garamond', Georgia, serif; }
+.cc-me__lede { margin: 0; max-width: 52ch; font: 500 clamp(18px, 2vw, 22px)/1.3 'Inter Tight', sans-serif; letter-spacing: -.02em; }
 .cc-me__lede a { font: 600 15px/1 'Inter Tight', sans-serif; margin-left: 6px; color: inherit; text-underline-offset: 3px; }
 .cc-me__list { border-top: var(--line); }
 .cc-me__empty { margin: 0; padding: 22px 16px; color: var(--muted); border-bottom: var(--line); }

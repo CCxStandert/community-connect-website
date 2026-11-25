@@ -1,7 +1,7 @@
 /* Built from cc-site/template.html by build.py. Edit there. */
 /* Community Connect — Mobile 2027. Follows standert.de on phones: photo-led, hairline tiles,
    short bold headings, outlined pills. Paper #F4EEE4 · Ink #141217 · Sand #D3C8B4 · Hearts Pink #FFB1EC
-   · Karoo Ochre #A56C12 · Cream Fade #EDE3E8. Inter Tight (UI), EB Garamond (stories), IBM Plex Mono (labels),
+   · Karoo Ochre #A56C12 · Cream Fade #EDE3E8. Inter Tight (UI and stories), IBM Plex Mono (labels),
    Reenie Beanie (one hand note). Mobile first at 390 px; wider screens get more columns. */
 :root{--ink:#141217;--paper:#F4EEE4;--sand:#D3C8B4;--pink:#FFB1EC;--ochre:#A56C12;--cream:#EDE3E8;--muted:#5B5560;--line:1.5px solid #141217}
 *{box-sizing:border-box;min-width:0}
@@ -15,7 +15,7 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .max{max-width:1280px;margin-inline:auto}
 .mono{font:400 12px/1.3 'IBM Plex Mono',ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase}
 .hand{font-family:'Reenie Beanie',cursive;font-weight:400;line-height:1}
-.serif{font-family:'EB Garamond',Georgia,serif}
+.serif{font-family:'Inter Tight',Helvetica,sans-serif;letter-spacing:-.02em}
 .h{margin:0;font:700 24px/1.08 'Inter Tight',sans-serif;letter-spacing:-.035em}
 .h.big{font-size:clamp(30px,6vw,52px);font-weight:800;letter-spacing:-.045em;line-height:1}
 .sub{margin:4px 0 0;font-size:15px;color:var(--ink)}
@@ -44,11 +44,11 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
   .links a{text-decoration:none;font-weight:500;font-size:15px;padding:10px 12px;border-radius:999px}
   .links a:hover{background:var(--cream)}
 }
-.pillbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border-radius:999px;border:var(--line);background:transparent;color:var(--ink);font:700 15px/1 'Inter Tight',sans-serif;text-decoration:none;cursor:pointer;white-space:nowrap}
+.pillbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;border:var(--line);background:transparent;color:var(--ink);font:700 15px/1 'Inter Tight',sans-serif;text-decoration:none;cursor:pointer;white-space:nowrap}
 .pillbtn.pink{background:var(--pink);border-color:var(--pink)}
 .pillbtn.ink{background:var(--ink);color:var(--paper)}
 .pillbtn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.pillbtn.sm{height:40px;padding:0 16px;font-size:14px}
+.pillbtn.sm{height:34px;padding:0 14px;font-size:13px}
 .top .pillbtn.sm{display:none}
 @media(min-width:980px){.top .pillbtn.sm{display:inline-flex}}
 
@@ -144,10 +144,10 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .say{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:0 18%;pointer-events:none}
 .say i{display:block;font:400 11px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-style:normal;margin-bottom:8px;transition:opacity .35s}
 .say b{display:block;font:800 clamp(28px,7vw,52px)/1 'Inter Tight',sans-serif;letter-spacing:-.04em;transition:opacity .35s,transform .35s}
-.say span{display:block;margin-top:8px;font:400 18px/1.2 'EB Garamond',Georgia,serif;transition:opacity .35s}
+.say span{display:block;margin-top:8px;font:500 17px/1.25 'Inter Tight',sans-serif;letter-spacing:-.01em;transition:opacity .35s}
 .say.swap b,.say.swap span,.say.swap i{opacity:0;transform:translateY(8px)}
 .ctrl{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
-.ctrl button{min-width:40px;height:40px;border:var(--line);border-radius:999px;background:var(--paper);color:var(--ink);font:700 13px/1 'Inter Tight',sans-serif;padding:0 12px;cursor:pointer}
+.ctrl button{min-width:44px;height:44px;border:var(--line);border-radius:999px;background:var(--paper);color:var(--ink);font:700 13px/1 'Inter Tight',sans-serif;padding:0 12px;cursor:pointer}
 .row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;border-top:var(--line);border-bottom:var(--line);margin-top:14px;scrollbar-width:none}
 .row::-webkit-scrollbar{display:none}
 .row>*{flex:0 0 min(78%,300px);scroll-snap-align:start;border-right:var(--line);padding:14px 14px 18px;display:flex;flex-direction:column;gap:6px}
@@ -188,7 +188,7 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .deal ul{margin:0;padding:0 16px 16px 34px;font-size:15px}
 .deal li{margin-bottom:6px}
 .game{background:var(--cream);padding:16px;display:grid;gap:12px;border-bottom:var(--line)}
-.game .q{margin:0;font:400 24px/1.15 "EB Garamond",Georgia,serif;min-height:2.3em}
+.game .q{margin:0;font:600 22px/1.2 'Inter Tight',sans-serif;letter-spacing:-.025em;min-height:2.4em}
 .game .ans{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .game .ans .pillbtn{white-space:normal;text-align:center;line-height:1.1;font-size:14px;padding:0 10px}
 .game .why{margin:0;min-height:3em;font-size:15px}
@@ -217,7 +217,7 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .agree details>*:not(summary){padding-inline:16px;max-width:68ch;font-size:15.5px}
 .agree details ul{padding-left:34px}
 .agree details>:last-child{padding-bottom:12px}
-.agree .intro{font:400 22px/1.25 'EB Garamond',Georgia,serif;margin:14px 0}
+.agree .intro{font:500 20px/1.3 'Inter Tight',sans-serif;letter-spacing:-.02em;margin:14px 0}
 
 /* merch-like drawings strip */
 .drawings{display:grid;grid-template-columns:1fr 1fr;border-bottom:var(--line)}
@@ -251,7 +251,7 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 /* fleet grid: inset like the content above it, closed box with hairlines */.grid.max{margin-inline:16px;border-left:var(--line);border-right:var(--line)}@media(min-width:980px){.grid.max{margin-inline:40px}}@media(min-width:1360px){.grid.max{max-width:1200px;margin-inline:auto}}.grid>li{display:flex}.grid>li>.card{flex:1 1 auto;min-width:0}.grid.max{border-bottom:var(--line);margin-bottom:28px}.grid>li{margin-bottom:-1.5px}
 .evchips{margin-top:14px;padding-inline:16px}@media(min-width:980px){.evchips{padding-inline:40px}}.evchips+.evs{margin-top:12px}.ev .sts{grid-row:1;grid-column:3;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.st.race{background:var(--ink);color:var(--paper)}.ev[hidden]{display:none}
 
-/* On Instagram: latest posts in the hairline grid */.igh{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.cc-part--ig .igh .pillbtn{text-decoration:none;height:40px;padding:0 16px;font-size:14px}.cc-part--ig .iggrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));list-style:none;margin:0 16px 28px;padding:0;border-top:var(--line);border-left:var(--line)}.iggrid>li{border-right:var(--line);border-bottom:var(--line);min-width:0}.cc-part--ig .igpost,.cc-part--ig .igpost *{color:var(--ink);text-decoration:none}.igpost{display:flex;flex-direction:column;height:100%}.igh>div>.h,.igh>div>.sub{margin-block:0}.igh>div>.sub{margin-top:4px}.igimg{position:relative;display:block;aspect-ratio:1;overflow:hidden;background:var(--sand);border-bottom:var(--line)}.igimg img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .5s ease,opacity .2s}.igpost:hover .igimg img,.igpost:focus-visible .igimg img{transform:scale(1.03)}.igbadge{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:var(--paper);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1}.igmeta{display:flex;flex-direction:column;gap:6px;padding:10px 12px 14px}.igmeta .mono{font-size:11px;color:var(--muted)}.igcap{font-size:14px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.cc-part--ig .igpost:hover .igcap{text-decoration:underline;text-underline-offset:3px}.cc-part--ig .igmeta .mono{color:var(--muted)}@media(min-width:760px){.cc-part--ig .iggrid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(min-width:980px){.cc-part--ig .iggrid{margin-inline:40px}}@media(min-width:1360px){.cc-part--ig .iggrid{max-width:1200px;margin-inline:auto}}@media(max-width:759px){.iggrid>li:nth-child(n+5){display:none}}@media(prefers-reduced-motion:reduce){.igimg img{transition:none}}
+/* On Instagram: latest posts in the hairline grid */.igh{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.cc-part--ig .igh .pillbtn{text-decoration:none;height:34px;padding:0 14px;font-size:13px}.cc-part--ig .iggrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));list-style:none;margin:0 16px 28px;padding:0;border-top:var(--line);border-left:var(--line)}.iggrid>li{border-right:var(--line);border-bottom:var(--line);min-width:0}.cc-part--ig .igpost,.cc-part--ig .igpost *{color:var(--ink);text-decoration:none}.igpost{display:flex;flex-direction:column;height:100%}.igh>div>.h,.igh>div>.sub{margin-block:0}.igh>div>.sub{margin-top:4px}.igimg{position:relative;display:block;aspect-ratio:1;overflow:hidden;background:var(--sand);border-bottom:var(--line)}.igimg img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .5s ease,opacity .2s}.igpost:hover .igimg img,.igpost:focus-visible .igimg img{transform:scale(1.03)}.igbadge{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:var(--paper);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1}.igmeta{display:flex;flex-direction:column;gap:6px;padding:10px 12px 14px}.igmeta .mono{font-size:11px;color:var(--muted)}.igcap{font-size:14px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.cc-part--ig .igpost:hover .igcap{text-decoration:underline;text-underline-offset:3px}.cc-part--ig .igmeta .mono{color:var(--muted)}@media(min-width:760px){.cc-part--ig .iggrid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(min-width:980px){.cc-part--ig .iggrid{margin-inline:40px}}@media(min-width:1360px){.cc-part--ig .iggrid{max-width:1200px;margin-inline:auto}}@media(max-width:759px){.iggrid>li:nth-child(n+5){display:none}}@media(prefers-reduced-motion:reduce){.igimg img{transition:none}}
 
 .pillbtn .arw{margin-left:-2px}.arw{display:inline-block;width:.72em;height:.72em;margin-left:.15em;vertical-align:-.02em;flex:none}.igbadge svg{width:12px;height:12px}@media(hover:none){.cc-part--ig .igpost:hover .igcap{text-decoration:none}.igpost:hover .igimg img{transform:none}}
 
@@ -283,9 +283,9 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
 .ev .st.surf--mtb{background:#7A8B5A;color:#fff}
 
 /* Events: "Find a bike" jumps to the fleet with the event's dates checked */
-.ev__bike{grid-column:2;justify-self:start;margin-top:8px;min-height:36px;padding:0 14px;border:1.5px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);font:600 13px/1 'Inter Tight',sans-serif;letter-spacing:-.01em;white-space:nowrap;cursor:pointer}
+.ev__bike{grid-column:2;justify-self:start;margin-top:8px;min-height:34px;padding:0 14px;border:1.5px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);font:600 13px/1 'Inter Tight',sans-serif;letter-spacing:-.01em;white-space:nowrap;cursor:pointer}
 .ev__bike:hover{background:var(--ink);color:var(--paper)}
-.ev__bike--sm{grid-column:auto;margin:0;min-height:28px;padding:0 10px;font-size:12px}
+.ev__bike--sm{grid-column:auto;margin:0;min-height:34px;padding:0 12px;font-size:12px}
 .ev__body ol li:has(.ev__bike--sm){grid-template-columns:120px 1fr auto;align-items:center}
 @media(min-width:760px){.ev{grid-template-columns:150px minmax(0,1fr) auto auto}.ev>.ev__bike{grid-row:1;grid-column:4;margin:0}.ev__body{grid-column:2/-1}}
 
@@ -336,7 +336,6 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
   .evfilter{gap:8px}
   .evfilter__lbl{flex-basis:34px;font-size:10px}
   .evfilter .evchips{gap:5px}
-  .evfilter .chip{height:30px;padding:0 11px;border-width:1.2px;font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase}
   .evfilter .l-long{display:none}.evfilter .l-short{display:inline}
   .evs .ev{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:0;align-items:center;padding:18px 16px 16px}
   .evs .ev>.ev__when{grid-column:1;grid-row:1;flex-direction:row;align-items:center;gap:8px;padding-top:0}
@@ -356,4 +355,10 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
   .evs .ev__acts>.ev__tog,.evs .ev__acts>a{margin:0 0 0 auto;font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:var(--ink)}
   .evs .ev__acts>.ev__tog::after{font-family:'Inter Tight',sans-serif;font-size:16px;width:22px;height:22px;border:1.2px solid currentColor;border-radius:50%;display:inline-grid;place-items:center;margin-left:2px}
   .evs .ev>.ev__body{grid-column:1/-1;grid-row:4;margin-top:12px;padding-top:4px;border-top:1px solid rgba(20,18,23,.18)}
+}
+
+/* Filter chips on phones: one compact style everywhere (fleet, events, projects) */
+@media(max-width:759px){
+  .chip{height:30px;padding:0 11px;border-width:1.2px;font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase}
+  .chips{gap:5px}
 }
