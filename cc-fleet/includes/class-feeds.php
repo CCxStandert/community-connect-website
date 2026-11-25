@@ -128,7 +128,7 @@ class CC_Fleet_Feeds {
 	public static function strava_cats( $title, $desc = '' ) {
 		$t    = strtolower( $title . ' ' . $desc );
 		$cats = array();
-		if ( preg_match( '/\brace\b|racing|far inverted|segment/', $t ) ) {
+		if ( preg_match( '/\brace\b|racing|far inverted|\bfar\b|segment/', $t ) ) {
 			$cats[] = 'race';
 		}
 		if ( preg_match( '/overnight|overnighter|bivvy|sleep ?out|camp(ing)? night/', $t ) ) {
@@ -198,7 +198,10 @@ class CC_Fleet_Feeds {
 				}
 			}
 			if ( ! $next ) {
-				$res['past'] = ( $res['past'] ?? 0 ) + 1; // Already happened: nothing to show.
+				// Already happened: kept as a record if it was in the last 12 months (the numbers on the
+				// home page count those), unless the crew already has that ride on the same day.
+				$res['past'] = ( $res['past'] ?? 0 ) + 1;
+				self::strava_record_past( $ev, $s, $tz, $res );
 				continue;
 			}
 			$src   = 'strava:' . $ev['id'];
@@ -233,7 +236,7 @@ class CC_Fleet_Feeds {
 			}
 		}
 		$s['last']        = current_time( 'mysql' );
-		$s['last_result'] = sprintf( '%d new, %d updated, %d skipped, %d past', $res['created'], $res['updated'], $res['skipped'], $res['past'] ?? 0 ) . ( ! empty( $res['hidden'] ) ? ', ' . $res['hidden'] . ' no longer on Strava (hidden)' : '' );
+		$s['last_result'] = sprintf( '%d new, %d updated, %d skipped, %d past (%d saved as records, %d already on the calendar)', $res['created'], $res['updated'], $res['skipped'], $res['past'] ?? 0, $res['recorded'] ?? 0, $res['matched'] ?? 0 ) . ( ! empty( $res['hidden'] ) ? ', ' . $res['hidden'] . ' no longer on Strava (hidden)' : '' );
 		self::strava_save( $s );
 		return $res;
 	}
@@ -262,6 +265,50 @@ class CC_Fleet_Feeds {
 			'events_all'       => $sum( self::strava_get( '/clubs/' . $id . '/group_events', array( 'per_page' => 50 ) ) ),
 			'scope_asked'      => 'read',
 		);
+	}
+
+	/** A club ride that already happened, saved once as a past event (for the records and the yearly count). */
+	private static function strava_record_past( array $ev, array $s, $tz, array &$res ) {
+		global $wpdb;
+		$t    = CC_Fleet_Records::table( 'events' );
+		$src  = 'strava:' . $ev['id'];
+		$occ  = (array) ( $ev['upcoming_occurrences'] ?? array() );
+		$dt   = $occ ? date_create_immutable( (string) end( $occ ) ) : null;
+		if ( ! $dt ) {
+			return;
+		}
+		$day   = $dt->setTimezone( $tz )->format( 'Y-m-d' );
+		$since = wp_date( 'Y-m-d', strtotime( CC_Fleet_Settings::today() . ' -364 days' ) );
+		if ( $day < $since || $day >= CC_Fleet_Settings::today() ) {
+			return;
+		}
+		if ( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $t WHERE source = %s LIMIT 1", $src ) ) ) {
+			return; // Already saved.
+		}
+		// Same day as a group or social ride the crew entered by hand: that's this ride, don't double it.
+		$same = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $t WHERE start_date = %s AND ( type LIKE %s OR type LIKE %s )", $day, '%social%', '%group%' ) );
+		if ( $same ) {
+			$res['matched'] = ( $res['matched'] ?? 0 ) + 1;
+			return;
+		}
+		$title = sanitize_text_field( (string) ( $ev['title'] ?? 'Club ride' ) );
+		$desc  = trim( wp_strip_all_tags( (string) ( $ev['description'] ?? '' ) ) );
+		$wpdb->insert( $t, array(
+			'name'         => $title,
+			'start_date'   => $day,
+			'end_date'     => null,
+			'location'     => sanitize_text_field( (string) ( $ev['address'] ?? '' ) ),
+			'link'         => esc_url_raw( 'https://www.strava.com/clubs/' . rawurlencode( (string) ( $ev['club_id'] ?? $s['club_id'] ) ) . '/group_events/' . rawurlencode( (string) $ev['id'] ) ),
+			'description'  => sanitize_textarea_field( $dt->setTimezone( $tz )->format( 'D j M, H:i' ) . "\n" . wp_trim_words( $desc, 60 ) . "\n(From the Strava club)" ),
+			'type'         => implode( ',', self::strava_cats( $title, $desc ) ),
+			'show_on_site' => 1,
+			'cancelled'    => 0,
+			'source'       => $src,
+			'created_at'   => current_time( 'mysql' ),
+			'updated_at'   => current_time( 'mysql' ),
+		) );
+		CC_Fleet_Install::log( 'events', (int) $wpdb->insert_id, 'strava', 'Past ride saved: ' . $title . ' ' . $day );
+		$res['recorded'] = ( $res['recorded'] ?? 0 ) + 1;
 	}
 
 	private static function strava_level( $l ) {
