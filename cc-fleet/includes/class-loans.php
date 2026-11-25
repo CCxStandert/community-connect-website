@@ -231,8 +231,10 @@ class CC_Fleet_Loans {
 			if ( $end < $from ) {
 				continue;
 			}
+			// The free day sits on both sides of a loan: a new loan has to end (plus its own free day)
+			// before this one starts, so the day(s) just before a booking can't be booked either.
 			$out[] = array(
-				'start' => max( $l->start_date, $from ),
+				'start' => max( self::add_days( $l->start_date, -$buffer ), $from ),
 				'end'   => min( $end, $to ),
 				'kind'  => 'requested' === $l->status ? 'pending' : ( 'held' === $l->status ? 'reserved' : 'booked' ),
 			);
