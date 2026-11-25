@@ -363,35 +363,60 @@ body.cc-landing{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 
   .chips{gap:5px}
 }
 
-/* ---- Fleet: availability first (day strip + availability on every card) ---- */
-.avail{margin-top:14px}
+/* ---- Fleet: "Check availability" (Pick-up | Return + date picker), availability on every card ---- */
+.avail{display:grid;gap:10px;margin-top:14px}
 .avail[hidden]{display:none}
-.avail__hd{display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap;margin-bottom:8px}
-.avail__hd .mono{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.avail__hint{flex:1 1 220px;font-size:13px;color:var(--muted)}
-.avail__clear{margin-left:auto;padding:0;border:0;background:none;color:var(--ink);font:600 13px/1.2 'Inter Tight',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.avail__box{display:grid;grid-template-columns:1fr 1fr;border:var(--line);border-radius:14px;background:var(--paper);overflow:hidden}
+.avail__f{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px 14px;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.avail__f+.avail__f{border-left:1px solid var(--ink)}
+.avail__f .mono{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.avail__f b{font-weight:400;font-size:16px;color:var(--muted)}
+.avail__f.has b{font-weight:600;color:var(--ink)}
+button.avail__f:hover{background:var(--cream)}
+.avail__go{width:100%}
+.avail__clear{justify-self:start;padding:0;border:0;background:none;color:var(--ink);font:600 13px/1.2 'Inter Tight',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .avail__clear[hidden]{display:none}
-.avail__wrap{display:flex;align-items:stretch;border:var(--line);background:var(--paper)}
-.avail__days{flex:1 1 auto;display:flex;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;overscroll-behavior-x:contain}
-.avail__days::-webkit-scrollbar{display:none}
-.avail__nav{flex:none;width:34px;padding:0;border:0;background:var(--paper);color:var(--ink);font:400 24px/1 'Inter Tight',sans-serif;cursor:pointer}
-.avail__nav--prev{border-right:var(--line)}.avail__nav--next{border-left:var(--line)}
-.avail__nav:hover{background:var(--cream)}
-@media(max-width:759px){.avail__nav{display:none}}
-.ad{flex:0 0 48px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 8px;border:0;border-right:1px solid rgba(20,18,23,.14);background:transparent;color:var(--ink);font:inherit;cursor:pointer;scroll-snap-align:start}
-.ad__m{height:10px;font:500 10px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ochre)}
-.ad__w{font:400 10px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-.ad__n{font:700 17px/1.1 'Inter Tight',sans-serif;letter-spacing:-.02em}
-.ad__c{min-width:22px;padding:3px 5px;border-radius:999px;background:var(--cream);font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;text-align:center}
-.ad.is-low .ad__c{background:var(--pink)}
-.ad.is-none .ad__c{background:transparent;color:var(--muted);text-decoration:line-through}
-.ad:hover:not(:disabled) .ad__n{text-decoration:underline;text-underline-offset:3px}
-.ad:disabled{cursor:default}.ad:disabled .ad__n,.ad:disabled .ad__c{opacity:.3}
-.ad.is-sel{background:var(--ink);color:var(--paper)}
-.ad.is-sel .ad__w,.ad.is-sel .ad__m{color:var(--pink)}
-.ad.is-sel .ad__c{background:var(--paper);color:var(--ink);text-decoration:none}
-.ad:focus-visible{outline:2px solid var(--ink);outline-offset:-4px}
-@media(min-width:760px){.ad{flex-basis:52px}}
+@media(min-width:760px){.avail{grid-template-columns:minmax(0,420px) auto auto;align-items:center;justify-content:start;gap:14px}.avail__go{width:auto}}
+/* the picker */
+html.dp-open{overflow:hidden}
+.dp{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,18,23,.45)}
+.dp[hidden]{display:none}
+.dp__in{width:100%;max-height:92vh;overflow:auto;background:var(--paper);border-radius:18px 18px 0 0;padding:20px 16px 16px;box-shadow:0 -10px 40px rgba(0,0,0,.2)}
+@media(min-width:760px){.dp{align-items:center}.dp__in{width:min(760px,94vw);border-radius:18px;padding:28px 28px 20px}}
+.dp__hd{position:relative;display:grid;gap:14px;padding-right:36px}
+@media(min-width:760px){.dp__hd{grid-template-columns:1fr minmax(0,320px);align-items:start}}
+.dp__tt h3{margin:0;font:700 24px/1.1 'Inter Tight',sans-serif;letter-spacing:-.03em}
+.dp__tt p{margin:6px 0 0;font-size:14px;color:var(--muted)}
+.dp__sel .avail__f{cursor:default}
+.dp__sel .avail__f.is-on{box-shadow:inset 0 0 0 2px var(--ink);border-radius:12px}
+.dp__x{position:absolute;top:-6px;right:-6px;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--ink);font:400 28px/1 'Inter Tight',sans-serif;cursor:pointer}
+.dp__x:hover{background:var(--cream)}
+.dp__cal{position:relative;margin-top:18px}
+.dp__months{display:grid;gap:28px}
+@media(min-width:760px){.dp__months{grid-template-columns:1fr 1fr;gap:40px}}
+.dp__m h4{margin:0 0 12px;text-align:center;font:600 16px/36px 'Inter Tight',sans-serif}
+.dp__nav{position:absolute;top:0;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--ink);font:400 26px/1 'Inter Tight',sans-serif;cursor:pointer;z-index:1}
+.dp__nav:hover:not(:disabled){background:var(--cream)}
+.dp__nav:disabled{opacity:.25;cursor:default}
+#dpPrev{left:0}#dpNext{right:0}
+.dp__g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px}
+.dp__w{padding:4px 0 8px;text-align:center;font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;color:var(--muted);text-transform:uppercase}
+.dp__d{position:relative;height:44px;border:0;background:transparent;color:var(--ink);font:600 15px/1 'Inter Tight',sans-serif;cursor:pointer;border-radius:999px}
+.dp__d:hover:not(:disabled){box-shadow:inset 0 0 0 1.5px var(--ink)}
+.dp__d.is-off{color:rgba(20,18,23,.3);font-weight:400;text-decoration:line-through;cursor:default}
+.dp__d.is-low::after{content:'';position:absolute;left:50%;bottom:6px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:#E0518F}
+.dp__d.is-today{text-decoration:underline;text-underline-offset:4px}
+.dp__d.is-today.is-off{text-decoration:line-through}
+.dp__d.is-in{background:var(--cream);border-radius:0}
+.dp__d.is-a,.dp__d.is-b{background:var(--ink);color:var(--paper)}
+.dp__d.is-a.is-low::after,.dp__d.is-b.is-low::after{background:var(--pink)}
+.dp__d:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.dp__ft{display:flex;align-items:center;gap:16px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(20,18,23,.15)}
+.dp__key{flex:1;margin:0;font-size:12px;color:var(--muted)}
+.dp__key s{color:rgba(20,18,23,.4)}
+.dp__key i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#E0518F;vertical-align:middle;margin:0 2px}
+.dp__ft .pillbtn{height:44px}
+@media(max-width:759px){.dp__key{flex-basis:100%;order:3}.dp__ft{flex-wrap:wrap;justify-content:space-between}}
 /* On each card: "Free from 3 Dec" + the next 14 days (pink = taken, like the bike calendar) */
 .card .av{display:flex;flex-direction:column;gap:6px;margin-top:2px}
 .card .av__t{font-size:12.5px;line-height:1.3}

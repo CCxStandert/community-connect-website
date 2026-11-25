@@ -46,8 +46,8 @@ if (!reduce && slideEls.length > 1) setInterval(() => { if (!heroPaused && !docu
 }
 
 /* ---- the fleet: availability first (Airbnb-style) ----
-   A strip of days shows how many bikes are free each day; every card shows when its bike is free.
-   Tap a first and a last day and the grid shows which bikes are free for all of them. */
+   Every card shows when its bike is free; "Check availability" opens a date picker, and the grid
+   then shows which bikes are free for all of the picked days. */
 if ($('list')) {
 const COLORS = { 'CC-03': ['#CFC8BB', 0], 'CC-04': ['#BDB8AE', 0], 'CC-05': ['#4E6F3A', 0], 'CC-06': ['#E8C33A', 0], 'CC-07': ['#EF6AA9', 0], 'CC-08': ['#2A2830', 1], 'CC-09': ['#2F5C45', 0], 'CC-11': ['#B9783A', 0], 'CC-12': ['#D9CBD3', 0], 'CC-13': ['#D9CBD3', 0] };
 const BRAND = CFG.brand || '<span class="mono">Standert</span>'; // Our own SVG, from the server. Bike IDs stay internal.
@@ -137,57 +137,110 @@ const render = () => {
   days();
 };
 
-/* The day strip: one button per day up to the booking horizon, with the number of free bikes. */
-const strip = $('availDays');
-let built = false;
-const days = () => {
-  if (!cal || !strip) return;
-  const pool = bikes.filter((b) => shown(b) && !soon(b));
-  if (!built) {
-    let html = '';
-    for (let d = cal.today; d <= cal.latest; d = addDays(d, 1)) {
-      const dt = new Date(d + 'T12:00:00');
-      const first = d === cal.today || d.slice(8) === '01';
-      html += `<button type="button" class="ad" data-d="${d}">${first ? `<span class="ad__m">${MON[dt.getMonth()]}</span>` : '<span class="ad__m"></span>'}<span class="ad__w">${DOW[dt.getDay()]}</span><b class="ad__n">${dt.getDate()}</b><span class="ad__c"></span></button>`;
-    }
-    strip.innerHTML = html;
-    built = true;
-  }
-  strip.querySelectorAll('.ad').forEach((el) => {
-    const d = el.dataset.d;
-    const open = d >= cal.earliest && d <= cal.latest;
-    const n = open ? pool.filter((b) => freeOn(b, d)).length : 0;
-    el.querySelector('.ad__c').textContent = open ? String(n) : '–';
-    el.disabled = !open;
-    el.classList.toggle('is-none', open && !n);
-    el.classList.toggle('is-low', open && n > 0 && n <= 2);
-    const inSel = sel.a && d >= sel.a && d <= (sel.b || sel.a);
-    el.classList.toggle('is-sel', !!inSel);
-    el.classList.toggle('is-a', d === sel.a);
-    el.classList.toggle('is-b', d === (sel.b || sel.a));
-    el.setAttribute('aria-pressed', inSel ? 'true' : 'false');
-    el.setAttribute('aria-label', `${d}: ${open ? `${n} bike${n === 1 ? '' : 's'} free` : 'not bookable'}`);
+/* "Check availability": Pick-up | Return fields and a date picker (Airbnb-style). Days with no bike
+   free are struck through; once a pick-up day is set, return days that no single bike can cover are too. */
+const WD = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const dp = $('dp');
+const wide = matchMedia('(min-width: 760px)');
+let m0 = null, lastFocus = null;
+const pool = () => bikes.filter((b) => shown(b) && !soon(b));
+const nFree = (d) => pool().filter((b) => freeOn(b, d)).length;
+const nRange = (a, z) => pool().filter((b) => freeRange(b, a, z)).length;
+const dlen = (a, z) => Math.round((new Date(z + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5) + 1;
+const nice = (d) => { const x = new Date(d + 'T12:00:00'); return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][x.getDay()]} ${x.getDate()} ${MON[x.getMonth()]}`; };
+const fields = () => {
+  [['availA', 'dpA', sel.a], ['availB', 'dpB', sel.b]].forEach(([f1, f2, v]) => {
+    [f1, f2].forEach((id) => { const el = $(id); if (!el) return; el.querySelector('b').textContent = v ? nice(v) : 'Add date'; el.classList.toggle('has', !!v); });
   });
-  $('availClear').hidden = !sel.a;
+  if ($('dpA')) { $('dpA').classList.toggle('is-on', !sel.a || !!sel.b); $('dpB').classList.toggle('is-on', !!sel.a && !sel.b); }
+  if ($('availGo')) $('availGo').textContent = hasRange() ? 'Change dates' : 'Check availability';
+  if ($('availClear')) $('availClear').hidden = !sel.a;
+};
+const days = () => { fields(); if (dp && !dp.hidden) months(); };
+const dayState = (d) => {
+  if (!cal || d < cal.earliest || d > cal.latest) return { off: true };
+  if (sel.a && !sel.b && d >= sel.a) {
+    const ok = (!cal.max_days || dlen(sel.a, d) <= cal.max_days) && nRange(sel.a, d) > 0;
+    return { off: !ok, n: ok ? nRange(sel.a, d) : 0 };
+  }
+  const n = nFree(d);
+  return { off: n === 0, n };
+};
+const months = () => {
+  if (!cal) return;
+  const first = cal.today.slice(0, 7), last = cal.latest.slice(0, 7);
+  if (!m0) m0 = (sel.a || cal.earliest).slice(0, 7);
+  const count = wide.matches ? 2 : 1;
+  const addM = (ym, k) => { const [y, m] = ym.split('-').map(Number); const t = new Date(y, m - 1 + k, 1); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}`; };
+  if (m0 < first) m0 = first;
+  if (addM(m0, count - 1) > last) m0 = addM(last, -(count - 1)) < first ? first : addM(last, -(count - 1));
+  let html = '';
+  for (let k = 0; k < count; k++) {
+    const ym = addM(m0, k);
+    const [y, m] = ym.split('-').map(Number);
+    const lead = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+    const dim = new Date(y, m, 0).getDate();
+    let cells = '<span></span>'.repeat(lead);
+    for (let n = 1; n <= dim; n++) {
+      const d = `${ym}-${pad(n)}`;
+      const st = dayState(d);
+      const z = sel.b || sel.a;
+      const cls = ['dp__d', st.off ? 'is-off' : '', !st.off && st.n > 0 && st.n <= 2 ? 'is-low' : '', d === sel.a ? 'is-a' : '', sel.b && d === sel.b ? 'is-b' : '', sel.a && sel.b && d > sel.a && d < sel.b ? 'is-in' : '', d === cal.today ? 'is-today' : ''].filter(Boolean).join(' ');
+      const lab = `${nice(d)}${st.off ? ', not available' : `, ${st.n} bike${st.n === 1 ? '' : 's'} free`}`;
+      cells += `<button type="button" class="${cls}" data-d="${d}"${st.off ? ' disabled' : ''} aria-label="${lab}"${d === sel.a || d === z ? ' aria-pressed="true"' : ''}>${n}</button>`;
+    }
+    html += `<div class="dp__m"><h4>${MONTHS[m - 1]} ${y}</h4><div class="dp__g">${WD.map((w) => `<span class="dp__w">${w}</span>`).join('')}${cells}</div></div>`;
+  }
+  $('dpMonths').innerHTML = html;
+  $('dpPrev').disabled = m0 <= first;
+  $('dpNext').disabled = addM(m0, count - 1) >= last;
+  $('dpHint').textContent = !sel.a ? 'Pick the day you collect the bike.' : (!sel.b ? `Now your return day. Loans go up to ${cal.max_days || 7} days.` : `${nRange(sel.a, sel.b)} bike${nRange(sel.a, sel.b) === 1 ? '' : 's'} free ${short(sel.a, sel.b)}.`);
+  const n = hasRange() ? nRange(sel.a, sel.b) : 0;
+  $('dpDone').textContent = hasRange() ? (n ? `Show ${n} bike${n === 1 ? '' : 's'}` : 'Close') : 'Close';
+};
+const openDp = (e) => {
+  if (!dp || !cal) return;
+  lastFocus = e && e.currentTarget || document.activeElement;
+  m0 = null; dp.hidden = false; document.documentElement.classList.add('dp-open');
+  months(); fields();
+  setTimeout(() => { const f = dp.querySelector('.dp__d.is-a, .dp__d:not([disabled])'); if (f) f.focus(); }, 30);
+};
+const closeDp = () => {
+  if (!dp || dp.hidden) return;
+  dp.hidden = true; document.documentElement.classList.remove('dp-open');
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
 };
 const pick = (d) => {
   ctx = null;
-  if (!sel.a || sel.b || d < sel.a) { sel = { a: d, b: null }; }
-  else {
-    const len = Math.round((new Date(d + 'T12:00:00') - new Date(sel.a + 'T12:00:00')) / 864e5) + 1;
-    if (cal.max_days && len > cal.max_days) { $('msg').textContent = `That’s ${len} days. Loans go up to ${cal.max_days}; for longer, ask in your plan.`; return; }
-    sel.b = d;
-  }
-  render();
+  if (!sel.a || sel.b || d < sel.a) sel = { a: d, b: null };
+  else sel.b = d;
+  render(); months();
 };
-if (strip) {
-  strip.addEventListener('click', (e) => { const el = e.target.closest('.ad'); if (el && !el.disabled) pick(el.dataset.d); });
-  const by = (dir) => strip.scrollBy({ left: dir * strip.clientWidth * 0.85, behavior: reduce ? 'auto' : 'smooth' });
-  $('availPrev').addEventListener('click', () => by(-1));
-  $('availNext').addEventListener('click', () => by(1));
-  $('availClear').addEventListener('click', () => { sel = { a: null, b: null }; ctx = null; render(); });
+if (dp) {
+  document.body.appendChild(dp); // out of the section, so the overlay always covers the page
+  document.querySelectorAll('[data-dp]').forEach((b) => b.addEventListener('click', openDp));
+  $('dpMonths').addEventListener('click', (e) => { const el = e.target.closest('.dp__d'); if (el && !el.disabled) pick(el.dataset.d); });
+  const shift = (k) => { const [y, m] = m0.split('-').map(Number); const t = new Date(y, m - 1 + k, 1); m0 = `${t.getFullYear()}-${pad(t.getMonth() + 1)}`; months(); };
+  $('dpPrev').addEventListener('click', () => shift(-1));
+  $('dpNext').addEventListener('click', () => shift(1));
+  $('dpX').addEventListener('click', closeDp);
+  $('dpDone').addEventListener('click', () => { closeDp(); if (hasRange()) { const l = $('list'); if (l) l.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); } });
+  const clear = () => { sel = { a: null, b: null }; ctx = null; render(); months(); };
+  $('dpClear').addEventListener('click', clear);
+  $('availClear').addEventListener('click', clear);
+  dp.addEventListener('click', (e) => { if (e.target === dp) closeDp(); });
+  document.addEventListener('keydown', (e) => {
+    if (dp.hidden) return;
+    if (e.key === 'Escape') closeDp();
+    if (e.key === 'Tab') { // keep focus inside the picker
+      const f = [...dp.querySelectorAll('button:not([disabled])')]; if (!f.length) return;
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+  (wide.addEventListener ? wide.addEventListener('change', () => { if (!dp.hidden) months(); }) : null);
 }
-const scrollToDay = (d) => { const el = strip && strip.querySelector(`[data-d="${d}"]`); if (el) strip.scrollTo({ left: Math.max(0, el.offsetLeft - strip.offsetLeft - 8), behavior: reduce ? 'auto' : 'smooth' }); };
 
 $('chips').addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f; render(); });
 $('h').addEventListener('input', render);
@@ -204,7 +257,6 @@ window.ccFindBike = (e) => {
   render();
   const box = $('avail').closest('section') || $('avail');
   box.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-  setTimeout(() => scrollToDay(a), 400);
 };
 
 render();
@@ -219,7 +271,6 @@ if (API) {
     });
     cal = { today: j.today, earliest: j.earliest, latest: j.latest, max_days: j.max_days, bikes: out };
     render();
-    if (sel.a) scrollToDay(sel.a);
   }).catch(() => { $('avail').hidden = true; });
 } else if ($('avail')) { $('avail').hidden = true; }
 if (API && !LIVE) {
