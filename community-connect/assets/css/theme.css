@@ -130,6 +130,19 @@ header.top { position: sticky; top: 0; z-index: 20; }
 .cc-landing .drawings .art figure { margin: 0; height: 100%; display: flex; align-items: center; }
 .cc-landing .drawings .art img { max-height: 100%; width: auto; object-fit: contain; }
 .cc-landing .drawings .cc-fig > p { margin: 8px 0 0; font-size: 15px; }
+/* Drawings link to the shop: the whole tile is the link; on hover the product photo fades in over the drawing */
+.cc-landing .drawings .cc-fig { position: relative; }
+.cc-landing .drawings .cc-fig .art { position: relative; overflow: hidden; }
+.cc-landing .drawings .cc-fig > p a { color: inherit; text-decoration: none; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.cc-landing .drawings .cc-fig > p a::after { content: ''; position: absolute; inset: 0; }
+.cc-landing .drawings .cc-fig__cta { font: 500 11px/1.2 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+.cc-landing .drawings .cc-fig__hover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s ease; pointer-events: none; }
+@media (hover: hover) {
+	.cc-landing .drawings .cc-fig:hover .cc-fig__hover, .cc-landing .drawings .cc-fig:focus-within .cc-fig__hover { opacity: 1; }
+	.cc-landing .drawings .cc-fig:hover .cc-fig__cta { text-decoration: underline; text-underline-offset: 3px; }
+}
+.cc-landing .drawings .cc-fig > p a:focus-visible { outline: none; }
+.cc-landing .drawings .cc-fig:focus-within { outline: 2px solid var(--wp--preset--color--ink); outline-offset: -4px; }
 .cc-after { margin-top: 28px; }
 .cc-part { margin: 0; }
 @media (min-width: 980px) { .cc-landing .agree > p { padding: 0 40px; } }

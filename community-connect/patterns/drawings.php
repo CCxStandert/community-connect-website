@@ -14,7 +14,7 @@
 <figure class="wp-block-image size-large"><img src="<?php echo esc_url( get_theme_file_uri( 'assets/images/bear.webp' ) ); ?>" alt="Hand-drawn bear waving a flag, with the Standert lettering"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:group --><!-- wp:paragraph -->
-<p><strong>Gravel Hearts Club</strong></p>
+<p><a href="/shop/koos-gravel-hearts-club-tee/"><strong>Gravel Hearts Club</strong> <span class="cc-fig__cta">Pre-order the tee →</span></a></p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --><!-- wp:group {"className":"cc-fig","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group cc-fig"><!-- wp:group {"className":"art","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"},"backgroundColor":"sand"} -->
@@ -22,7 +22,7 @@
 <figure class="wp-block-image size-large"><img src="<?php echo esc_url( get_theme_file_uri( 'assets/images/eatmydust.webp' ) ); ?>" alt="Hand-lettered Eat my Dust with a poodle"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:group --><!-- wp:paragraph -->
-<p><strong>Eat my Dust</strong></p>
+<p><a href="/shop/bike-maintenance-fund/"><strong>Eat my Dust</strong> <span class="cc-fig__cta">Bike Maintenance Fund →</span></a></p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group --></div>

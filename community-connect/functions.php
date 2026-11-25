@@ -23,6 +23,7 @@ require_once get_theme_file_path( 'inc/projects/projects.php' );
 // The shop: only when WooCommerce is active, so the site never depends on it (see inc/shop/shop.php).
 if ( class_exists( 'WooCommerce' ) ) {
 	require_once get_theme_file_path( 'inc/shop/shop.php' );
+	require_once get_theme_file_path( 'inc/shop/figures.php' );
 } else {
 	// No WooCommerce, no shop: keep the header's "Shop" link out of sight.
 	add_filter( 'render_block_core/navigation-link', function ( $html, $block ) {
