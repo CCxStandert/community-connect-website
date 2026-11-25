@@ -36,9 +36,9 @@
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --><!-- wp:group {"className":"cc-ride cc-ride--pink","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group cc-ride cc-ride--pink"><!-- wp:paragraph {"className":"cc-ride__n"} -->
-<p class="cc-ride__n">02 · Every Friday</p>
+<p class="cc-ride__n">02 · Every OTHER Friday</p>
 <!-- /wp:paragraph --><!-- wp:heading {"level":3,"className":"cc-ride__name"} -->
-<h3 class="wp-block-heading cc-ride__name">The Weekend Ender</h3>
+<h3 class="wp-block-heading cc-ride__name">BLOCKHOUSE</h3>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"cc-ride__when"} -->
 <p class="cc-ride__when">Friday mornings · sunrise at the Blockhouse</p>
 <!-- /wp:paragraph --><!-- wp:paragraph {"className":"cc-ride__tags"} -->
