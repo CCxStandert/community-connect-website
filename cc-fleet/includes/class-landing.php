@@ -39,7 +39,7 @@ class CC_Fleet_Landing {
 		$html = (string) file_get_contents( $f ); // phpcs:ignore
 		if ( 'stats' === $name ) {
 			$st   = self::stats();
-			$html = preg_replace_callback( '/(<b id="(sLoans|sRiders|sEvents)">)[^<]*(<\/b>)/', function ( $m ) use ( $st ) {
+			$html = preg_replace_callback( '/(<b id="(sLoans|sRiders|sEvents)"[^>]*>)[^<]*(<\/b>)/', function ( $m ) use ( $st ) {
 				$k = array( 'sLoans' => 'loans', 'sRiders' => 'riders', 'sEvents' => 'events' )[ $m[2] ];
 				return $m[1] . (int) $st[ $k ] . $m[3];
 			}, $html );
