@@ -61,7 +61,7 @@ const fits = (b, h) => b.range && h >= b.range[0] - 2 && h <= b.range[1] + 2;
 const soon = (b) => b.state === 'soon';
 const label = { available: 'Available', out: 'Out riding', workshop: 'Workshop', booked: 'Booked', reserved: 'Raffle bike', soon: 'Coming soon' };
 const cats = () => [...new Set(bikes.map((b) => b.cat).filter(Boolean))];
-const chipsHtml = () => [['all', 'All'], ['fits', 'Fits me'], ...cats().map((c) => [c, c])].map(([k, l]) => `<button class="chip" data-f="${esc(k)}" aria-pressed="${k === filter}">${esc(l)}</button>`).join('');
+const chipsHtml = () => [['all', 'Show all'], ['fits', 'Fits me'], ...cats().map((c) => [c, c])].map(([k, l]) => `<button class="chip" data-f="${esc(k)}" aria-pressed="${k === filter}">${esc(l)}</button>`).join('');
 const pad = (n) => String(n).padStart(2, '0');
 const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const addDays = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return iso(x); };
@@ -244,7 +244,8 @@ if (dp) {
 }
 
 $('chips').addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f; render(); });
-$('h').addEventListener('input', render);
+// Moving the size slider shows the bikes that fit; "Show all" brings back the whole fleet.
+$('h').addEventListener('input', () => { filter = 'fits'; render(); });
 try { const saved = localStorage.getItem('cc-height'); if (saved) $('h').value = saved; } catch (e) {}
 $('h').addEventListener('change', () => { try { localStorage.setItem('cc-height', $('h').value); } catch (e) {} });
 
