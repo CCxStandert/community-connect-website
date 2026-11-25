@@ -12,6 +12,7 @@ class CC_Fleet_Settings {
 		return array(
 			'notify_emails'        => get_option( 'admin_email' ),
 			'from_name'            => 'Community Connect',
+			'from_email'           => '',      // Sender address for all bike emails, e.g. bikes@…; empty = the site's default.
 			'buffer_days'          => 1,       // Free days after each loan (washing, small fixes, late returns).
 			'same_day_handoff'     => 0,       // Only used with 0 buffer days: a loan may start on the day the previous one ends.
 			'min_notice_days'      => 1,       // Requests must start at least this many days from today.

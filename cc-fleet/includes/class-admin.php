@@ -805,8 +805,9 @@ class CC_Fleet_Admin {
 		wp_nonce_field( 'cc_fleet_settings_save' );
 		echo '<input type="hidden" name="action" value="cc_fleet_settings_save"><table class="form-table"><tbody>';
 		$fields = array(
-			'notify_emails'        => array( 'Crew emails', 'text', 'New requests and the daily digest go here. Separate with commas.' ),
+			'notify_emails'        => array( 'Crew emails', 'text', 'New requests and the daily digest go here. Separate with commas. The first one is also where riders’ replies go.' ),
 			'from_name'            => array( 'Sender name', 'text', '' ),
+			'from_email'           => array( 'Sender address', 'text', 'All bike emails come from this address, e.g. bikes@community-connect.cc. Leave empty to use the site’s default. In WP Mail SMTP, “Force From Email” must be off for this to apply.' ),
 			'min_notice_days'      => array( 'Minimum notice (days)', 'number', 'How far ahead a request must start.' ),
 			'usual_loan_days'      => array( 'Usual loan (days)', 'number', 'What riders are told is normal (we use 7). Longer requests can still be sent, with a reason in their plan, and are marked in the request.' ),
 			'max_loan_days'        => array( 'Longest loan (days)', 'number', 'Hard limit: the form refuses anything longer.' ),
@@ -873,6 +874,8 @@ class CC_Fleet_Admin {
 				$out[ $k ] = sanitize_textarea_field( $in[ $k ] ?? $default );
 			} elseif ( in_array( $k, array( 'agreement_url', 'privacy_url' ), true ) ) {
 				$out[ $k ] = esc_url_raw( $in[ $k ] ?? '' );
+			} elseif ( 'from_email' === $k ) {
+				$out[ $k ] = sanitize_email( $in[ $k ] ?? '' );
 			} elseif ( 'whatsapp_number' === $k ) {
 				$out[ $k ] = '' === trim( (string) ( $in[ $k ] ?? '' ) ) ? '' : CC_Fleet_Phone::clean( sanitize_text_field( $in[ $k ] ) );
 			} else {

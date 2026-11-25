@@ -64,11 +64,20 @@ class CC_Fleet_Emails {
 		if ( $from_name ) {
 			add_filter( 'wp_mail_from_name', $name_filter, 5 );
 		}
+		// Sender address for bike emails only (shop and WordPress emails keep the site's default).
+		$from_email  = (string) CC_Fleet_Settings::get( 'from_email' );
+		$addr_filter = function () use ( $from_email ) {
+			return $from_email;
+		};
+		if ( is_email( $from_email ) ) {
+			add_filter( 'wp_mail_from', $addr_filter, 5 );
+		}
 		if ( $as_html ) {
 			add_action( 'phpmailer_init', $alt );
 		}
 		$sent = wp_mail( $mail['to'], $mail['subject'], $as_html ? $mail['html'] : $mail['body'], $headers );
 		remove_filter( 'wp_mail_from_name', $name_filter, 5 );
+		remove_filter( 'wp_mail_from', $addr_filter, 5 );
 		remove_action( 'phpmailer_init', $alt );
 		return $sent;
 	}

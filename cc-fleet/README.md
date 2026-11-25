@@ -56,6 +56,10 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.21.1: Sender address
+
+- Settings → "Sender address": all bike emails (riders and crew) come from this address, e.g. bikes@community-connect.cc. Shop and WordPress emails keep the site default. Needs "Force From Email" off in WP Mail SMTP.
+
 ## 0.21.0: Rider-to-rider handoffs
 
 - Confirming a loan with pick-up "straight from the rider before" links the two loans (loans.handoff_from). On a loan page, "Hand straight to …" links the next confirmed rider; "Unlink" undoes it.
