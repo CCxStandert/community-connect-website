@@ -144,3 +144,12 @@
 .cc-pick label input[type=radio]{margin-right:4px}
 .cc-pick .cc-grow{flex:1 1 260px}
 .cc-pick__addr{margin-left:24px}
+/* Fleet calendar: return day (last cell of a loan, ↩) and check day (free day after it, ✓) */
+.cc-tl-loan { position: relative; }
+.cc-tl-loan.has-ret a { padding-right: 30px; }
+.cc-tl-ret { position: absolute; top: 0; right: 0; bottom: 0; width: 26px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; background: #A56C12; color: #fff; border-left: 2px solid #fff; pointer-events: none; }
+.cc-tl-check { background: repeating-linear-gradient(135deg, #fff, #fff 3px, #D3C8B4 3px, #D3C8B4 6px); }
+.cc-tl-check a { display: flex; align-items: center; justify-content: center; height: 30px; font-weight: 700; color: #141217; text-decoration: none; }
+.cc-tl-check a:hover { background: #F4EEE4; }
+.cc-legend .cc-tl-key-ret { background: #A56C12; color: #fff; border-color: #A56C12; font-weight: 700; }
+.cc-legend .cc-tl-check { font-weight: 700; }

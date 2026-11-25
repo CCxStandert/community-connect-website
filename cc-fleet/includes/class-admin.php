@@ -289,6 +289,17 @@ class CC_Fleet_Admin {
 			printf( '<tr class="%s"><th class="cc-tl-bike"><a href="%s">%s</a>%s</th>', 'active' === $state ? '' : 'is-inactive', esc_url( get_edit_post_link( $bike_id ) ), esc_html( CC_Fleet_Bikes::label( $bike_id ) ),
 				'1' === CC_Fleet_Bikes::get( $bike_id, 'show_on_site' ) ? '' : ' <small>(backend only)</small>' );
 			$asg = CC_Fleet_Bikes::assignment( $bike_id );
+			// Check days: the free day(s) after each loan, when the crew looks the bike over.
+			$buffer = max( 0, (int) CC_Fleet_Settings::get( 'buffer_days' ) );
+			$checks = array();
+			foreach ( $loans as $l ) {
+				if ( 'held' === $l->status ) {
+					continue;
+				}
+				for ( $k = 1; $k <= $buffer; $k++ ) {
+					$checks[ CC_Fleet_Loans::add_days( CC_Fleet_Loans::effective_end( $l ), $k ) ] = $l;
+				}
+			}
 			$i   = 0;
 			while ( $i < $days ) {
 				$d    = CC_Fleet_Loans::add_days( $start, $i );
@@ -309,9 +320,21 @@ class CC_Fleet_Admin {
 					$span = min( $days - $i, CC_Fleet_Loans::days_between( $d, CC_Fleet_Loans::effective_end( $hit ) ) + 1 );
 					$r    = CC_Fleet_Riders::get( $hit->rider_id );
 					$cls  = CC_Fleet_Loans::is_overdue( $hit ) ? 'overdue' : $hit->status;
-					printf( '<td colspan="%d" class="cc-tl-loan cc-tl--%s"><a href="%s" title="%s">%s</a></td>', $span, esc_attr( $cls ),
-						esc_url( self::url( 'cc-fleet-loan', array( 'id' => $hit->id ) ) ), esc_attr( $hit->start_date . ' → ' . $hit->end_date . ' · ' . $hit->status ), esc_html( $r->name ?? '?' ) );
+					// The bar's last cell is the return day (when it's on screen): marked with ↩ and the date.
+					$back    = CC_Fleet_Loans::effective_end( $hit );
+					$ret     = '';
+					if ( $back <= $end && $span > 0 && CC_Fleet_Loans::add_days( $d, $span - 1 ) === $back ) {
+						$ret = sprintf( '<span class="cc-tl-ret" title="%s">↩</span>', esc_attr( ( 'returned' === $hit->status ? 'Returned ' : 'Due back ' ) . wp_date( 'D j M', strtotime( $back . ' 12:00' ) ) ) );
+					}
+					printf( '<td colspan="%d" class="cc-tl-loan cc-tl--%s%s"><a href="%s" title="%s">%s</a>%s</td>', $span, esc_attr( $cls ), $ret ? ' has-ret' : '',
+						esc_url( self::url( 'cc-fleet-loan', array( 'id' => $hit->id ) ) ), esc_attr( $hit->start_date . ' → ' . $hit->end_date . ' · ' . $hit->status . ' · back ' . $back ), esc_html( $r->name ?? '?' ), $ret ); // phpcs:ignore -- $ret escaped above.
 					$i += $span;
+				} elseif ( isset( $checks[ $d ] ) ) {
+					$cl = $checks[ $d ];
+					$cr = CC_Fleet_Riders::get( $cl->rider_id );
+					printf( '<td class="cc-tl-check%s"><a href="%s" title="%s">✓</a></td>', $d === $today ? ' is-today' : '',
+						esc_url( self::url( 'cc-fleet-loan', array( 'id' => $cl->id ) ) ), esc_attr( 'Check day ' . wp_date( 'D j M', strtotime( $d . ' 12:00' ) ) . ': look the bike over after ' . ( $cr->name ?? 'the last rider' ) . '. Not bookable.' ) );
+					$i++;
 				} else {
 					printf( '<td class="cc-tl-free%s"><a href="%s" aria-label="New loan %s"></a></td>', $d === $today ? ' is-today' : '',
 						esc_url( self::url( 'cc-fleet-loan', array( 'bike_id' => $bike_id, 'start' => $d ) ) ), esc_attr( $d ) );
@@ -321,7 +344,7 @@ class CC_Fleet_Admin {
 			echo '</tr>';
 		}
 		echo '</tbody></table></div>';
-		echo '<p class="cc-legend"><span class="cc-tl--requested">Requested</span> <span class="cc-tl--approved">Approved</span> <span class="cc-tl--out">Out</span> <span class="cc-tl--overdue">Overdue</span> <span class="cc-tl--returned">Returned</span> <span class="cc-tl--assigned">Long-term rider</span></p>';
+		echo '<p class="cc-legend"><span class="cc-tl--requested">Requested</span> <span class="cc-tl--approved">Approved</span> <span class="cc-tl--out">Out</span> <span class="cc-tl--overdue">Overdue</span> <span class="cc-tl--returned">Returned</span> <span class="cc-tl--assigned">Long-term rider</span> <span class="cc-tl-key-ret">↩ Return day</span> <span class="cc-tl-check">✓ Check day</span></p>';
 		echo '</div>';
 	}
 
