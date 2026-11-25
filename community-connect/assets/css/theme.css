@@ -97,6 +97,8 @@ header.top { position: sticky; top: 0; z-index: 20; }
 .cc-welcome .cc-crumb span { color: var(--wp--preset--color--ink, #141217); }
 .cc-welcome .cc-welcome-text { font-size: 19px; line-height: 1.32; letter-spacing: -.01em; margin: 0; max-width: 40ch; }
 .cc-welcome .cc-welcome-text a { color: inherit; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
+.cc-welcome .cc-welcome-text a { transition: background-color .15s ease; border-radius: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.cc-welcome .cc-welcome-text a:hover, .cc-welcome .cc-welcome-text a:focus-visible { background: var(--wp--preset--color--pink); text-decoration-color: transparent; box-shadow: 0 0 0 3px var(--wp--preset--color--pink); }
 @media (min-width: 980px) {
 	.cc-welcome { padding: 40px 40px 56px; }
 	.cc-welcome .cc-crumb { font-size: 16px; margin-bottom: 20px; }

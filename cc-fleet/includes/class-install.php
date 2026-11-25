@@ -86,6 +86,9 @@ class CC_Fleet_Install {
 				// Wheelsets and tyres become parts: done on init, when bikes can be queried.
 				update_option( 'cc_fleet_migrate_parts', 1, false );
 			}
+			if ( $from && $from < 19 ) {
+				update_option( 'cc_fleet_add_soon_bikes', 1, false ); // Two Kieswerks "Coming soon" (done on init).
+			}
 			update_option( 'cc_fleet_db_version', CC_FLEET_DB_VERSION, false );
 		}
 	}

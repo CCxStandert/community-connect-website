@@ -16,11 +16,10 @@
 <!-- /wp:group --><!-- wp:group {"className":"deal max","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group deal max"><!-- wp:shortcode -->
 [cc_who_pays]
-<!-- /wp:shortcode --><!-- wp:group {"className":"covers","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
-<div class="wp-block-group covers"><!-- wp:group {"className":"cover","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
-<div class="wp-block-group cover"><!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">We cover</h3>
-<!-- /wp:heading --><!-- wp:list -->
+<!-- /wp:shortcode --></div>
+<!-- /wp:group --><!-- wp:group {"anchor":"agreement","className":"agree max","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+<div id="agreement" class="wp-block-group agree max"><!-- wp:details {"anchor":"ag-we-cover"} -->
+<details class="wp-block-details" id="ag-we-cover"><summary>What we cover</summary><!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
 <li><strong>Regular servicing</strong> with our friends at Woodstock Cycleworks.</li>
 <!-- /wp:list-item --><!-- wp:list-item -->
@@ -30,11 +29,11 @@
 <!-- /wp:list-item --><!-- wp:list-item -->
 <li><strong>Finding you a bike</strong> as often as we can.</li>
 <!-- /wp:list-item --></ul>
-<!-- /wp:list --></div>
-<!-- /wp:group --><!-- wp:group {"className":"cover","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
-<div class="wp-block-group cover"><!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">You cover</h3>
-<!-- /wp:heading --><!-- wp:list -->
+<!-- /wp:list --></details>
+<!-- /wp:details -->
+
+<!-- wp:details {"anchor":"ag-you-cover"} -->
+<details class="wp-block-details" id="ag-you-cover"><summary>What you cover</summary><!-- wp:list -->
 <ul class="wp-block-list"><!-- wp:list-item -->
 <li><strong>A wash &amp; lube or a service</strong> if the bike comes back muddy, dry-chained or neglected. The next person deserves a bike that's ready to go.</li>
 <!-- /wp:list-item --><!-- wp:list-item -->
@@ -44,13 +43,14 @@
 <!-- /wp:list-item --><!-- wp:list-item -->
 <li><strong>Telling us early</strong>, and flagging damage at the handover.</li>
 <!-- /wp:list-item --></ul>
-<!-- /wp:list --></div>
-<!-- /wp:group --></div>
-<!-- /wp:group --><!-- wp:paragraph {"className":"cover-note"} -->
-<p class="cover-note">Whatever needs fixing, we get it done at Woodstock Cycleworks and share the invoice with you. No markup, no drama.</p>
-<!-- /wp:paragraph --></div>
-<!-- /wp:group --><!-- wp:group {"anchor":"agreement","className":"agree max","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
-<div id="agreement" class="wp-block-group agree max"><!-- wp:details {"anchor":"ag-why-we-do-this"} -->
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Whatever needs fixing, we get it done at Woodstock Cycleworks and share the invoice with you. No markup, no drama.</p>
+<!-- /wp:paragraph --></details>
+<!-- /wp:details -->
+
+<!-- wp:details {"anchor":"ag-why-we-do-this"} -->
 <details class="wp-block-details" id="ag-why-we-do-this"><summary>Why we do this</summary><!-- wp:paragraph -->
 <p>Community Connect is a non-profit bike collective in Cape Town. Together with Standert we keep a small fleet of premium gravel and road bikes that <strong>anyone can borrow</strong>. You don't have to be fast, famous or part of the crew. We do our best to keep the bikes available as often as we can, so more people get to ride.</p>
 <!-- /wp:paragraph --><!-- wp:paragraph -->

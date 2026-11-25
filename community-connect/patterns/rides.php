@@ -9,7 +9,7 @@
 <!-- wp:group {"className":"sect cc-rides-sect","align":"full","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group alignfull sect cc-rides-sect"><!-- wp:group {"className":"in max","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group in max"><!-- wp:heading {"className":"h","anchor":"rides"} -->
-<h2 class="wp-block-heading h" id="rides">Rides</h2>
+<h2 class="wp-block-heading h" id="rides">Community rides and races</h2>
 <!-- /wp:heading --><!-- wp:paragraph {"className":"sub"} -->
 <p class="sub">Four ways to ride with us, from your first gravel loop to Cape Town’s fastest bunch. Bring your own bike, or borrow one of ours.</p>
 <!-- /wp:paragraph --></div>

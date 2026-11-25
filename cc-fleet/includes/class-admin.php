@@ -209,7 +209,7 @@ class CC_Fleet_Admin {
 		self::notices();
 		echo '<div class="cc-kpis">';
 		foreach ( array(
-			array( 'On the website', count( $bikes ) ), array( 'Available now', $states['available'] ), array( 'Out now', $states['out'] ),
+			array( 'On the website', count( $bikes ) - count( array_filter( $bikes, function ( $id ) { return 'soon' === CC_Fleet_Bikes::get( $id, 'state' ); } ) ) ), array( 'Available now', $states['available'] ), array( 'Out now', $states['out'] ),
 			array( 'In the workshop', $states['workshop'] ), array( 'To review', count( $pending ), $pending ? 'pink' : '' ),
 			array( 'Overdue', count( $overdue ), $overdue ? 'pink' : '' ), array( 'Waiting list', CC_Fleet_Loans::count( array( 'status' => array( 'waiting', 'offered' ) ) ) ), array( 'Loans in ' . wp_date( 'Y' ), $year ), array( 'Riders', CC_Fleet_Riders::count() ),
 		) as $k ) {

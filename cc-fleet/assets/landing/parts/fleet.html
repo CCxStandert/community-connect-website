@@ -5,7 +5,10 @@
       <p id="fitMsg">Probably size 54 or 56.</p>
     </div>
     <div class="chips" role="group" aria-label="Filter bikes" id="chips"></div>
-    <form class="when" id="dateForm"><label for="d1">From<input id="d1" type="date" required></label><label for="d2">Until<input id="d2" type="date" required></label><button class="pillbtn ink" type="submit">Check</button></form>
+    <div class="avail" id="avail">
+      <div class="avail__hd"><span class="mono">When?</span><span class="avail__hint" id="availHint">Tap your first and last day. The number is how many bikes are free.</span><button type="button" class="avail__clear" id="availClear" hidden>Clear dates</button></div>
+      <div class="avail__wrap"><button type="button" class="avail__nav avail__nav--prev" id="availPrev" aria-label="Earlier days">‹</button><div class="avail__days" id="availDays" role="group" aria-label="Free bikes per day"></div><button type="button" class="avail__nav avail__nav--next" id="availNext" aria-label="Later days">›</button></div>
+    </div>
     <p class="count" id="msg" aria-live="polite"></p>
   </div>
   <ul class="grid max" id="list"></ul>

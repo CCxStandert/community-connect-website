@@ -30,6 +30,9 @@ class CC_Fleet_Rest {
 			'methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => array( __CLASS__, 'available' ),
 			'args' => array( 'start' => array( 'required' => true ), 'end' => array( 'required' => true ), 'size' => array() ),
 		) );
+		register_rest_route( self::NS, '/fleet-calendar', array(
+			'methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => array( __CLASS__, 'fleet_calendar' ),
+		) );
 		register_rest_route( self::NS, '/fleet-status', array(
 			'methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => array( __CLASS__, 'fleet_status' ),
 		) );
@@ -111,15 +114,41 @@ class CC_Fleet_Rest {
 		return self::nocache( new WP_REST_Response( array_map( array( 'CC_Fleet_Bikes', 'public_data' ), $ids ) ) );
 	}
 
+	/**
+	 * Every bike's taken days in one call, for the fleet calendar on the home page (Airbnb-style:
+	 * riders see what's free before they pick dates). No names, no notes: only date ranges.
+	 */
+	public static function fleet_calendar() {
+		$s     = CC_Fleet_Settings::all();
+		$today = CC_Fleet_Settings::today();
+		$to    = CC_Fleet_Loans::horizon();
+		$bikes = array();
+		foreach ( CC_Fleet_Bikes::public_ids() as $id ) {
+			$state = CC_Fleet_Bikes::get( $id, 'state' );
+			$bikes[ CC_Fleet_Bikes::get( $id, 'cc_id' ) ] = array(
+				'bookable' => 'active' === $state,
+				'state'    => $state,
+				'booked'   => 'active' === $state ? CC_Fleet_Loans::booked_ranges( $id, $today, $to ) : array(),
+			);
+		}
+		return self::nocache( new WP_REST_Response( array(
+			'today'    => $today,
+			'earliest' => CC_Fleet_Loans::add_days( $today, (int) $s['min_notice_days'] ),
+			'latest'   => $to,
+			'max_days' => (int) $s['max_loan_days'],
+			'bikes'    => $bikes,
+		) ) );
+	}
+
 	public static function fleet_status() {
-		$counts = array( 'available' => 0, 'out' => 0, 'workshop' => 0, 'retired' => 0 );
+		$counts = array( 'available' => 0, 'out' => 0, 'workshop' => 0, 'soon' => 0, 'retired' => 0 );
 		foreach ( CC_Fleet_Bikes::public_ids() as $id ) {
 			$s = CC_Fleet_Bikes::state_now( $id );
 			$counts[ $s ] = ( $counts[ $s ] ?? 0 ) + 1;
 		}
 		$year_start = wp_date( 'Y' ) . '-01-01';
 		return self::nocache( new WP_REST_Response( array(
-			'bikes'           => array_sum( $counts ) - $counts['retired'],
+			'bikes'           => array_sum( $counts ) - $counts['retired'] - $counts['soon'],
 			'states'          => $counts,
 			'loans_this_year' => CC_Fleet_Loans::count( array( 'status' => array( 'approved', 'out', 'returned' ), 'from' => $year_start, 'to' => wp_date( 'Y' ) . '-12-31' ) ),
 			'riders'          => CC_Fleet_Riders::count(),

@@ -55,7 +55,7 @@ class CC_Fleet_Bikes {
 	/** Website-only fields (not in the sheet). */
 	public static function site_fields() {
 		return array(
-			'state'        => 'active',  // active | workshop | retired
+			'state'        => 'active',  // active | workshop | soon | retired
 			'show_on_site' => '0',
 			'public_name'  => '',
 			'public_blurb' => '',
@@ -73,6 +73,10 @@ class CC_Fleet_Bikes {
 			if ( get_option( 'cc_fleet_migrate_slugs' ) ) {
 				delete_option( 'cc_fleet_migrate_slugs' );
 				self::migrate_slugs();
+			}
+			if ( get_option( 'cc_fleet_add_soon_bikes' ) ) {
+				delete_option( 'cc_fleet_add_soon_bikes' );
+				self::add_soon_bikes();
 			}
 		}, 30 );
 		// On the website a bike is called by its model, size and name; the Bike ID stays in the admin.
@@ -138,6 +142,31 @@ class CC_Fleet_Bikes {
 
 	public static function set( $post_id, $key, $value ) {
 		update_post_meta( $post_id, '_cc_' . $key, is_string( $value ) ? trim( $value ) : $value );
+	}
+
+	/**
+	 * v0.22: the two new Kieswerks (52 and 56) arriving in 2027 go on the website as "Coming soon":
+	 * shown with the fleet, not bookable. Switch them to Active on their page when they arrive.
+	 */
+	public static function add_soon_bikes() {
+		$like = self::find_by_cc_id( 'CC-04' ); // Kieswerk 52: same model, same category.
+		foreach ( array( array( 'CC-15', '52' ), array( 'CC-16', '56' ) ) as $b ) {
+			if ( self::find_by_cc_id( $b[0] ) ) {
+				continue;
+			}
+			$id = wp_insert_post( array( 'post_type' => self::CPT, 'post_status' => 'publish', 'post_title' => 'Kieswerk ' . $b[1] . ' (2027)', 'post_name' => 'kieswerk-' . $b[1] . '-2027' ) );
+			if ( ! $id || is_wp_error( $id ) ) {
+				continue;
+			}
+			self::set( $id, 'cc_id', $b[0] );
+			self::set( $id, 'model', 'Kieswerk' );
+			self::set( $id, 'model_year', '2027' );
+			self::set( $id, 'size', $b[1] );
+			self::set( $id, 'category', $like ? (string) self::get( $like, 'category' ) : '' );
+			self::set( $id, 'public_name', 'New for 2027' );
+			self::set( $id, 'state', 'soon' );
+			self::set( $id, 'show_on_site', '1' );
+		}
 	}
 
 	public static function find_by_cc_id( $cc_id ) {
@@ -357,7 +386,7 @@ JS;
 		wp_nonce_field( 'cc_bike_save', 'cc_bike_nonce' );
 		$state = self::get( $post->ID, 'state' );
 		echo '<p><label><strong>State</strong><br><select name="cc[state]" style="width:100%">';
-		foreach ( array( 'active' => 'Active — can be borrowed', 'workshop' => 'In the workshop', 'retired' => 'Retired' ) as $k => $l ) {
+		foreach ( array( 'active' => 'Active — can be borrowed', 'workshop' => 'In the workshop', 'soon' => 'Coming soon — shown, not bookable yet', 'retired' => 'Retired' ) as $k => $l ) {
 			printf( '<option value="%s"%s>%s</option>', esc_attr( $k ), selected( $state, $k, false ), esc_html( $l ) );
 		}
 		echo '</select></label></p>';
@@ -583,7 +612,7 @@ JS;
 		if ( class_exists( 'CC_Fleet_Care' ) && isset( $_POST['cc_care'] ) && is_array( $_POST['cc_care'] ) ) {
 			CC_Fleet_Care::save( $post_id, wp_unslash( $_POST['cc_care'] ) );
 		}
-		self::set( $post_id, 'state', in_array( $in['state'] ?? '', array( 'active', 'workshop', 'retired' ), true ) ? $in['state'] : 'active' );
+		self::set( $post_id, 'state', in_array( $in['state'] ?? '', array( 'active', 'workshop', 'soon', 'retired' ), true ) ? $in['state'] : 'active' );
 		self::set( $post_id, 'show_on_site', empty( $in['show_on_site'] ) ? '0' : '1' );
 		self::set( $post_id, 'public_name', sanitize_text_field( $in['public_name'] ?? '' ) );
 		self::set( $post_id, 'public_blurb', sanitize_textarea_field( $in['public_blurb'] ?? '' ) );

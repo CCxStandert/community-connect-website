@@ -78,7 +78,7 @@ class CC_Fleet_Frontend {
 	}
 
 	private static function state_label( $s ) {
-		return array( 'available' => 'Available', 'out' => 'Out riding', 'workshop' => 'Workshop', 'retired' => 'Retired' )[ $s ] ?? ucfirst( $s );
+		return array( 'available' => 'Available', 'out' => 'Out riding', 'workshop' => 'Workshop', 'soon' => 'Coming soon', 'retired' => 'Retired' )[ $s ] ?? ucfirst( $s );
 	}
 
 	/* ---------- [cc_fleet] ---------- */
@@ -386,7 +386,11 @@ class CC_Fleet_Frontend {
 				<?php echo self::sc_request( array( 'bike' => (string) $id ) ); // phpcs:ignore ?>
 				<div class="cc-stickybar" data-cc-sticky><?php echo $thumb; // phpcs:ignore ?><span><b>Free · <?php echo esc_html( $b['model'] . ' ' . $b['size'] ); ?></b><small><?php echo esc_html( $b['name'] ); ?></small></span><a href="#request">Request bike</a></div>
 			<?php else : ?>
+				<?php if ( 'soon' === CC_Fleet_Bikes::get( $id, 'state' ) ) : ?>
+				<p class="cc-bike__note">Coming soon: this bike joins the fleet in 2027 and can't be booked yet. <a href="<?php echo esc_url( $fleet ); ?>">See the bikes you can borrow now</a>.</p>
+				<?php else : ?>
 				<p class="cc-bike__note">This bike is in the workshop right now. <a href="<?php echo esc_url( $fleet ); ?>">See the other bikes</a>.</p>
+				<?php endif; ?>
 			<?php endif; ?>
 		</div>
 		<?php

@@ -45,85 +45,181 @@ slides.addEventListener('pointerdown', () => { heroPaused = true; });
 if (!reduce && slideEls.length > 1) setInterval(() => { if (!heroPaused && !document.hidden) { const n = (curSlide() + 1) % slideEls.length; slides.scrollTo({ left: n * slides.clientWidth, behavior: 'smooth' }); } }, 6000);
 }
 
-/* ---- the fleet ---- */
+/* ---- the fleet: availability first (Airbnb-style) ----
+   A strip of days shows how many bikes are free each day; every card shows when its bike is free.
+   Tap a first and a last day and the grid shows which bikes are free for all of them. */
 if ($('list')) {
 const COLORS = { 'CC-03': ['#CFC8BB', 0], 'CC-04': ['#BDB8AE', 0], 'CC-05': ['#4E6F3A', 0], 'CC-06': ['#E8C33A', 0], 'CC-07': ['#EF6AA9', 0], 'CC-08': ['#2A2830', 1], 'CC-09': ['#2F5C45', 0], 'CC-11': ['#B9783A', 0], 'CC-12': ['#D9CBD3', 0], 'CC-13': ['#D9CBD3', 0] };
 const BRAND = CFG.brand || '<span class="mono">Standert</span>'; // Our own SVG, from the server. Bike IDs stay internal.
 const PHOTOS = { 'CC-12': 'cc-13.webp', 'CC-13': 'cc-12.webp' };
-let bikes = FALLBACK.map((b) => ({ ...b })), free = null, filter = 'all';
+const DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+let bikes = FALLBACK.map((b) => ({ ...b })), filter = 'all';
+let cal = null;            // { today, earliest, latest, max_days, bikes: { CC-xx: { bookable, taken:Set } } }
+let sel = { a: null, b: null };
+let ctx = null;            // set when "Find a bike" on an event picked the dates
 const fits = (b, h) => b.range && h >= b.range[0] - 2 && h <= b.range[1] + 2;
-const label = { available: 'Available', out: 'Out riding', workshop: 'Workshop', booked: 'Booked', reserved: 'Raffle bike' };
+const soon = (b) => b.state === 'soon';
+const label = { available: 'Available', out: 'Out riding', workshop: 'Workshop', booked: 'Booked', reserved: 'Raffle bike', soon: 'Coming soon' };
 const cats = () => [...new Set(bikes.map((b) => b.cat).filter(Boolean))];
 const chipsHtml = () => [['all', 'All'], ['fits', 'Fits me'], ...cats().map((c) => [c, c])].map(([k, l]) => `<button class="chip" data-f="${esc(k)}" aria-pressed="${k === filter}">${esc(l)}</button>`).join('');
+const pad = (n) => String(n).padStart(2, '0');
+const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const addDays = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return iso(x); };
+const dayMon = (d) => `${Number(d.slice(8))} ${MON[Number(d.slice(5, 7)) - 1]}`;
+const short = (a, b) => (a === b ? dayMon(a) : (a.slice(5, 7) === b.slice(5, 7) ? `${Number(a.slice(8))}–${dayMon(b)}` : `${dayMon(a)} – ${dayMon(b)}`));
+const height = () => +$('h').value;
+const shown = (b) => filter === 'all' || (filter === 'fits' ? fits(b, height()) : b.cat === filter);
+const info = (b) => cal && cal.bikes[b.cc];
+const freeOn = (b, d) => { const i = info(b); return !!i && i.bookable && d >= cal.earliest && d <= cal.latest && !i.taken.has(d); };
+const freeRange = (b, a, z) => { for (let d = a; d <= z; d = addDays(d, 1)) { if (!freeOn(b, d)) return false; } return true; };
+const nextFree = (b) => { if (!cal) return null; for (let d = cal.earliest; d <= cal.latest; d = addDays(d, 1)) { if (freeOn(b, d)) return d; } return null; };
+const hasRange = () => sel.a && sel.b;
+
 const pic = (b) => {
   const img = b.image || (PHOTOS[b.cc] ? `${IMG}/${PHOTOS[b.cc]}` : '');
   const c = COLORS[b.cc] || ['#D3C8B4', 0];
   return img ? `<span class="pic"><img src="${esc(img)}" alt="${esc(b.model)} ${esc(b.size)}, ${esc(b.name)}" loading="lazy"></span>`
-    : `<span class="pic${c[1] ? ' dark' : ''}" style="background:${c[0]}"><b>${esc(b.size)}</b><span class="hand">photo to come</span></span>`;
+    : `<span class="pic${c[1] ? ' dark' : ''}" style="background:${c[0]}"><b>${esc(b.size)}</b><span class="hand">${soon(b) ? 'coming 2027' : 'photo to come'}</span></span>`;
+};
+// The card's availability: a line ("Free now", "Free from 3 Dec") and two weeks of days.
+const availHtml = (b) => {
+  if (soon(b)) return '<span class="av"><span class="av__t">Joins the fleet in 2027 · not bookable yet</span></span>';
+  if (!cal || !info(b)) return '';
+  const i = info(b);
+  if (!i.bookable) return '<span class="av"><span class="av__t">Back on the calendar soon</span></span>';
+  const from = hasRange() ? sel.a : cal.earliest;
+  let t;
+  if (hasRange()) t = freeRange(b, sel.a, sel.b) ? `<b>Free ${esc(short(sel.a, sel.b))}</b>` : 'Taken on those dates';
+  else { const n = nextFree(b); t = !n ? 'Fully booked' : (n === cal.earliest ? '<b>Free from ' + (cal.earliest === addDays(cal.today, 1) ? 'tomorrow' : esc(dayMon(n))) + '</b>' : `Free from ${esc(dayMon(n))}`); }
+  let strip = '';
+  for (let k = 0; k < 14; k++) {
+    const d = addDays(from, k);
+    const inSel = hasRange() && d >= sel.a && d <= sel.b;
+    strip += `<i class="${freeOn(b, d) ? 'f' : 't'}${inSel ? ' s' : ''}"></i>`;
+  }
+  return `<span class="av"><span class="av__t">${t}</span><span class="av__s" aria-hidden="true">${strip}</span></span>`;
 };
 const render = () => {
-  const h = +$('h').value;
+  const h = height();
   $('hv').textContent = `${h} cm`;
-  const sizes = [...new Set(bikes.filter((b) => fits(b, h)).map((b) => b.size))].sort();
-  const nFit = bikes.filter((b) => fits(b, h)).length;
+  const real = bikes.filter((b) => !soon(b));
+  const sizes = [...new Set(real.filter((b) => fits(b, h)).map((b) => b.size))].sort();
+  const nFit = real.filter((b) => fits(b, h)).length;
   $('fitMsg').textContent = nFit ? `Probably size ${sizes.join(' or ')}: ${nFit} bike${nFit === 1 ? '' : 's'} fit${nFit === 1 ? 's' : ''}.` : 'Nothing in the fleet fits that height yet. Message us anyway.';
   $('chips').innerHTML = chipsHtml();
-  const show = (b) => filter === 'all' || (filter === 'fits' ? fits(b, h) : b.cat === filter);
-  const list = [...bikes].sort((a, b) => a.cc.localeCompare(b.cc));
+  // Bookable bikes first (by number), the ones still on their way at the end.
+  const list = [...bikes].sort((a, b) => (soon(a) - soon(b)) || a.cc.localeCompare(b.cc));
   $('list').innerHTML = list.map((b) => {
-    const st = free ? (free.has(b.cc) ? 'available' : 'booked') : b.state;
-    const chip = free ? (free.has(b.cc) ? 'Free those dates' : 'Booked') : (label[st] || st);
     const ok = fits(b, h);
-    const href = ctx && free && free.has(b.cc) ? `${b.url}${b.url.includes('?') ? '&' : '?'}start=${ctx.a}&end=${ctx.b}${ctx.id ? `&event=${ctx.id}` : ''}#request` : b.url;
-    return `<li${show(b) ? '' : ' hidden'}><a class="card${free && !free.has(b.cc) ? ' dim' : ''}" href="${esc(href)}"><span class="hd"><span class="brand">${BRAND}</span><span class="st ${esc(st)}">${esc(chip)}</span></span>${pic(b)}<strong>${esc(b.model)} ${esc(b.size)}</strong><small>${esc(b.name)}</small><span class="fit">${b.range ? `${b.range[0]}–${b.range[1]} cm${ok ? ' · <b>fits you</b>' : ''}` : ''}</span></a></li>`;
+    const free = hasRange() && cal ? freeRange(b, sel.a, sel.b) : null;
+    const st = soon(b) ? 'soon' : (free === null ? b.state : (free ? 'available' : 'booked'));
+    const chip = soon(b) ? label.soon : (free === null ? (label[st] || st) : (free ? 'Free those dates' : 'Booked'));
+    const href = free ? `${b.url}${b.url.includes('?') ? '&' : '?'}start=${sel.a}&end=${sel.b}${ctx && ctx.id ? `&event=${ctx.id}` : ''}#request` : b.url;
+    const inner = `<span class="hd"><span class="brand">${BRAND}</span><span class="st ${esc(st)}">${esc(chip)}</span></span>${pic(b)}<strong>${esc(b.model)} ${esc(b.size)}</strong><small>${esc(b.name)}</small><span class="fit">${b.range ? `${b.range[0]}–${b.range[1]} cm${ok && !soon(b) ? ' · <b>fits you</b>' : ''}` : ''}</span>${availHtml(b)}`;
+    const dim = free === false || soon(b);
+    return `<li${shown(b) ? '' : ' hidden'}>${soon(b) ? `<div class="card soon dim">${inner}</div>` : `<a class="card${dim ? ' dim' : ''}" href="${esc(href)}">${inner}</a>`}</li>`;
   }).join('');
-  const shown = list.filter(show).length;
-  if (!free) $('msg').textContent = `${shown} bike${shown === 1 ? '' : 's'}` + (LIVE ? '' : ' · preview, fleet as of 21 Nov 2026');
-  setText('nBikes', bikes.length);
+  const nShown = list.filter((b) => shown(b) && !soon(b)).length;
+  const nSoon = list.filter((b) => shown(b) && soon(b)).length;
+  if (hasRange() && cal) {
+    const n = list.filter((b) => shown(b) && freeRange(b, sel.a, sel.b)).length;
+    $('msg').textContent = n
+      ? `${n} bike${n === 1 ? '' : 's'} free ${short(sel.a, sel.b)}${ctx ? ` for ${ctx.name}` : ''}. Tap one to request it.`
+      : (ctx ? `Every bike is taken around ${ctx.name}. Message us, we may still sort something out.` : 'Nothing free for all of those days. Try shifting by a day or two.');
+  } else if (sel.a && cal) {
+    $('msg').textContent = `From ${dayMon(sel.a)}. Now tap your last day.`;
+  } else {
+    $('msg').textContent = `${nShown} bike${nShown === 1 ? '' : 's'}${nSoon ? ` · ${nSoon} coming soon` : ''}` + (LIVE ? '' : ' · preview');
+  }
+  setText('nBikes', real.length);
+  days();
 };
+
+/* The day strip: one button per day up to the booking horizon, with the number of free bikes. */
+const strip = $('availDays');
+let built = false;
+const days = () => {
+  if (!cal || !strip) return;
+  const pool = bikes.filter((b) => shown(b) && !soon(b));
+  if (!built) {
+    let html = '';
+    for (let d = cal.today; d <= cal.latest; d = addDays(d, 1)) {
+      const dt = new Date(d + 'T12:00:00');
+      const first = d === cal.today || d.slice(8) === '01';
+      html += `<button type="button" class="ad" data-d="${d}">${first ? `<span class="ad__m">${MON[dt.getMonth()]}</span>` : '<span class="ad__m"></span>'}<span class="ad__w">${DOW[dt.getDay()]}</span><b class="ad__n">${dt.getDate()}</b><span class="ad__c"></span></button>`;
+    }
+    strip.innerHTML = html;
+    built = true;
+  }
+  strip.querySelectorAll('.ad').forEach((el) => {
+    const d = el.dataset.d;
+    const open = d >= cal.earliest && d <= cal.latest;
+    const n = open ? pool.filter((b) => freeOn(b, d)).length : 0;
+    el.querySelector('.ad__c').textContent = open ? String(n) : '–';
+    el.disabled = !open;
+    el.classList.toggle('is-none', open && !n);
+    el.classList.toggle('is-low', open && n > 0 && n <= 2);
+    const inSel = sel.a && d >= sel.a && d <= (sel.b || sel.a);
+    el.classList.toggle('is-sel', !!inSel);
+    el.classList.toggle('is-a', d === sel.a);
+    el.classList.toggle('is-b', d === (sel.b || sel.a));
+    el.setAttribute('aria-pressed', inSel ? 'true' : 'false');
+    el.setAttribute('aria-label', `${d}: ${open ? `${n} bike${n === 1 ? '' : 's'} free` : 'not bookable'}`);
+  });
+  $('availClear').hidden = !sel.a;
+};
+const pick = (d) => {
+  ctx = null;
+  if (!sel.a || sel.b || d < sel.a) { sel = { a: d, b: null }; }
+  else {
+    const len = Math.round((new Date(d + 'T12:00:00') - new Date(sel.a + 'T12:00:00')) / 864e5) + 1;
+    if (cal.max_days && len > cal.max_days) { $('msg').textContent = `That’s ${len} days. Loans go up to ${cal.max_days}; for longer, ask in your plan.`; return; }
+    sel.b = d;
+  }
+  render();
+};
+if (strip) {
+  strip.addEventListener('click', (e) => { const el = e.target.closest('.ad'); if (el && !el.disabled) pick(el.dataset.d); });
+  const by = (dir) => strip.scrollBy({ left: dir * strip.clientWidth * 0.85, behavior: reduce ? 'auto' : 'smooth' });
+  $('availPrev').addEventListener('click', () => by(-1));
+  $('availNext').addEventListener('click', () => by(1));
+  $('availClear').addEventListener('click', () => { sel = { a: null, b: null }; ctx = null; render(); });
+}
+const scrollToDay = (d) => { const el = strip && strip.querySelector(`[data-d="${d}"]`); if (el) strip.scrollTo({ left: Math.max(0, el.offsetLeft - strip.offsetLeft - 8), behavior: reduce ? 'auto' : 'smooth' }); };
+
 $('chips').addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f; render(); });
 $('h').addEventListener('input', render);
 try { const saved = localStorage.getItem('cc-height'); if (saved) $('h').value = saved; } catch (e) {}
 $('h').addEventListener('change', () => { try { localStorage.setItem('cc-height', $('h').value); } catch (e) {} });
-const pad = (n) => String(n).padStart(2, '0');
-const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-$('d1').min = $('d2').min = iso(tomorrow);
-$('d1').max = $('d2').max = HORIZON;
-// From the events list: check the fleet for an event's dates (pick up two days before, back the day after).
-let ctx = null;
-['d1', 'd2'].forEach((k) => $(k).addEventListener('input', () => { ctx = null; }));
+
+// From the events list: pick up two days before, back the day after.
 window.ccFindBike = (e) => {
-  const day = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return iso(x); };
-  let a = day(e.start, -2), b = day(e.end || e.start, 1);
-  if (a < iso(tomorrow)) a = iso(tomorrow);
+  const today = cal ? cal.earliest : addDays(iso(new Date()), 1);
+  let a = addDays(e.start, -2), b = addDays(e.end || e.start, 1);
+  if (a < today) a = today;
   if (b > HORIZON) b = HORIZON;
-  $('d1').value = a; $('d2').value = b;
-  ctx = { id: e.id, name: e.name, a, b };
-  filter = 'all';
-  const box = $('dateForm').closest('section') || $('dateForm');
-  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  $('dateForm').requestSubmit();
+  sel = { a, b }; ctx = { id: e.id, name: e.name }; filter = 'all';
+  render();
+  const box = $('avail').closest('section') || $('avail');
+  box.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  setTimeout(() => scrollToDay(a), 400);
 };
-$('dateForm').addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const a = $('d1').value, b = $('d2').value;
-  if (!a || !b || b < a) { $('msg').textContent = 'Pick a first and a last day, in that order.'; return; }
-  if (b > HORIZON) { $('msg').textContent = `We take requests up to ${nice(HORIZON)}.`; return; }
-  if (!API) { $('msg').textContent = 'The live date check works on community-connect.cc. Open a bike to see its calendar.'; return; }
-  $('msg').textContent = 'Checking…';
-  try {
-    const r = await fetch(`${API}/available?start=${a}&end=${b}`, { headers: { Accept: 'application/json' } });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.message || 'Those dates don’t work.');
-    free = new Set(j.map((x) => x.cc_id));
-    render();
-    $('msg').textContent = free.size
-      ? (ctx ? `${free.size} bike${free.size === 1 ? '' : 's'} free for ${ctx.name}: pick-up ${nice(a)}, back ${nice(b)}. Tap a bike to request it.` : `${free.size} bike${free.size === 1 ? '' : 's'} free ${nice(a)} – ${nice(b)}.`)
-      : (ctx ? `Every bike is booked around ${ctx.name}. Message us, we may still sort something out.` : 'Nothing free on those dates. Try shifting by a few days.');
-  } catch (e) { $('msg').textContent = e.message; }
-});
+
 render();
+if (API) {
+  fetch(`${API}/fleet-calendar`, { headers: { Accept: 'application/json' } }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    if (!j || !j.bikes) { $('avail').hidden = true; return; }
+    const out = {};
+    Object.keys(j.bikes).forEach((k) => {
+      const taken = new Set();
+      (j.bikes[k].booked || []).forEach((r) => { for (let d = r.start; d <= r.end; d = addDays(d, 1)) taken.add(d); });
+      out[k] = { bookable: !!j.bikes[k].bookable, taken };
+    });
+    cal = { today: j.today, earliest: j.earliest, latest: j.latest, max_days: j.max_days, bikes: out };
+    render();
+    if (sel.a) scrollToDay(sel.a);
+  }).catch(() => { $('avail').hidden = true; });
+} else if ($('avail')) { $('avail').hidden = true; }
 if (API && !LIVE) {
   fetch(`${API}/bikes`, { headers: { Accept: 'application/json' } }).then((r) => r.ok ? r.json() : null).then((j) => {
     if (!j || !j.length) return;
