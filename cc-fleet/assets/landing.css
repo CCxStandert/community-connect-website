@@ -440,3 +440,26 @@ html.dp-open{overflow:hidden}
 .card__cal{position:relative;z-index:1;align-self:flex-start;margin-top:auto;min-height:34px;padding:0 14px;border:1.5px solid var(--ink);border-radius:999px;background:var(--paper);color:var(--ink);font:600 13px/1 'Inter Tight',sans-serif;cursor:pointer}
 .card__cal:hover{background:var(--ink);color:var(--paper)}
 .card .av{margin-bottom:4px}
+
+/* ---- In numbers: three columns with hairline separators, the CC icon in front of the loans ---- */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:0;border-bottom:var(--line)}
+.stat{display:flex;flex-direction:column;gap:8px;min-width:0;padding:22px 16px 24px}
+.stat--loans{grid-column:1/-1;border-bottom:var(--line)}
+.stat:last-child{border-left:var(--line)}
+.stat__k{font:500 11px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.stat__n{display:flex;align-items:center;gap:14px;margin-top:4px}
+.stat__n b{font:800 56px/.85 'Inter Tight',sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums}
+.stat--loans .stat__n b{font-size:76px}
+.stat__icon{flex:none;height:56px;width:auto;fill:var(--ink)}
+.stat__l{font-size:14px;line-height:1.3}
+.stat__hand{font:400 24px/1 'Reenie Beanie',cursive;color:var(--ochre);transform:rotate(-3deg);transform-origin:left;margin-top:2px}
+@media(min-width:760px){
+  .stats{grid-template-columns:1.4fr 1fr 1fr}
+  .stat--loans{grid-column:auto;border-bottom:0}
+  .stat+.stat{border-left:var(--line)}
+  .stat{padding:34px 28px 36px}
+  .stat__n b{font-size:72px}
+  .stat--loans .stat__n b{font-size:96px}
+  .stat__icon{height:72px}
+}
+@media(min-width:980px){.stats{padding:0}.stat{padding:40px}}

@@ -511,6 +511,19 @@ if ($('evList')) {
 /* ---- numbers ---- */
 if (STATS) { setText('sLoans', STATS.loans); setText('sYear', STATS.year); setText('sRiders', STATS.riders); setText('sEvents', STATS.events); }
 else { setText('sEvents', EVENTS.length); }
+// The numbers count up once, when they scroll into view.
+(() => {
+  const els = [...document.querySelectorAll('.stats [data-count]')];
+  if (!els.length || reduce || !('IntersectionObserver' in window)) return;
+  const run = (el) => {
+    const to = parseInt(el.textContent, 10); if (!to) return;
+    const t0 = performance.now(), dur = 1100;
+    const step = (t) => { const k = Math.min(1, (t - t0) / dur); el.textContent = String(Math.round(to * (1 - Math.pow(1 - k, 3)))); if (k < 1) requestAnimationFrame(step); };
+    el.textContent = '0'; requestAnimationFrame(step);
+  };
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { io.unobserve(e.target); run(e.target); } }), { threshold: 0.6 });
+  els.forEach((el) => io.observe(el));
+})();
 
 /* ---- who pays? ---- */
 const Q = [
