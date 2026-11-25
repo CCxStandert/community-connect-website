@@ -235,7 +235,9 @@ const bikeBtn = (e) => (!e.when && e.start && (e.end || e.start) >= new Date().t
   ? `<button type="button" class="ev__bike" data-ev="${esc(JSON.stringify({ id: e.id, name: e.name, start: e.start, end: e.end || e.start }))}">Find a bike</button>` : '';
 // Row: [date + Road/Gravel] [name, place] [ride type] [Find a bike]
 const whenCol = (dateHtml, e) => `<div class="ev__when">${dateHtml}${surfPill(e)}</div>`;
-const evRow = (e) => `<li class="ev${e.desc ? ' ev--more' : ''}" data-cats="${esc(catsOf(e).join(' '))}">${whenCol(e.when ? `<span class="mono when">[${esc(e.when)}]</span>` : `<time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time>`, e)}<div class="ev__what"><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${kindPills(e)}</span>${bikeBtn(e)}${e.desc ? `<details class="ev__more"><summary>About this event</summary><div class="ev__desc">${evDesc(e.desc)}</div>${evLink(e)}</details>` : evLink(e)}</li>`;
+// The fold-out (about / all dates) opens under the row; its toggle sits next to "Find a bike".
+const evTog = (label) => `<button type="button" class="ev__tog" aria-expanded="false">${label}</button>`;
+const evRow = (e) => `<li class="ev" data-cats="${esc(catsOf(e).join(' '))}">${whenCol(e.when ? `<span class="mono when">[${esc(e.when)}]</span>` : `<time class="mono" datetime="${esc(e.start)}">[${esc(span(e))}]</time>`, e)}<div class="ev__what"><b>${esc(e.name)}</b><small>${esc(e.where)}</small></div><span class="sts">${kindPills(e)}</span><div class="ev__acts">${bikeBtn(e)}${e.desc ? evTog('About') : evLink(e)}</div>${e.desc ? `<div class="ev__body" hidden><div class="ev__desc">${evDesc(e.desc)}</div>${evLink(e)}</div>` : ''}</li>`;
 // A series ("FAR Inverted #1", "#2"…) becomes one row with its dates in a fold-out.
 const ARW = '<svg class="arw" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9 9 3M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
 const dayMon = (d) => `${Number(d.slice(8))} ${MON[+d.slice(5, 7) - 1]}`;
@@ -254,7 +256,7 @@ const seriesRow = (g) => {
   const range = `${dayMon(a.start)} → ${dayMon(z.end || z.start)} ${(z.end || z.start).slice(0, 4)}`;
   const dates = g.items.map((e) => `<li><time class="mono" datetime="${esc(e.start)}">${esc(span(e))}</time><span>${esc(e.name.replace(g.series, '').replace(/^[\s·–-]+/, ''))}</span>${bikeBtn(e).replace('class="ev__bike"', 'class="ev__bike ev__bike--sm"')}</li>`).join('');
   const next = g.items.find((e) => bikeBtn(e));
-  return `<li class="ev ev--series" data-cats="${esc(cats.join(' '))}">${whenCol(`<time class="mono" datetime="${esc(a.start)}">[${esc(range)}]</time>`, a)}<div class="ev__what"><b>${esc(g.series)}</b><small>${g.items.length} dates · ${esc(a.where)}</small></div><span class="sts">${kindPills(a)}</span>${next ? bikeBtn(next).replace('>Find a bike<', `>Find a bike · ${esc(dayMon(next.start))}<`) : ''}<details class="ev__more"><summary>All ${g.items.length} dates</summary>${a.desc ? `<div class="ev__desc">${evDesc(a.desc)}</div>` : ''}<ol>${dates}</ol>${a.link ? `<a href="${esc(a.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(a.link) ? 'On Instagram' : 'Event page'} ${ARW}</a>` : ''}</details></li>`;
+  return `<li class="ev ev--series" data-cats="${esc(cats.join(' '))}">${whenCol(`<time class="mono" datetime="${esc(a.start)}">[${esc(range)}]</time>`, a)}<div class="ev__what"><b>${esc(g.series)}</b><small>${g.items.length} dates · ${esc(a.where)}</small></div><span class="sts">${kindPills(a)}</span><div class="ev__acts">${next ? bikeBtn(next).replace('>Find a bike<', `>Find a bike · ${esc(dayMon(next.start))}<`) : ''}${evTog(`All ${g.items.length} dates`)}</div><div class="ev__body" hidden>${a.desc ? `<div class="ev__desc">${evDesc(a.desc)}</div>` : ''}<ol>${dates}</ol>${a.link ? `<a href="${esc(a.link)}" rel="noopener" target="_blank">${/instagram\.com/.test(a.link) ? 'On Instagram' : 'Event page'} ${ARW}</a>` : ''}</div></li>`;
 };
 if ($('evList')) {
   const list = $('evList');
@@ -266,11 +268,18 @@ if ($('evList')) {
   // Two filters that combine: the bike (Road / Gravel) and the kind of event.
   const TIERS = [
     { key: 'surf', label: 'Bike', opts: [['road', 'Road', ['road']], ['gravel', 'Gravel', ['gravel', 'mtb']]] },
-    { key: 'type', label: 'Type', opts: [['race', 'Races', ['race']], ['group', 'Group rides', ['group', 'social']], ['overnight', 'Overnight bikepacking', ['overnight', 'bikepacking', 'getaway']]] },
+    { key: 'type', label: 'Type', opts: [['race', 'Races', ['race']], ['group', 'Group rides', ['group', 'social'], 'Group'], ['overnight', 'Overnight bikepacking', ['overnight', 'bikepacking', 'getaway'], 'Overnight']] },
   ].map((t) => ({ ...t, opts: t.opts.filter(([, , ks]) => EVENTS.some((e) => catsOf(e).some((c) => ks.includes(c)))) }))
    .filter((t) => t.opts.length > 1);
   const pick = { surf: '', type: '' };
   list.addEventListener('click', (ev) => {
+    const tog = ev.target.closest('.ev__tog');
+    if (tog) {
+      const body = tog.closest('.ev').querySelector('.ev__body');
+      const show = body.hidden; body.hidden = !show;
+      tog.setAttribute('aria-expanded', show ? 'true' : 'false');
+      return;
+    }
     const btn = ev.target.closest('.ev__bike'); if (!btn) return;
     try { window.ccFindBike(JSON.parse(btn.dataset.ev)); } catch (e) {}
   });
@@ -307,7 +316,7 @@ if ($('evList')) {
   if (TIERS.length) {
     const bar = document.createElement('div');
     bar.className = 'evfilter max'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Filter events');
-    bar.innerHTML = TIERS.map((t) => `<div class="evfilter__row"><span class="evfilter__lbl">${esc(t.label)}</span><div class="chips evchips" data-tier="${t.key}"><button type="button" class="chip on" data-k="" aria-pressed="true">All</button>${t.opts.map(([k, l]) => `<button type="button" class="chip" data-k="${k}" aria-pressed="false">${esc(l)}</button>`).join('')}</div></div>`).join('');
+    bar.innerHTML = TIERS.map((t) => `<div class="evfilter__row"><span class="evfilter__lbl">${esc(t.label)}</span><div class="chips evchips" data-tier="${t.key}"><button type="button" class="chip on" data-k="" aria-pressed="true">All</button>${t.opts.map(([k, l, , sh]) => `<button type="button" class="chip" data-k="${k}" aria-pressed="false"${sh ? ` aria-label="${esc(l)}"` : ''}>${sh ? `<span class="l-long">${esc(l)}</span><span class="l-short" aria-hidden="true">${esc(sh)}</span>` : esc(l)}</button>`).join('')}</div></div>`).join('');
     list.before(bar);
     bar.addEventListener('click', (ev) => {
       const b = ev.target.closest('button'); if (!b) return;
