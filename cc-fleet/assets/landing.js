@@ -128,7 +128,7 @@ const render = () => {
     const n = list.filter((b) => shown(b) && freeRange(b, sel.a, sel.b)).length;
     $('msg').textContent = n
       ? `${n} bike${n === 1 ? '' : 's'} free ${short(sel.a, sel.b)}${ctx ? ` for ${ctx.name}` : ''}. Tap one to request it.`
-      : (ctx ? `Every bike is taken around ${ctx.name}. Message us, we may still sort something out.` : 'Nothing free for all of those days. Try shifting by a day or two.');
+      : (ctx ? `Every bike is taken around ${ctx.name}. Tap “Check availability” on a bike to join its waiting list, or message us.` : 'Nothing free for all of those days. Shift by a day or two, or tap “Check availability” on a bike to join its waiting list.');
   } else if (sel.a && cal) {
     $('msg').textContent = `From ${dayMon(sel.a)}. Now tap your last day.`;
   } else {
@@ -167,6 +167,11 @@ const fields = () => {
 const days = () => { fields(); if (dp && !dp.hidden) months(); };
 const dayState = (d) => {
   if (!cal || d < cal.earliest || d > cal.latest) return { off: true, out: true };
+  if (pbike) { // one bike: taken days stay pink but can be picked (waiting list)
+    const free = freeOn(pbike, d);
+    const tooLong = P().a && !P().b && d >= P().a && cal.max_days && dlen(P().a, d) > cal.max_days;
+    return { off: !free, dis: !!tooLong, n: free ? 1 : 0 };
+  }
   if (P().a && !P().b && d >= P().a) {
     const ok = (!cal.max_days || dlen(P().a, d) <= cal.max_days) && nRange(P().a, d) > 0;
     return { off: !ok, n: ok ? nRange(P().a, d) : 0 };
@@ -193,9 +198,9 @@ const months = () => {
       const d = `${ym}-${pad(n)}`;
       const st = dayState(d);
       const z = P().b || P().a;
-      const cls = ['dp__d', st.out ? 'is-out' : (st.off ? 'is-off' : ''), d === P().a ? 'is-a' : '', P().b && d === P().b ? 'is-b' : '', P().a && P().b && d > P().a && d < P().b ? 'is-in' : '', d === cal.today ? 'is-today' : ''].filter(Boolean).join(' ');
-      const lab = `${nice(d)}${st.off ? ', not available' : `, ${st.n} bike${st.n === 1 ? '' : 's'} free`}`;
-      cells += `<button type="button" class="${cls}" data-d="${d}"${st.off ? ' disabled' : ''} aria-label="${lab}"${d === P().a || d === z ? ' aria-pressed="true"' : ''}>${n}</button>`;
+      const cls = ['dp__d', st.out || st.dis ? 'is-out' : (st.off ? 'is-off' : ''), d === P().a ? 'is-a' : '', P().b && d === P().b ? 'is-b' : '', P().a && P().b && d > P().a && d < P().b ? 'is-in' : '', d === cal.today ? 'is-today' : ''].filter(Boolean).join(' ');
+      const lab = `${nice(d)}${st.out || st.dis ? ', not available' : (st.off ? (pbike ? ', taken (waiting list)' : ', not available') : (pbike ? ', free' : `, ${st.n} bike${st.n === 1 ? '' : 's'} free`))}`;
+      cells += `<button type="button" class="${cls}" data-d="${d}"${st.out || st.dis || (st.off && !pbike) ? ' disabled' : ''} aria-label="${lab}"${d === P().a || d === z ? ' aria-pressed="true"' : ''}>${n}</button>`;
     }
     html += `<div class="dp__m"><h4>${MONTHS[m - 1]} ${y}</h4><div class="dp__g">${WD.map((w) => `<span class="dp__w">${w}</span>`).join('')}${cells}</div></div>`;
   }
@@ -203,10 +208,11 @@ const months = () => {
   $('dpPrev').disabled = m0 <= first;
   $('dpNext').disabled = addM(m0, count - 1) >= last;
   $('dpT').textContent = pbike ? `${pbike.model} ${pbike.size}` : 'Select dates';
-  $('dpKeyOff').textContent = pbike ? 'Taken' : 'No bike free';
-  $('dpHint').textContent = !P().a ? (pbike ? `${pbike.name}. Pick the day you collect it.` : 'Pick the day you collect the bike.') : (!P().b ? `Now your return day. Loans go up to ${cal.max_days || 7} days.` : (pbike ? `Free ${short(P().a, P().b)}.` : `${nRange(P().a, P().b)} bike${nRange(P().a, P().b) === 1 ? '' : 's'} free ${short(P().a, P().b)}.`));
+  $('dpKeyOff').textContent = pbike ? 'Taken: pick it to join the waiting list' : 'No bike free';
+  const waiting = pbike && pHas() && !freeRange(pbike, P().a, P().b);
+  $('dpHint').textContent = !P().a ? (pbike ? `${pbike.name}. Pick the day you collect it.` : 'Pick the day you collect the bike.') : (!P().b ? `Now your return day. Loans go up to ${cal.max_days || 7} days.` : (pbike ? (waiting ? `Taken for some of ${short(P().a, P().b)}. Join the waiting list: if it frees up, we email you.` : `Free ${short(P().a, P().b)}.`) : `${nRange(P().a, P().b)} bike${nRange(P().a, P().b) === 1 ? '' : 's'} free ${short(P().a, P().b)}.`));
   const n = pHas() ? nRange(P().a, P().b) : 0;
-  $('dpDone').textContent = pHas() && n ? (pbike ? 'Request these dates' : `Show ${n} bike${n === 1 ? '' : 's'}`) : 'Close';
+  $('dpDone').textContent = waiting ? 'Join the waiting list' : (pHas() && n ? (pbike ? 'Request these dates' : `Show ${n} bike${n === 1 ? '' : 's'}`) : 'Close');
 };
 const openDp = (e, bike) => {
   if (!dp || !cal) return;
@@ -243,8 +249,9 @@ if (dp) {
   $('dpNext').addEventListener('click', () => shift(1));
   $('dpX').addEventListener('click', closeDp);
   $('dpDone').addEventListener('click', () => {
-    if (pbike && pHas() && nRange(P().a, P().b)) { // straight to this bike's request, dates filled in
-      location.href = `${pbike.url}${pbike.url.includes('?') ? '&' : '?'}start=${P().a}&end=${P().b}#request`;
+    if (pbike && pHas()) { // straight to this bike's request, dates filled in (taken dates: waiting list)
+      const wait = !freeRange(pbike, P().a, P().b);
+      location.href = `${pbike.url}${pbike.url.includes('?') ? '&' : '?'}start=${P().a}&end=${P().b}${wait ? '&wait=1' : ''}#request`;
       return;
     }
     const go = !pbike && hasRange();

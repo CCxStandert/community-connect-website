@@ -52,9 +52,16 @@
 				self.ends[b.end] = (self.ends[b.end] || 0) + 1;
 				self.starts[b.start] = (self.starts[b.start] || 0) + 1;
 			});
+			// Dates from a link (event or a card's calendar) that are taken: waiting-list mode.
+			if (self.start && self.end && self.form && !self.rangeFree(self.start, self.end) && self.canWait()) {
+				self.wait = true;
+				self.form.dispatchEvent(new CustomEvent('cc:dates', { detail: { wait: true } }));
+			}
 			self.render();
 		}).catch(function () { self.root.textContent = 'Availability could not be loaded.'; });
 	};
+	// Taken days can still be picked on a bike that's in use: those dates go on the waiting list.
+	Calendar.prototype.canWait = function () { return !!this.data && (this.data.state === 'available' || this.data.state === 'out'); };
 	Calendar.prototype.isFree = function (d) { return !this.booked[d] && d >= this.data.earliest && d <= this.data.latest; };
 	Calendar.prototype.rangeFree = function (a, b) {
 		for (var d = parse(a); iso(d) <= b; d.setDate(d.getDate() + 1)) {
@@ -97,7 +104,7 @@
 			if (this.start && k === this.start) b.classList.add('is-start');
 			if (this.end && k === this.end) b.classList.add('is-end');
 			if (this.start && this.end && k > this.start && k < this.end) b.classList.add('is-range');
-			b.disabled = past || (taken && !this.data.same_day_handoff);
+			b.disabled = past || (taken && !this.data.same_day_handoff && !this.canWait());
 			b.setAttribute('aria-label', k + (taken ? (this.booked[k] === 'reserved' ? ' reserved for an event raffle' : ' booked') : past ? ' unavailable' : ' free'));
 			b.onclick = (function (key) { return function () { self.pick(key); }; })(k);
 			grid.append(b);
@@ -105,21 +112,23 @@
 		}
 		var legend = el('p', 'cc-cal__legend');
 		legend.innerHTML = '<span class="cc-cal__key is-booked"></span> Booked <span class="cc-cal__key is-reserved"></span> Raffle bike <span class="cc-cal__key is-start"></span> Your dates';
-		var hint = el('p', 'cc-cal__hint', this.start && !this.end ? 'Now tap your last day.' : 'Tap your first day, then your last day.');
+		var hint = el('p', 'cc-cal__hint', this.start && !this.end ? 'Now tap your last day.' : (this.wait ? 'Taken for some of those days: send the form to join the waiting list.' : 'Tap your first day, then your last day.' + (this.canWait() ? ' Booked days work too: you join the waiting list.' : '')));
 		root.append(head, grid, legend, hint);
 	};
 	Calendar.prototype.pick = function (k) {
 		if (!this.start || this.end || k < this.start) { this.start = k; this.end = null; }
 		else {
 			var days = (parse(k) - parse(this.start)) / 864e5 + 1;
-			if (!this.rangeFree(this.start, k)) { this.flash('Those dates cross a booking. Pick another range.'); this.start = k; this.end = null; }
-			else if (days > this.data.max_days) { this.flash('Loans are limited to ' + this.data.max_days + ' days.'); }
+			if (days > this.data.max_days) { this.flash('Loans are limited to ' + this.data.max_days + ' days.'); }
+			else if (!this.rangeFree(this.start, k) && !this.canWait()) { this.flash('Those dates cross a booking. Pick another range.'); this.start = k; this.end = null; }
 			else this.end = k;
 		}
+		// A range over booked days: the form becomes "join the waiting list".
+		this.wait = !!(this.start && this.end && !this.rangeFree(this.start, this.end));
 		if (this.form) {
 			var s = this.form.querySelector('[data-cc-start]'), e = this.form.querySelector('[data-cc-end]');
 			if (s) s.value = this.start || ''; if (e) e.value = this.end || '';
-			this.form.dispatchEvent(new CustomEvent('cc:dates'));
+			this.form.dispatchEvent(new CustomEvent('cc:dates', { detail: { wait: this.wait } }));
 		}
 		this.render();
 	};
@@ -215,9 +224,25 @@
 			}
 			ev.addEventListener('change', sync); sync();
 		}
+		// Waiting-list mode: picked dates are taken, so sending the form puts the rider in line.
+		var submitBtn = form.querySelector('button[type=submit]'), waitNote = null;
+		var setWait = function (on) {
+			var hid = form.querySelector('input[name=waitlist]');
+			if (!hid) { hid = document.createElement('input'); hid.type = 'hidden'; hid.name = 'waitlist'; form.appendChild(hid); }
+			hid.value = on ? '1' : '';
+			if (submitBtn) { submitBtn.dataset.label = submitBtn.dataset.label || submitBtn.textContent; submitBtn.textContent = on ? 'Join the waiting list' : submitBtn.dataset.label; }
+			if (on && !waitNote && submitBtn) {
+				waitNote = document.createElement('p'); waitNote.className = 'cc-waitlist-note cc-waitlist-note--form';
+				waitNote.textContent = 'These dates are taken. Send this to join the waiting list: if they free up, we email you a yes/no link. Nothing is booked until you say yes.';
+				submitBtn.parentNode.insertBefore(waitNote, submitBtn);
+			}
+			if (waitNote) waitNote.hidden = !on;
+		};
+		form.addEventListener('cc:dates', function (e) { setWait(!!(e.detail && e.detail.wait)); });
+		if (/[?&]wait=1/.test(location.search) && linkDates()) setWait(true);
 		form.addEventListener('change', function (e) {
 			var hid = form.querySelector('input[name=waitlist]');
-			if (hid && e.target && e.target !== hid && /start|end|bike|size/.test(e.target.name || '')) hid.value = '';
+			if (hid && e.target && e.target !== hid && /start|end|bike|size/.test(e.target.name || '')) setWait(false);
 		});
 		var who = Who(form);
 		form.addEventListener('submit', function (ev) {

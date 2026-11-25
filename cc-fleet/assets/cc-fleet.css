@@ -33,6 +33,7 @@
 .cc-cal__day.is-start, .cc-cal__day.is-end, .cc-cal__key.is-start { background: var(--cc-ink); color: var(--cc-paper); text-decoration: none; }
 .cc-cal__day.is-range { background: var(--cc-pink); border-color: var(--cc-pink); }
 .cc-cal__legend, .cc-cal__hint { font-size: 12px; margin: 8px 0 0; }
+.cc-waitlist-note--form { margin: 0 0 12px; padding: 10px 12px; background: #FFB1EC; font-size: 14px; line-height: 1.4; }
 .cc-cal__key { display: inline-block; width: 10px; height: 10px; vertical-align: middle; margin: 0 4px 0 8px; border: 1px solid var(--cc-ink); }
 
 .cc-request { display: grid; gap: 12px; max-width: 640px; }
