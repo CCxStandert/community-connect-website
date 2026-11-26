@@ -42,15 +42,30 @@ add_action( 'init', function () {
 	) );
 } );
 
-/** Elevation scale shared by every day of a story, so the profiles compare honestly. */
-function cc_story_scale( $days ) {
-	$lo = PHP_INT_MAX;
-	$hi = 0;
-	foreach ( $days as $d ) {
-		$lo = min( $lo, (int) ( $d['min'] ?? 0 ) );
-		$hi = max( $hi, (int) ( $d['max'] ?? 0 ) );
+/**
+ * Elevation scale for one day, the way Strava does it: fitted to that ride's own lowest and highest
+ * point (not to the trip, not from zero), with a little headroom, and never less than 300 m tall so a
+ * flat day doesn't look like an Alpine pass. Returns [bottom, top, tick step].
+ */
+function cc_story_day_scale( $d ) {
+	$min  = (float) ( $d['min'] ?? 0 );
+	$max  = (float) ( $d['max'] ?? 0 );
+	foreach ( (array) ( $d['profile'] ?? array() ) as $q ) {
+		$min = min( $min ?: $q[1], $q[1] );
+		$max = max( $max, $q[1] );
 	}
-	return array( max( 0, floor( $lo / 100 ) * 100 - 300 ), ceil( $hi / 100 ) * 100 + 100 );
+	$span = max( 300, $max - $min );
+	$mid  = ( $max + $min ) / 2;
+	$lo   = $mid - $span / 2 - $span * .08;
+	$hi   = $mid + $span / 2 + $span * .14;
+	$step = 100;
+	foreach ( array( 50, 100, 200, 250, 500, 1000 ) as $st ) {
+		if ( ( $hi - $lo ) / $st <= 4 ) {
+			$step = $st;
+			break;
+		}
+	}
+	return array( floor( $lo / 10 ) * 10, ceil( $hi / 10 ) * 10, $step );
 }
 
 function cc_story_n( $x ) {
@@ -210,11 +225,11 @@ add_shortcode( 'cc_story_day', function ( $atts ) {
 		return '';
 	}
 	$pad          = sprintf( '%02d', $n );
-	list( $lo, $hi ) = cc_story_scale( $days );
+	list( $lo, $hi, $step ) = cc_story_day_scale( $d );
 	$p            = $d['profile'];
 	$kmax         = max( 0.1, end( $p )[0] );
 	$X            = function ( $k ) use ( $kmax ) { return round( $k / $kmax * 1000, 1 ); };
-	$Y            = function ( $e ) use ( $lo, $hi ) { return round( 200 - ( $e - $lo ) / ( $hi - $lo ) * 190, 1 ); };
+	$Y            = function ( $e ) use ( $lo, $hi ) { return round( 200 - ( $e - $lo ) / ( $hi - $lo ) * 200, 1 ); };
 	$line         = '';
 	$pk           = $p[0];
 	foreach ( $p as $i => $q ) {
@@ -222,6 +237,13 @@ add_shortcode( 'cc_story_day', function ( $atts ) {
 		if ( $q[1] > $pk[1] ) {
 			$pk = $q;
 		}
+	}
+	// Height lines, labelled, so each day's own scale reads honestly.
+	$grid = $ticks = '';
+	for ( $e = ceil( $lo / $step ) * $step; $e < $hi; $e += $step ) {
+		$y      = $Y( $e );
+		$grid  .= '<line x1="0" x2="1000" y1="' . $y . '" y2="' . $y . '" class="g"/>';
+		$ticks .= '<span style="top:' . round( $y / 2, 2 ) . '%">' . cc_story_n( $e ) . '</span>';
 	}
 	// Shape of the day, north up.
 	$L   = $d['line'];
@@ -249,15 +271,61 @@ add_shortcode( 'cc_story_day', function ( $atts ) {
 		. '<h2 class="cc-sday__t"><span class="screen-reader-text">Day ' . $n . ': </span>' . esc_html( $d['title'] ?? '' ) . '</h2>'
 		. '<p class="cc-sday__ft">' . esc_html( ( $d['start'] ?? '' ) . ' → ' . ( $d['end'] ?? '' ) ) . '</p></div>'
 		. '<div class="cc-sday__r"><dl class="cc-sday__st">' . $stat( 'Distance', round( $d['km'] ), 'km' ) . $stat( 'Climbing', cc_story_n( $d['gain'] ), 'm' ) . $stat( 'High point', cc_story_n( $d['max'] ), 'm', 'is-hi' ) . '</dl>'
-		. '<div class="cc-sday__viz"><svg class="cc-sday__prof" viewBox="0 0 1000 200" preserveAspectRatio="none" role="img" aria-label="Elevation profile: ' . esc_attr( cc_story_n( $p[0][1] ) ) . ' m to ' . esc_attr( cc_story_n( end( $p )[1] ) ) . ' m, high point ' . esc_attr( cc_story_n( $d['max'] ) ) . ' m">'
-		. '<path d="' . $line . 'L1000 200L0 200Z" fill="#D3C8B4"/><path d="' . $line . '" fill="none" stroke="#141217" stroke-width="2.5" vector-effect="non-scaling-stroke"/>'
-		. '<line x1="' . $X( $pk[0] ) . '" x2="' . $X( $pk[0] ) . '" y1="' . $Y( $pk[1] ) . '" y2="200" stroke="#A56C12" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>'
+		. '<div class="cc-sday__viz"><div class="cc-sday__pw"><svg class="cc-sday__prof" viewBox="0 0 1000 200" preserveAspectRatio="none" role="img" aria-label="Elevation profile: ' . esc_attr( cc_story_n( $p[0][1] ) ) . ' m to ' . esc_attr( cc_story_n( end( $p )[1] ) ) . ' m, high point ' . esc_attr( cc_story_n( $d['max'] ) ) . ' m">'
+		. $grid . '<path d="' . $line . 'L1000 200L0 200Z" fill="#D3C8B4" fill-opacity=".85"/><path d="' . $line . '" fill="none" stroke="#141217" stroke-width="2.5" vector-effect="non-scaling-stroke"/>'
+		. '<line x1="' . $X( $pk[0] ) . '" x2="' . $X( $pk[0] ) . '" y1="' . $Y( $pk[1] ) . '" y2="200" stroke="#A56C12" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg><p class="cc-sday__yt" aria-hidden="true">' . $ticks . '</p></div>'
 		. '<svg class="cc-sday__shape" viewBox="0 0 120 120" role="img" aria-label="Shape of the day\'s route"><path d="' . $rt . '" fill="none" stroke="#141217" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="' . $a0[0] . '" cy="' . $a0[1] . '" r="4" fill="#F4EEE4" stroke="#141217" stroke-width="2"/><circle cx="' . $a1[0] . '" cy="' . $a1[1] . '" r="4" fill="#141217"/></svg></div>'
-		. '<p class="cc-sday__ax"><span>0 km · ' . cc_story_n( $p[0][1] ) . ' m</span><span>GPX · ' . cc_story_n( $lo ) . '–' . cc_story_n( $hi ) . ' m scale</span><span>' . round( $d['km'] ) . ' km · ' . cc_story_n( end( $p )[1] ) . ' m</span></p>'
+		. '<p class="cc-sday__ax"><span>0 km · ' . cc_story_n( $p[0][1] ) . ' m</span><span>Height in m · scaled to this day</span><span>' . round( $d['km'] ) . ' km · ' . cc_story_n( end( $p )[1] ) . ' m</span></p>'
 		. '</div></section>';
 } );
 
 /* ---------- [cc_story_route] ---------- */
+
+/** Country, province and river outlines (Natural Earth, public domain), simplified to ~1 km. */
+function cc_story_geo() {
+	static $g = null;
+	if ( null === $g ) {
+		$g = json_decode( (string) file_get_contents( get_theme_file_path( 'assets/geo/southern-africa.json' ) ), true ) ?: array();
+	}
+	return $g;
+}
+
+/** Point [lon, lat] inside a ring of [lon, lat]? */
+function cc_story_inside( $x, $y, $ring ) {
+	$in = false;
+	for ( $i = 0, $j = count( $ring ) - 1, $n = count( $ring ); $i < $n; $j = $i++ ) {
+		if ( ( $ring[ $i ][1] > $y ) !== ( $ring[ $j ][1] > $y ) && $x < ( $ring[ $j ][0] - $ring[ $i ][0] ) * ( $y - $ring[ $i ][1] ) / ( $ring[ $j ][1] - $ring[ $i ][1] ) + $ring[ $i ][0] ) {
+			$in = ! $in;
+		}
+	}
+	return $in;
+}
+
+function cc_story_country_at( $lat, $lon, $countries ) {
+	// Smallest first: Lesotho sits inside South Africa's outline, so the enclave must win.
+	static $sorted = null;
+	if ( null === $sorted ) {
+		$sorted = $countries;
+		$area   = function ( $c ) {
+			$a = 0;
+			foreach ( $c['r'] as $ring ) {
+				$xs = array_column( $ring, 0 );
+				$ys = array_column( $ring, 1 );
+				$a += ( max( $xs ) - min( $xs ) ) * ( max( $ys ) - min( $ys ) );
+			}
+			return $a;
+		};
+		usort( $sorted, function ( $x, $y ) use ( $area ) { return $area( $x ) <=> $area( $y ); } );
+	}
+	foreach ( $sorted as $c ) {
+		foreach ( $c['r'] as $ring ) {
+			if ( cc_story_inside( $lon, $lat, $ring ) ) {
+				return $c['iso'];
+			}
+		}
+	}
+	return '';
+}
 
 add_shortcode( 'cc_story_route', function ( $atts ) {
 	$a    = shortcode_atts( array( 'peak' => '' ), $atts );
@@ -265,23 +333,102 @@ add_shortcode( 'cc_story_route', function ( $atts ) {
 	if ( ! $days ) {
 		return '';
 	}
-	$k  = cos( deg2rad( $days[0]['line'][0][0] ) );
-	$x0 = $y0 = INF;
-	$x1 = $y1 = -INF;
-	foreach ( $days as $d ) {
-		foreach ( $d['line'] as $q ) {
-			$x0 = min( $x0, $q[1] * $k );
-			$x1 = max( $x1, $q[1] * $k );
-			$y0 = min( $y0, -$q[0] );
-			$y1 = max( $y1, -$q[0] );
+	$geo  = cc_story_geo();
+	$ctry = $geo['countries'] ?? array();
+
+	// Which countries does the ride pass through, and where does it cross a border?
+	$seq = array();
+	foreach ( $days as $i => $d ) {
+		foreach ( $d['line'] as $j => $q ) {
+			$seq[] = array( $q, cc_story_country_at( $q[0], $q[1], $ctry ), $i );
 		}
 	}
-	$s  = min( 920 / max( 1e-9, $x1 - $x0 ), 520 / max( 1e-9, $y1 - $y0 ) );
-	$ox = 40 + ( 920 - ( $x1 - $x0 ) * $s ) / 2;
-	$oy = 90;
-	$H  = (int) ceil( ( $y1 - $y0 ) * $s + 180 );
-	$T  = function ( $q ) use ( $k, $x0, $y0, $s, $ox, $oy ) { return array( round( $ox + ( $q[1] * $k - $x0 ) * $s, 1 ), round( $oy + ( -$q[0] - $y0 ) * $s, 1 ) ); };
-	$paths = $towns = $list = '';
+	$home    = $seq[0][1];
+	$visited = array();
+	$cross   = array();
+	$prev    = $home;
+	foreach ( $seq as $k => $pt ) {
+		if ( '' === $pt[1] ) {
+			continue;
+		}
+		$visited[ $pt[1] ] = true;
+		if ( $pt[1] !== $prev ) {
+			$cross[] = array( $seq[ $k - 1 ][0], $pt[0], $pt[2], $pt[1], $prev );
+			$prev    = $pt[1];
+		}
+	}
+	$focus = array_diff( array_keys( $visited ), array( $home ) );
+
+	// Frame: the route plus every country it enters (so you see it was crossed), with a margin.
+	$lo_x = $lo_y = INF;
+	$hi_x = $hi_y = -INF;
+	$grow = function ( $lon, $lat ) use ( &$lo_x, &$lo_y, &$hi_x, &$hi_y ) {
+		$lo_x = min( $lo_x, $lon );
+		$hi_x = max( $hi_x, $lon );
+		$lo_y = min( $lo_y, $lat );
+		$hi_y = max( $hi_y, $lat );
+	};
+	foreach ( $seq as $pt ) {
+		$grow( $pt[0][1], $pt[0][0] );
+	}
+	foreach ( $ctry as $c ) {
+		if ( in_array( $c['iso'], $focus, true ) ) {
+			foreach ( $c['r'] as $ring ) {
+				foreach ( $ring as $q ) {
+					$grow( $q[0], $q[1] );
+				}
+			}
+		}
+	}
+	$mx   = ( $hi_x - $lo_x ) * .08;
+	$my   = ( $hi_y - $lo_y ) * .14;
+	$lo_x -= $mx;
+	$hi_x += $mx;
+	$lo_y -= $my;
+	$hi_y += $my;
+	$k  = cos( deg2rad( ( $lo_y + $hi_y ) / 2 ) );
+	$W  = 1000;
+	$s  = $W / ( ( $hi_x - $lo_x ) * $k );
+	$H  = (int) ceil( ( $hi_y - $lo_y ) * $s );
+	$P  = function ( $lon, $lat ) use ( $lo_x, $hi_y, $k, $s ) { return array( round( ( $lon - $lo_x ) * $k * $s, 1 ), round( ( $hi_y - $lat ) * $s, 1 ) ); };
+	$T  = function ( $q ) use ( $P ) { return $P( $q[1], $q[0] ); }; // route points are [lat, lon]
+	$ring_d = function ( $ring, $close = true ) use ( $P ) {
+		$d = '';
+		foreach ( $ring as $i => $q ) {
+			$t  = $P( $q[0], $q[1] );
+			$d .= ( $i ? 'L' : 'M' ) . $t[0] . ' ' . $t[1];
+		}
+		return $d . ( $close ? 'Z' : '' );
+	};
+	$inframe = function ( $lon, $lat ) use ( $lo_x, $hi_x, $lo_y, $hi_y ) { return $lon > $lo_x && $lon < $hi_x && $lat > $lo_y && $lat < $hi_y; };
+
+	// Base map.
+	$base = $labels = '';
+	foreach ( $geo['regions'] ?? array() as $r ) {
+		foreach ( $r['r'] as $ring ) {
+			$base .= '<path class="cc-smap__prov" d="' . $ring_d( $ring ) . '"/>';
+		}
+	}
+	foreach ( $geo['rivers'] ?? array() as $r ) {
+		foreach ( $r['r'] as $ring ) {
+			$base .= '<path class="cc-smap__river" d="' . $ring_d( $ring, false ) . '"/>';
+		}
+	}
+	foreach ( $ctry as $c ) {
+		$f = in_array( $c['iso'], $focus, true );
+		foreach ( $c['r'] as $ring ) {
+			$base .= '<path class="cc-smap__ctry' . ( $f ? ' is-focus' : '' ) . '" d="' . $ring_d( $ring ) . '"/>';
+		}
+	}
+	foreach ( $geo['regions'] ?? array() as $r ) {
+		if ( $inframe( $r['c'][0], $r['c'][1] ) ) {
+			$t       = $P( $r['c'][0], $r['c'][1] );
+			$labels .= '<text x="' . $t[0] . '" y="' . $t[1] . '" text-anchor="middle" class="cc-smap__reg">' . esc_html( strtoupper( $r['n'] ) ) . '</text>';
+		}
+	}
+
+	// Route, towns, crossings, peak.
+	$paths = $towns = $list = $marks = '';
 	$hiDay = 0;
 	foreach ( $days as $i => $d ) {
 		$dd = '';
@@ -289,55 +436,182 @@ add_shortcode( 'cc_story_route', function ( $atts ) {
 			$t   = $T( $q );
 			$dd .= ( $j ? 'L' : 'M' ) . $t[0] . ' ' . $t[1];
 		}
-		$paths .= '<path class="cc-sroute__p" data-day="' . ( $i + 1 ) . '" d="' . $dd . '"/>';
+		$paths .= '<path class="cc-sroute__halo" d="' . $dd . '"/><path class="cc-sroute__p" data-day="' . ( $i + 1 ) . '" d="' . $dd . '"/>';
 		$list  .= '<li><a href="#day-' . ( $i + 1 ) . '" data-day="' . ( $i + 1 ) . '" data-sel="' . esc_attr( '[Day ' . sprintf( '%02d', $i + 1 ) . ' · ' . ( $d['date'] ?? '' ) . ']|' . ( $d['start'] ?? '' ) . ' → ' . ( $d['end'] ?? '' ) . '|' . round( $d['km'] ) . ' km · ' . cc_story_n( $d['gain'] ) . ' m up · high ' . cc_story_n( $d['max'] ) . ' m' ) . '"><span>' . sprintf( '%02d', $i + 1 ) . '</span><b>' . esc_html( $d['title'] ?? '' ) . '</b><span>' . round( $d['km'] ) . ' km</span></a></li>';
 		if ( $d['max'] > ( $days[ $hiDay ]['max'] ?? 0 ) ) {
 			$hiDay = $i;
 		}
 	}
-	$stops = array_map( function ( $d ) { return array( $d['line'][0], $d['start'] ?? '' ); }, $days );
-	$last  = end( $days );
+	// Label placement: every label tries 8 spots around its point and takes the one that covers the
+	// fewest route points and earlier labels.
+	$occ = array();
+	foreach ( $seq as $pt ) {
+		$u     = $T( $pt[0] );
+		$occ[] = array( $u[0] - 3, $u[1] - 3, $u[0] + 3, $u[1] + 3 );
+	}
+	$hits  = function ( $bx ) use ( &$occ ) {
+		$n = 0;
+		foreach ( $occ as $o ) {
+			if ( $bx[0] < $o[2] && $bx[2] > $o[0] && $bx[1] < $o[3] && $bx[3] > $o[1] ) {
+				$n++;
+			}
+		}
+		return $n;
+	};
+	$place = function ( $x, $y, $text, $cw = 7.9, $h = 14, $gap = 10 ) use ( &$occ, $hits, $W, $H ) {
+		$w    = strlen( $text ) * $cw;
+		$best = null;
+		foreach ( array( array( 1, -1 ), array( 1, 1 ), array( -1, -1 ), array( -1, 1 ), array( 0, -1 ), array( 0, 1 ), array( 1, 0 ), array( -1, 0 ) ) as $o ) {
+			$lx = 0 === $o[0] ? $x - $w / 2 : ( $o[0] > 0 ? $x + $gap : $x - $gap - $w );
+			$ly = 0 === $o[1] ? $y - $h / 2 : ( $o[1] > 0 ? $y + $gap : $y - $gap - $h );
+			$bx = array( $lx, $ly, $lx + $w, $ly + $h );
+			$sc = $hits( $bx ) * 10 + ( $lx < 4 || $lx + $w > $W - 4 || $ly < 40 || $ly + $h > $H - 40 ? 50 : 0 ) + ( 0 === $o[0] || 0 === $o[1] ? 1 : 0 );
+			if ( null === $best || $sc < $best[0] ) {
+				$best = array( $sc, $bx );
+			}
+		}
+		$occ[] = array( $best[1][0] - 4, $best[1][1] - 4, $best[1][2] + 4, $best[1][3] + 4 );
+		return array( round( $best[1][0], 1 ), round( $best[1][3] - 3, 1 ) ); // text x (start), baseline y
+	};
+
+	$stops   = array_map( function ( $d ) { return array( $d['line'][0], $d['start'] ?? '' ); }, $days );
+	$last    = end( $days );
 	$stops[] = array( end( $last['line'] ), $last['end'] ?? '' );
-	$seen  = array();
+	$seen    = array();
+	$tpts    = array();
 	foreach ( $stops as $st ) {
 		if ( isset( $seen[ $st[1] ] ) ) {
 			continue;
 		}
 		$seen[ $st[1] ] = 1;
-		$t     = $T( $st[0] );
-		// Which side of the town is free? Sum where the track goes within ~40 px and label the emptier side.
-		$up = $dn = $lf = $rg = 0;
-		foreach ( $days as $d ) {
-			foreach ( $d['line'] as $q ) {
-				$u = $T( $q );
-				$dx = $u[0] - $t[0];
-				$dy = $u[1] - $t[1];
-				if ( abs( $dx ) < 90 && abs( $dy ) < 40 && ( $dx || $dy ) ) {
-					$dy < 0 ? $up++ : $dn++;
-					$dx < 0 ? $lf++ : $rg++;
-				}
-			}
-		}
-		$below  = $up > $dn;
-		$left   = $t[0] > 820 || ( $rg > $lf * 1.5 && $t[0] > 200 );
-		$towns .= '<circle cx="' . $t[0] . '" cy="' . $t[1] . '" r="5" class="cc-sroute__town"/><text x="' . ( $t[0] + ( $left ? -10 : 10 ) ) . '" y="' . ( $t[1] + ( $below ? 22 : -10 ) ) . '"' . ( $left ? ' text-anchor="end"' : '' ) . ' class="cc-sroute__lbl">' . esc_html( strtoupper( $st[1] ) ) . '</text>';
+		$t      = $T( $st[0] );
+		$tpts[] = array( $t, $st[1] );
+		$occ[]  = array( $t[0] - 7, $t[1] - 7, $t[0] + 7, $t[1] + 7 );
+		$towns .= '<circle cx="' . $t[0] . '" cy="' . $t[1] . '" r="5" class="cc-sroute__town"/>';
+	}
+	$xpts = array();
+	foreach ( $cross as $c ) {
+		$t      = $T( array( ( $c[0][0] + $c[1][0] ) / 2, ( $c[0][1] + $c[1][1] ) / 2 ) );
+		$xpts[] = array( $t, $c );
+		$occ[]  = array( $t[0] - 8, $t[1] - 8, $t[0] + 8, $t[1] + 8 );
+		$marks .= '<rect class="cc-smap__xb" x="' . ( $t[0] - 6 ) . '" y="' . ( $t[1] - 6 ) . '" width="12" height="12"/>';
 	}
 	$hd   = $days[ $hiDay ];
 	$pt   = $T( $hd['maxAt'] ?? $hd['line'][0] );
 	$peak = $a['peak'] ?: cc_story_n( $hd['max'] ) . ' m';
-	$bar  = round( 24 + $s * ( 50 / 111.32 ), 1 );
+	$occ[] = array( $pt[0] - 8, $pt[1] - 18, $pt[0] + 8, $pt[1] );
+	$marks .= '<path d="M' . $pt[0] . ' ' . ( $pt[1] - 4 ) . ' l-7 -12 h14 z" fill="#141217"/>';
+	// Peak note first (biggest), then towns, then crossings.
+	$pl     = $place( $pt[0], $pt[1] - 10, $peak, 10.5, 22, 8 );
+	$marks .= '<text x="' . $pl[0] . '" y="' . $pl[1] . '" class="cc-sroute__peak">' . esc_html( $peak ) . '</text>';
+	foreach ( $tpts as $tp ) {
+		$pl     = $place( $tp[0][0], $tp[0][1], strtoupper( $tp[1] ) );
+		$towns .= '<text x="' . $pl[0] . '" y="' . $pl[1] . '" class="cc-sroute__lbl">' . esc_html( strtoupper( $tp[1] ) ) . '</text>';
+	}
+	foreach ( $xpts as $xp ) {
+		$into   = in_array( $xp[1][3], $focus, true );
+		$txt    = '[' . ( $into ? 'IN' : 'OUT' ) . ' · DAY ' . sprintf( '%02d', $xp[1][2] + 1 ) . ']';
+		$pl     = $place( $xp[0][0], $xp[0][1], $txt, 7.3, 13 );
+		$marks .= '<text x="' . $pl[0] . '" y="' . $pl[1] . '" class="cc-smap__xt">' . esc_html( $txt ) . '</text>';
+	}
+	$names = array();
+	foreach ( $ctry as $c ) {
+		$names[ $c['iso'] ] = $c['n'];
+	}
+	// The crossed country's name: the emptiest spot inside it.
+	foreach ( $ctry as $c ) {
+		if ( ! in_array( $c['iso'], $focus, true ) ) {
+			continue;
+		}
+		$nm   = strtoupper( $c['n'] );
+		$bw   = strlen( $nm ) * 36;
+		$best = null;
+		foreach ( $c['r'] as $ring ) {
+			$xs = array_column( $ring, 0 );
+			$ys = array_column( $ring, 1 );
+			for ( $gx = 1; $gx < 14; $gx++ ) {
+				for ( $gy = 1; $gy < 14; $gy++ ) {
+					$lon = min( $xs ) + ( max( $xs ) - min( $xs ) ) * $gx / 14;
+					$lat = min( $ys ) + ( max( $ys ) - min( $ys ) ) * $gy / 14;
+					if ( ! cc_story_inside( $lon, $lat, $ring ) ) {
+						continue;
+					}
+					$t  = $P( $lon, $lat );
+					$bx = array( $t[0] - $bw / 2, $t[1] - 34, $t[0] + $bw / 2, $t[1] + 4 );
+					$sc = $hits( $bx ) + ( $bx[0] < 0 || $bx[2] > $W ? 99 : 0 );
+					// Keep the word inside the country: corners outside cost.
+					foreach ( array( array( $bx[0], $bx[1] ), array( $bx[2], $bx[1] ), array( $bx[0], $bx[3] ), array( $bx[2], $bx[3] ) ) as $cn ) {
+						$sc += cc_story_inside( $lo_x + $cn[0] / ( $k * $s ), $hi_y - $cn[1] / $s, $ring ) ? 0 : 3;
+					}
+					if ( null === $best || $sc < $best[0] ) {
+						$best = array( $sc, $t );
+					}
+				}
+			}
+		}
+		if ( $best ) {
+			$labels .= '<text x="' . $best[1][0] . '" y="' . $best[1][1] . '" text-anchor="middle" class="cc-smap__big">' . esc_html( $nm ) . '</text>';
+		}
+	}
+	$km50 = 50 / ( 111.32 * $k ) * $k * $s; // 50 km in px
 	$tk   = array_sum( array_column( $days, 'km' ) );
 	$tg   = array_sum( array_column( $days, 'gain' ) );
 	$first = $days[0]['start'] ?? '';
 	$all   = '[The whole route · ' . count( $days ) . ' days]|' . $first . ' → ' . ( $last['end'] ?? '' ) . '|' . cc_story_n( $tk ) . ' km · ' . cc_story_n( $tg ) . ' m up';
 	$sel   = explode( '|', $all );
-	return '<section class="cc-sroute" aria-label="The route"><div class="cc-sroute__map"><svg viewBox="0 0 1000 ' . $H . '" role="img" aria-label="' . esc_attr( 'The ' . count( $days ) . ' days of the route, drawn from GPX, ' . $first . ' to ' . ( $last['end'] ?? '' ) ) . '">'
-		. '<text x="24" y="40" class="cc-sroute__cap">[ROUTE · ' . count( $days ) . ' GPX TRACKS · N ↑]</text>'
-		. $paths . $towns
-		. '<path d="M' . $pt[0] . ' ' . ( $pt[1] - 4 ) . ' l-7 -12 h14 z" fill="#A56C12"/><text x="' . $pt[0] . '" y="' . ( $pt[1] - 26 ) . '" text-anchor="middle" class="cc-sroute__peak">' . esc_html( $peak ) . '</text>'
-		. '<line x1="24" x2="' . $bar . '" y1="' . ( $H - 28 ) . '" y2="' . ( $H - 28 ) . '" stroke="#141217" stroke-width="2"/><text x="24" y="' . ( $H - 40 ) . '" class="cc-sroute__cap">0</text><text x="' . $bar . '" y="' . ( $H - 40 ) . '" text-anchor="end" class="cc-sroute__cap">50 km</text>'
-		. '</svg></div><div class="cc-sroute__side"><div class="cc-sroute__sel" data-all="' . esc_attr( $all ) . '"><span>' . esc_html( $sel[0] ) . '</span><b>' . esc_html( $sel[1] ) . '</b><span>' . esc_html( $sel[2] ) . '</span></div>'
-		. '<ol class="cc-sroute__list">' . $list . '</ol><p class="cc-sroute__note">Planned route from GPX. Point at a day to light it up; tap to jump to it.</p></div></section>';
+	$nb    = count( $cross );
+
+	// The whole route as one height profile, day by day (scaled to the trip's own range, like Strava does per activity).
+	$all_p = array();
+	$off   = 0;
+	foreach ( $days as $i => $d ) {
+		foreach ( $d['profile'] as $q ) {
+			$all_p[] = array( $off + $q[0], $q[1], $i );
+		}
+		$off += end( $d['profile'] )[0];
+	}
+	list( $elo, $ehi, $estep ) = cc_story_day_scale( array( 'profile' => array_map( function ( $q ) { return array( $q[0], $q[1] ); }, $all_p ) ) );
+	$EX    = function ( $km ) use ( $off ) { return round( $km / max( 1, $off ) * 1000, 1 ); };
+	$EY    = function ( $e ) use ( $elo, $ehi ) { return round( 160 - ( $e - $elo ) / ( $ehi - $elo ) * 160, 1 ); };
+	$segs  = $seps = $dlab = $grid = $ticks = '';
+	$top   = array( 0, 0 );
+	foreach ( $days as $i => $d ) {
+		$pts = array_values( array_filter( $all_p, function ( $q ) use ( $i ) { return $q[2] === $i; } ) );
+		$ln  = '';
+		foreach ( $pts as $j => $q ) {
+			$ln .= ( $j ? 'L' : 'M' ) . $EX( $q[0] ) . ' ' . $EY( $q[1] );
+			if ( $q[1] > $top[1] ) {
+				$top = array( $q[0], $q[1] );
+			}
+		}
+		$x0    = $EX( $pts[0][0] );
+		$x1    = $EX( end( $pts )[0] );
+		$segs .= '<path class="cc-sroute__e" data-day="' . ( $i + 1 ) . '" d="' . $ln . 'L' . $x1 . ' 160L' . $x0 . ' 160Z"/>';
+		$seps .= $i ? '<line x1="' . $x0 . '" x2="' . $x0 . '" y1="0" y2="160" class="s"/>' : '';
+		$dlab .= '<a href="#day-' . ( $i + 1 ) . '" data-day="' . ( $i + 1 ) . '" style="left:' . round( $x0 / 10, 2 ) . '%;width:' . round( ( $x1 - $x0 ) / 10, 2 ) . '%" aria-label="' . esc_attr( 'Day ' . ( $i + 1 ) . ': ' . ( $d['title'] ?? '' ) ) . '">' . sprintf( '%02d', $i + 1 ) . '</a>';
+	}
+	$eline = '';
+	foreach ( $all_p as $j => $q ) {
+		$eline .= ( $j ? 'L' : 'M' ) . $EX( $q[0] ) . ' ' . $EY( $q[1] );
+	}
+	for ( $e = ceil( $elo / $estep ) * $estep; $e < $ehi; $e += $estep ) {
+		$grid  .= '<line x1="0" x2="1000" y1="' . $EY( $e ) . '" y2="' . $EY( $e ) . '" class="g"/>';
+		$ticks .= '<span style="top:' . round( $EY( $e ) / 1.6, 2 ) . '%">' . cc_story_n( $e ) . '</span>';
+	}
+	$elev = '<div class="cc-sroute__elev"><p class="cc-sroute__elab"><span>[Height · the whole route]</span><span>' . cc_story_n( $off ) . ' km · high ' . esc_html( $a['peak'] ?: cc_story_n( $top[1] ) . ' m' ) . '</span></p>'
+		. '<div class="cc-sroute__ew"><svg viewBox="0 0 1000 160" preserveAspectRatio="none" role="img" aria-label="' . esc_attr( 'Height profile of the whole route, ' . cc_story_n( $off ) . ' km, from ' . cc_story_n( $all_p[0][1] ) . ' m to a high point of ' . cc_story_n( $top[1] ) . ' m' ) . '">'
+		. $grid . $segs . '<path d="' . $eline . '" fill="none" stroke="#141217" stroke-width="2" vector-effect="non-scaling-stroke"/>' . $seps
+		. '<line x1="' . $EX( $top[0] ) . '" x2="' . $EX( $top[0] ) . '" y1="' . $EY( $top[1] ) . '" y2="160" stroke="#141217" stroke-width="1.5" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/></svg>'
+		. '<p class="cc-sday__yt" aria-hidden="true">' . $ticks . '</p></div><nav class="cc-sroute__days" aria-label="Days">' . $dlab . '</nav></div>';
+
+	return '<section class="cc-sroute" aria-label="The route"><div class="cc-sroute__map"><svg viewBox="0 0 ' . $W . ' ' . $H . '" role="img" aria-label="' . esc_attr( 'Map: the ' . count( $days ) . ' days of the route from ' . $first . ' to ' . ( $last['end'] ?? '' ) . ( $focus ? ', across ' . implode( ', ', array_map( function ( $iso ) use ( $names ) { return $names[ $iso ] ?? $iso; }, $focus ) ) : '' ) ) . '">'
+		. '<defs><pattern id="cc-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#141217" stroke-width="1.1"/></pattern></defs>'
+		. '<g>' . $base . $labels . $paths . $marks . $towns
+		. '</g>'
+		. '</svg><p class="cc-sroute__mcap">[Route · ' . count( $days ) . ' GPX tracks' . ( $nb ? ' · ' . $nb . ' border crossings' : '' ) . ' · N ↑]</p>'
+		. '<p class="cc-sroute__scale" data-px="' . round( $km50, 1 ) . '" data-w="' . $W . '"><i style="width:' . round( $km50 / $W * 100, 2 ) . '%"></i><span>0</span><span>50 km</span></p>'
+		. '</div><div class="cc-sroute__side"><div class="cc-sroute__sel" data-all="' . esc_attr( $all ) . '"><span>' . esc_html( $sel[0] ) . '</span><b>' . esc_html( $sel[1] ) . '</b><span>' . esc_html( $sel[2] ) . '</span></div>'
+		. '<ol class="cc-sroute__list">' . $list . '</ol><p class="cc-sroute__note">Planned route from GPX. Hatched: the country we crossed. Point at a day to light it up; tap to jump to it.</p></div>' . $elev . '</section>';
 } );
 
 /* ---------- [cc_story_tape src="" poster="" label="" meta="" caption="" side="right"] ---------- */
@@ -369,15 +643,15 @@ add_action( 'wp_footer', function () {
 	}
 	$days = cc_story_days( get_queried_object_id() );
 	if ( $days ) {
-		list( $lo, $hi ) = cc_story_scale( $days );
-		$rail = array( 'lo' => $lo, 'hi' => $hi, 'days' => array_map( function ( $d ) {
+		$rail = array( 'days' => array_map( function ( $d ) {
+			list( $lo, $hi ) = cc_story_day_scale( $d );
 			$p = array();
 			foreach ( $d['profile'] as $i => $q ) {
 				if ( 0 === $i % 3 || $i === count( $d['profile'] ) - 1 ) {
 					$p[] = $q;
 				}
 			}
-			return array( 't' => $d['title'] ?? '', 'km' => $d['km'], 'p' => $p );
+			return array( 't' => $d['title'] ?? '', 'km' => $d['km'], 'p' => $p, 'lo' => $lo, 'hi' => $hi );
 		}, $days ) );
 		echo '<script type="application/json" id="cc-story-data">' . wp_json_encode( $rail ) . '</script>';
 	}
@@ -400,16 +674,21 @@ var rm=document.querySelector('.cc-sroute');
 if(rm){var sel=rm.querySelector('.cc-sroute__sel'),all=sel.dataset.all;
   function show(n,txt){rm.classList.toggle('has-sel',!!n);rm.querySelectorAll('[data-day]').forEach(function(el){el.classList.toggle('on',el.dataset.day===String(n));});
     var s=(txt||all).split('|');sel.children[0].textContent=s[0];sel.children[1].textContent=s[1];sel.children[2].textContent=s[2];
-    var p=rm.querySelector('.cc-sroute__p.on');if(p)p.parentNode.insertBefore(p,p.parentNode.querySelector('.cc-sroute__town'));}
+    var p=rm.querySelector('.cc-sroute__p.on');if(p)p.parentNode.insertBefore(p,p.parentNode.querySelector('.cc-smap__x')||p.parentNode.querySelector('.cc-sroute__town'));}
   rm.querySelectorAll('.cc-sroute__list a').forEach(function(a){a.addEventListener('mouseenter',function(){show(a.dataset.day,a.dataset.sel);});a.addEventListener('focus',function(){show(a.dataset.day,a.dataset.sel);});});
+  rm.querySelectorAll('.cc-sroute__e,.cc-sroute__days a').forEach(function(p){p.addEventListener('mouseenter',function(){var a=rm.querySelector('.cc-sroute__list a[data-day="'+p.dataset.day+'"]');show(p.dataset.day,a&&a.dataset.sel);});
+    if(p.tagName==='path')p.addEventListener('click',function(){location.hash='day-'+p.dataset.day;});});
   rm.querySelectorAll('.cc-sroute__p').forEach(function(p){p.addEventListener('mouseenter',function(){var a=rm.querySelector('.cc-sroute__list a[data-day="'+p.dataset.day+'"]');show(p.dataset.day,a&&a.dataset.sel);});
     p.addEventListener('click',function(){location.hash='day-'+p.dataset.day;});});
   rm.addEventListener('mouseleave',function(){show(0);});
+  var sc=rm.querySelector('.cc-sroute__scale'),sv=rm.querySelector('.cc-sroute__map svg');
+  function bar(){if(!sc||!sv)return;var b=sv.getBoundingClientRect(),vb=sv.viewBox.baseVal,k=Math.min(b.width/vb.width,b.height/vb.height);sc.querySelector('i').style.width=(+sc.dataset.px*k).toFixed(1)+'px';}
+  bar();addEventListener('resize',bar);
 }
 /* Rail: which day, how far into it. */
 var heads=[].slice.call(document.querySelectorAll('.cc-sday'));
 if(!data||!heads.length)return;
-var end=document.querySelector('.cc-pbody'),N=data.days.length,lo=data.lo,hi=data.hi;
+var end=document.querySelector('.cc-pbody'),N=data.days.length;
 var r=document.createElement('aside');r.className='cc-srail';r.setAttribute('aria-label','Where you are in the story');
 var ticks='';for(var i=1;i<=N;i++)ticks+='<a href="#day-'+i+'" aria-label="Day '+i+': '+data.days[i-1].t.replace(/"/g,'&quot;')+'"></a>';
 r.innerHTML='<p class="cc-srail__k">[Day <span class="n1">01</span> / '+('0'+N).slice(-2)+']</p><b class="cc-srail__n">01</b><p class="cc-srail__t"></p>'
@@ -417,7 +696,7 @@ r.innerHTML='<p class="cc-srail__k">[Day <span class="n1">01</span> / '+('0'+N).
  +'<p class="cc-srail__km"></p><nav class="cc-srail__ticks">'+ticks+'</nav><span class="cc-srail__bar"><i></i></span>';
 document.body.appendChild(r);
 var cur=-1,el={n:r.querySelector('.cc-srail__n'),n1:r.querySelector('.n1'),t:r.querySelector('.cc-srail__t'),a:r.querySelector('.a'),l:r.querySelector('.l'),m:r.querySelector('.m'),km:r.querySelector('.cc-srail__km'),bar:r.querySelector('.cc-srail__bar i'),ticks:r.querySelectorAll('.cc-srail__ticks a')};
-function draw(i){var d=data.days[i],P=d.p,K=P[P.length-1][0]||1,s='';P.forEach(function(q,j){s+=(j?'L':'M')+(q[0]/K*200).toFixed(1)+' '+(90-(q[1]-lo)/(hi-lo)*86).toFixed(1);});
+function draw(i){var d=data.days[i],P=d.p,lo=d.lo,hi=d.hi,K=P[P.length-1][0]||1,s='';P.forEach(function(q,j){s+=(j?'L':'M')+(q[0]/K*200).toFixed(1)+' '+(90-(q[1]-lo)/(hi-lo)*86).toFixed(1);});
   el.l.setAttribute('d',s);el.a.setAttribute('d',s+'L200 90L0 90Z');var p=('0'+(i+1)).slice(-2);el.n.textContent=p;el.n1.textContent=p;el.t.textContent=d.t;
   el.ticks.forEach(function(a,j){a.classList.toggle('on',j===i);a.classList.toggle('done',j<i);});}
 var tick=false;
