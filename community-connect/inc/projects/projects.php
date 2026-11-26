@@ -247,6 +247,9 @@ function cc_project_feature( $p ) {
 add_shortcode( 'cc_projects', function ( $atts ) {
 	$a     = shortcode_atts( array( 'all' => '0' ), $atts );
 	$all   = '1' === $a['all'];
+	if ( ! $all && ! get_option( 'cc_projects_on_home', 0 ) ) {
+		return ''; // Hidden from the landing page (switch on the Projects screen).
+	}
 	$items = cc_projects_query();
 	if ( ! $items ) {
 		return '';
@@ -447,4 +450,31 @@ add_action( 'template_redirect', function () {
 		status_header( 404 );
 		nocache_headers();
 	}
+} );
+
+/* ---------- Switch: projects on the landing page ---------- */
+
+add_action( 'admin_notices', function () {
+	$screen = get_current_screen();
+	if ( ! $screen || 'edit-' . CC_PROJECT !== $screen->id || ! current_user_can( 'edit_theme_options' ) ) {
+		return;
+	}
+	$on  = (bool) get_option( 'cc_projects_on_home', 0 );
+	$url = wp_nonce_url( admin_url( 'admin-post.php?action=cc_projects_home&on=' . ( $on ? 0 : 1 ) ), 'cc_projects_home' );
+	printf(
+		'<div class="notice notice-info"><p><strong>Landing page:</strong> the Projects section is %s. <a class="button" href="%s">%s</a></p></div>',
+		$on ? 'shown' : 'hidden',
+		esc_url( $url ),
+		$on ? 'Hide it from the landing page' : 'Show it on the landing page'
+	);
+} );
+
+add_action( 'admin_post_cc_projects_home', function () {
+	if ( ! current_user_can( 'edit_theme_options' ) ) {
+		wp_die( 'Not allowed.', 403 );
+	}
+	check_admin_referer( 'cc_projects_home' );
+	update_option( 'cc_projects_on_home', empty( $_GET['on'] ) ? 0 : 1 );
+	wp_safe_redirect( admin_url( 'edit.php?post_type=' . CC_PROJECT ) );
+	exit;
 } );
