@@ -18,6 +18,8 @@ defined( 'ABSPATH' ) || exit;
 
 const CC_PROJECT = 'cc_project';
 
+require_once __DIR__ . '/story.php';
+
 /** Fields in the "Project details" box: key => [label, type, help]. */
 function cc_project_fields() {
 	return array(
@@ -32,7 +34,7 @@ function cc_project_fields() {
 		'hero_url'   => array( 'Cover photo URL', 'url', 'Only if no featured image is set.' ),
 		'link'       => array( 'Link', 'url', 'e.g. the event page' ),
 		'link_label' => array( 'Link text', 'text', 'e.g. "Enter Road to Desolation"' ),
-		'look'       => array( 'Look', 'select', array( 'cc' => 'Community Connect (colour, serif title)', 'standert' => 'Standert (white, black, long read)' ) ),
+		'look'       => array( 'Look', 'select', array( 'cc' => 'Community Connect (colour, serif title)', 'standert' => 'Standert (white, black, long read)', 'story' => 'Story (magazine: day openers from GPX, route map, phone tapes)' ) ),
 		'color'      => array( 'Card colour', 'select', array( 'pink' => 'Hearts pink', 'ochre' => 'Karoo ochre', 'ink' => 'Ink', 'sand' => 'Sand', 'cream' => 'Cream' ) ),
 	);
 }
@@ -293,7 +295,7 @@ add_shortcode( 'cc_project_hero', function () {
 		: ( $cover ? '<img class="cc-phero__media" src="' . esc_url( $cover ) . '" alt="" fetchpriority="high"' . ( $fs ? ' style="' . esc_attr( $fs ) . '"' : '' ) . '>' : '' );
 	$intro = has_excerpt( $id ) ? '<p class="cc-phero__intro">' . esc_html( get_the_excerpt( $id ) ) . '</p>' : '';
 	$out   = '<header class="cc-phero cc-phero--' . esc_attr( $look ) . '">';
-	if ( 'standert' === $look ) {
+	if ( 'standert' === $look || 'story' === $look ) {
 		$out .= '<div class="cc-phero__top max"><p class="cc-phero__eye">' . esc_html( cc_project_eyebrow( $id ) ) . '</p><h1 class="cc-phero__title">' . esc_html( get_the_title( $id ) ) . '</h1>' . $intro . '</div>' . cc_project_credits( $id ) . '<div class="cc-phero__pic">' . $media . '</div>';
 	} else {
 		$out .= '<div class="cc-phero__pic">' . $media . '</div><div class="cc-phero__over max"><p class="cc-phero__eye">' . esc_html( cc_project_eyebrow( $id ) ) . '</p><h1 class="cc-phero__title">' . esc_html( get_the_title( $id ) ) . '</h1>' . $intro . '</div>';
