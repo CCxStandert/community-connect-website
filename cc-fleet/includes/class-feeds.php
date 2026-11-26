@@ -49,6 +49,7 @@ class CC_Fleet_Feeds {
 		$ig = get_option( self::OPT_IG, array() );
 		if ( ! empty( $ig['token'] ) && ( empty( $ig['fetched'] ) || time() - (int) $ig['fetched'] > 3 * HOUR_IN_SECONDS ) ) {
 			$out['instagram'] = self::ig_fetch();
+			$out['ambassadors'] = CC_Fleet_IG_Curate::fetch();
 		}
 		return $out;
 	}
@@ -506,7 +507,10 @@ class CC_Fleet_Feeds {
 	/** [cc_instagram count="4"]: the whole section, or nothing when there are no posts. */
 	public static function sc_instagram( $atts ) {
 		$a     = shortcode_atts( array( 'count' => 4, 'title' => 'On Instagram', 'handle' => '' ), $atts, 'cc_instagram' );
-		$posts = array_slice( (array) get_option( self::OPT_POSTS, array() ), 0, max( 1, min( 8, (int) $a['count'] ) ) );
+		// Our own latest posts plus the ambassador posts the crew featured, newest first.
+		$posts = array_merge( (array) get_option( self::OPT_POSTS, array() ), CC_Fleet_IG_Curate::featured() );
+		usort( $posts, function ( $x, $y ) { return strcmp( (string) $y['time'], (string) $x['time'] ); } );
+		$posts = array_slice( $posts, 0, max( 1, min( 8, (int) $a['count'] ) ) );
 		if ( ! $posts ) {
 			return '';
 		}
@@ -521,10 +525,10 @@ class CC_Fleet_Feeds {
 			$when = $p['time'] ? wp_date( 'j M Y', strtotime( $p['time'] ) ) : '';
 			$cap  = wp_trim_words( preg_replace( '/\s+/', ' ', $p['caption'] ), 18, '…' );
 			$h   .= sprintf(
-				'<li><a class="igpost" href="%s" target="_blank" rel="noopener"><span class="igimg"><img src="%s" alt="%s" loading="%s" decoding="async" width="640" height="640">%s</span><span class="igmeta"><time class="mono" datetime="%s">[%s]</time><span class="igcap">%s</span></span></a></li>',
-				esc_url( $p['permalink'] ), esc_url( $p['img'] ), esc_attr( wp_trim_words( $p['caption'], 14, '' ) ?: 'Instagram post by @' . $handle ), $i < 2 ? 'eager' : 'lazy',
+				'<li><a class="igpost" href="%s" target="_blank" rel="noopener"><span class="igimg"><img src="%s" alt="%s" loading="%s" decoding="async" width="640" height="640">%s</span><span class="igmeta"><span class="mono"><time datetime="%s">[%s]</time>%s</span><span class="igcap">%s</span></span></a></li>',
+				esc_url( $p['permalink'] ), esc_url( $p['img'] ), esc_attr( wp_trim_words( $p['caption'], 14, '' ) ?: 'Instagram post by @' . ( $p['by'] ?? $handle ) ), $i < 2 ? 'eager' : 'lazy',
 				'VIDEO' === $p['type'] ? '<span class="igbadge" aria-label="Video"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2.5v7l6-3.5z" fill="currentColor"/></svg></span>' : ( 'CAROUSEL_ALBUM' === $p['type'] ? '<span class="igbadge" aria-label="Several photos"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 1.75h6.25V8M1.75 4h6.25v6.25H1.75z" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>' : '' ),
-				esc_attr( $p['time'] ), esc_html( $when ), esc_html( $cap )
+				esc_attr( $p['time'] ), esc_html( $when ), ! empty( $p['by'] ) ? ' <span class="igby">@' . esc_html( $p['by'] ) . '</span>' : '', esc_html( $cap )
 			);
 		}
 		return $h . '</ul></section>';

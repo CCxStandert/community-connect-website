@@ -468,3 +468,5 @@ html.dp-open{overflow:hidden}
 @media(min-width:760px){.stats .stat__l{font-size:15px}.stats .stat__hand{font-size:30px}}
 .stat__icon--flag{height:44px}
 @media(min-width:760px){.stat__icon--flag{height:56px}}
+
+/* Ambassador posts: their handle next to the date */.igmeta>.mono{display:flex;flex-wrap:wrap;gap:0 6px;font-size:11px;color:var(--muted)}.cc-part--ig .igmeta .mono time{color:var(--muted)}.igby{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}

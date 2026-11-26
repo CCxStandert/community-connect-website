@@ -4,6 +4,7 @@ global $pass, $fail; $pass = 0; $fail = 0;
 function ok( $c, $m ) { global $pass, $fail; if ( $c ) { $pass++; } else { $fail++; echo "FAIL: $m\n"; } }
 CC_Fleet_Install::maybe_upgrade();
 global $wpdb; $t = CC_Fleet_Records::table( 'events' );
+delete_option( "cc_fleet_ig_curate" );
 $wpdb->query( "DELETE FROM $t WHERE source LIKE 'strava:%'" );
 $today = CC_Fleet_Settings::today();
 $d1 = gmdate( 'Y-m-d\T05:30:00\Z', strtotime( $today . ' +5 days' ) );
