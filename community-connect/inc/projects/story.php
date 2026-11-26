@@ -27,7 +27,10 @@ function cc_story_days( $id = 0 ) {
 	$id = $id ?: get_the_ID();
 	if ( ! isset( $cache[ $id ] ) ) {
 		$d             = json_decode( (string) get_post_meta( $id, '_cc_p_days', true ), true );
-		$cache[ $id ] = is_array( $d ) ? array_values( $d ) : array();
+		// Only days that have a map line and a profile; anything else would break the drawings.
+		$cache[ $id ] = is_array( $d ) ? array_values( array_filter( $d, function ( $x ) {
+			return is_array( $x ) && ! empty( $x['line'][1] ) && ! empty( $x['profile'][1] ) && isset( $x['km'], $x['gain'], $x['max'] );
+		} ) ) : array();
 	}
 	return $cache[ $id ];
 }
