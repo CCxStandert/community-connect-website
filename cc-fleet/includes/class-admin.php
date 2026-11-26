@@ -663,9 +663,16 @@ class CC_Fleet_Admin {
 				self::back( $ref, esc_html( $set->get_error_message() ), 'error' );
 			}
 		}
-		$res = CC_Fleet_Loans::set_status( $id, sanitize_key( $_GET['to'] ?? '' ) );
+		$lend = ! empty( $_REQUEST['lend'] ); // phpcs:ignore WordPress.Security.NonceVerification -- guarded above.
+		$res  = CC_Fleet_Loans::set_status( $id, sanitize_key( $_REQUEST['to'] ?? '' ), true, false, $lend ); // phpcs:ignore
 		if ( is_wp_error( $res ) ) {
-			self::back( $ref, esc_html( $res->get_error_message() ), 'error' );
+			$msg = esc_html( $res->get_error_message() );
+			if ( 'cc_assigned' === $res->get_error_code() ) {
+				$a    = $loan ? CC_Fleet_Bikes::assignment( (int) CC_Fleet_Loans::get( $id )->bike_id ) : null;
+				$msg  = esc_html( 'This bike is assigned long-term to ' . ( $a['name'] ?? 'a rider' ) . '.' ) . ' <a class="button button-primary" href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=cc_fleet_loan_status&id=' . $id . '&to=' . sanitize_key( $_REQUEST['to'] ?? 'approved' ) . '&lend=1' ), 'cc_fleet_loan_status_' . $id ) ) . '">Lend it out for these dates and approve</a>'
+					. ' <span class="cc-muted">The long-term assignment stays; the bike is just out to this rider for these days.</span>';
+			}
+			self::back( $ref, $msg, 'error' );
 		}
 		$to = sanitize_key( $_GET['to'] ?? '' );
 		self::back( $ref, 'waiting' === $to ? 'On the waiting list. The rider was emailed.' : 'Loan updated' . ( in_array( $to, array( 'approved', 'declined', 'cancelled', 'returned' ), true ) ? ' and the rider was emailed.' : '.' ) );

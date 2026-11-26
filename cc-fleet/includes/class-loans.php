@@ -352,7 +352,7 @@ class CC_Fleet_Loans {
 	 * Move a loan through its lifecycle. Approving re-checks clashes.
 	 * @return true|WP_Error
 	 */
-	public static function set_status( $id, $status, $notify = true, $force = false ) {
+	public static function set_status( $id, $status, $notify = true, $force = false, $lend_assigned = false ) {
 		global $wpdb;
 		$loan = self::get( $id );
 		if ( ! $loan ) {
@@ -375,6 +375,10 @@ class CC_Fleet_Loans {
 				return new WP_Error( 'cc_winner', 'Choose the raffle winner as the rider and save, then approve.' );
 			}
 			$clash = $force ? array() : self::conflicts( $loan->bike_id, $loan->start_date, $loan->end_date, $id, false );
+			if ( $lend_assigned ) {
+				// The crew chose to lend out a long-term bike for these dates; the assignment itself stays.
+				$clash = array_values( array_filter( $clash, function ( $c ) { return 'assigned' !== $c->status; } ) );
+			}
 			if ( $clash ) {
 				return self::clash_error( $clash ) ?: new WP_Error( 'cc_conflict', 'Another approved loan overlaps these dates.' );
 			}
