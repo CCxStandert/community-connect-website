@@ -89,6 +89,9 @@ class CC_Fleet_Install {
 			if ( $from && $from < 19 ) {
 				update_option( 'cc_fleet_add_soon_bikes', 1, false ); // Two Kieswerks "Coming soon" (done on init).
 			}
+			if ( $from && $from < 20 ) {
+				CC_Fleet_Parts::mount_existing(); // Tyres on a bike are mounted on its wheelset, so they move together.
+			}
 			update_option( 'cc_fleet_db_version', CC_FLEET_DB_VERSION, false );
 		}
 	}

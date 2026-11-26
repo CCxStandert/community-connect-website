@@ -5,10 +5,12 @@ defined( 'ABSPATH' ) || exit;
  * Parts that move between bikes: wheelsets and tyre sets.
  *
  * Each part has a code (WS-01, TY-01), lives on at most one bike (or on the shelf), and can be
- * flagged as damaged with a note. When a part moves to another bike, the bike it came from is
- * left without one: it gets a scheduled workshop job, which puts it "In the workshop" until the
- * job is done. The bike's own spec fields (Wheelset, Wheel size, Freehub, Tyres, Tyre size) are
- * kept in step with the parts, so the public bike page and the history keep working as before.
+ * flagged as damaged with a note. Tyres are mounted on a wheelset (wheelset_id) and travel with
+ * it: move or swap a wheelset and its tyres go along. After every move, wheels_check() looks at
+ * each bike involved: no wheels, or damaged wheels/tyres → a scheduled "[wheels]" workshop job and
+ * "In the workshop"; good wheels again → that job is closed and the bike is active again.
+ * The bike's own spec fields (Wheelset, Wheel size, Freehub, Tyres, Tyre size) are kept in step
+ * with the parts, so the public bike page and the history keep working as before.
  */
 class CC_Fleet_Parts {
 
@@ -37,6 +39,7 @@ class CC_Fleet_Parts {
 			size varchar(40) NOT NULL DEFAULT '',
 			detail varchar(120) NOT NULL DEFAULT '',
 			bike_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			wheelset_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			damaged tinyint(1) NOT NULL DEFAULT 0,
 			damage_note text NULL,
 			status varchar(20) NOT NULL DEFAULT 'active',
@@ -83,6 +86,21 @@ class CC_Fleet_Parts {
 		return $wpdb->get_results( 'SELECT * FROM ' . self::table() . " WHERE damaged = 1 AND status <> 'retired' ORDER BY type, code" ); // phpcs:ignore
 	}
 
+	/** The tyres mounted on a wheelset (or null). */
+	public static function tyres_on( $wheelset_id ) {
+		global $wpdb;
+		return $wheelset_id ? $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . self::table() . " WHERE type = 'tyres' AND wheelset_id = %d AND status <> 'retired' ORDER BY id ASC LIMIT 1", (int) $wheelset_id ) ) : null;
+	}
+
+	/** "WS-03 HUNT 40 CGR + TY-02 Schwalbe G-One RS" — what moves when the wheels move. */
+	public static function pair_label( $ws ) {
+		if ( ! $ws ) {
+			return 'no wheels';
+		}
+		$t = self::tyres_on( $ws->id );
+		return $ws->code . ' ' . $ws->name . ( $t ? ' + ' . $t->code . ' ' . $t->name : '' );
+	}
+
 	public static function next_code( $type ) {
 		global $wpdb;
 		$prefix = self::TYPES[ $type ]['prefix'];
@@ -99,6 +117,10 @@ class CC_Fleet_Parts {
 	/** "WS-03 · HUNT 40 CGR · 700c". */
 	public static function label( $p, $with_place = false ) {
 		$s = $p->code . ' · ' . $p->name . ( '' !== $p->size ? ' · ' . $p->size . ( 'tyres' === $p->type && is_numeric( $p->size ) ? ' mm' : '' ) : '' );
+		if ( 'wheelset' === $p->type ) {
+			$t  = self::tyres_on( $p->id );
+			$s .= $t ? ' + ' . $t->code . ' ' . $t->name . ( (int) $t->damaged ? ' ⚠' : '' ) : ' (no tyres)';
+		}
 		if ( $with_place ) {
 			$s .= $p->bike_id ? ' — on ' . CC_Fleet_Bikes::get( $p->bike_id, 'cc_id' ) : ' — spare';
 		}
@@ -148,8 +170,15 @@ class CC_Fleet_Parts {
 			if ( (int) $old->damaged !== $row['damaged'] ) {
 				CC_Fleet_Install::log( 'part', $id, $row['damaged'] ? 'damaged' : 'repaired', $row['damaged'] ? $row['damage_note'] : (string) $old->damage_note );
 			}
-			if ( $old->bike_id && 'retired' === $row['status'] && 'retired' !== $old->status ) {
-				self::assign( $id, 0, array( 'note' => 'Part retired' ) );
+			if ( 'retired' === $row['status'] && 'retired' !== $old->status ) {
+				if ( $old->bike_id ) {
+					self::assign( $id, 0, array( 'note' => 'Part retired' ) );
+				}
+				if ( 'tyres' === $type ) {
+					self::mount( $id, 0 );
+				} else {
+					$wpdb->update( self::table(), array( 'wheelset_id' => 0 ), array( 'wheelset_id' => (int) $id ) ); // Its tyres become loose spares.
+				}
 			}
 		} else {
 			$row['type']       = $type;
@@ -167,65 +196,237 @@ class CC_Fleet_Parts {
 		return (int) $id;
 	}
 
+	/** Move one part (no checks, no bike history): set bike, log it. */
+	private static function put( $p, $bike_id, $why = '' ) {
+		global $wpdb;
+		$from = (int) $p->bike_id;
+		if ( $from === (int) $bike_id ) {
+			return;
+		}
+		$wpdb->update( self::table(), array( 'bike_id' => (int) $bike_id, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $p->id ) );
+		$where = function ( $b ) { return $b ? CC_Fleet_Bikes::get( $b, 'cc_id' ) : 'spare'; };
+		CC_Fleet_Install::log( 'part', $p->id, 'moved', $where( $from ) . ' → ' . $where( $bike_id ) . ( '' !== $why ? ' · ' . $why : '' ) );
+	}
+
+	/** Mount tyres on a wheelset (0 = loose). */
+	private static function mount( $tyres_id, $wheelset_id ) {
+		global $wpdb;
+		$wpdb->update( self::table(), array( 'wheelset_id' => (int) $wheelset_id ), array( 'id' => (int) $tyres_id ) );
+	}
+
+	/** What a bike has now, to compare after a move. */
+	public static function snapshot( $bike_id ) {
+		$ws = self::on_bike( $bike_id, 'wheelset' );
+		$ty = self::on_bike( $bike_id, 'tyres' );
+		return array( 'ws' => $ws ? (int) $ws->id : 0, 'ty' => $ty ? (int) $ty->id : 0, 'damaged' => ( $ws && (int) $ws->damaged ) || ( $ty && (int) $ty->damaged ) );
+	}
+
 	/**
 	 * Put a part on a bike (or on the shelf with $bike_id = 0).
-	 * - The bike's previous part of the same type goes to the shelf.
-	 * - The bike the part came from is left without one: history entry + scheduled workshop job.
+	 * - A wheelset takes its tyres along. The bike's previous wheelset (and its tyres) goes to the shelf.
+	 * - Tyres are mounted on the bike's wheelset; the bike's previous tyres go to the shelf.
+	 * - Every bike involved is checked afterwards (wheels_check): missing or damaged → workshop.
 	 *
-	 * @param array $ctx date, note, by — for the history entries.
+	 * @param array $ctx date, note, by — for the history entries; quiet_target: the caller records
+	 *                   the receiving bike's history itself (the bike editor does).
 	 * @return array Bike ids that lost the part (for messages).
 	 */
 	public static function assign( $part_id, $bike_id, array $ctx = array() ) {
-		global $wpdb;
 		$p = self::get( $part_id );
 		if ( ! $p ) {
 			return array();
 		}
 		$bike_id = (int) $bike_id;
 		$from    = (int) $p->bike_id;
-		$lost    = array();
 		if ( $from === $bike_id ) {
 			if ( $bike_id ) {
 				self::sync_bike( $bike_id, $p->type );
 			}
 			return array();
 		}
-		$date  = CC_Fleet_Import::date( $ctx['date'] ?? '' ) ?: CC_Fleet_Settings::today();
-		$label = self::TYPES[ $p->type ]['label'];
-		// The target bike's current part of this type goes to the shelf.
-		if ( $bike_id ) {
-			$cur = self::on_bike( $bike_id, $p->type );
-			if ( $cur && (int) $cur->id !== (int) $p->id ) {
-				$wpdb->update( self::table(), array( 'bike_id' => 0, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $cur->id ) );
-				CC_Fleet_Install::log( 'part', $cur->id, 'moved', 'Taken off ' . CC_Fleet_Bikes::get( $bike_id, 'cc_id' ) . ' → spare' );
-			}
+		$bikes  = array_values( array_filter( array( $from, $bike_id ) ) );
+		$before = array();
+		foreach ( $bikes as $bk ) {
+			$before[ $bk ] = self::snapshot( $bk );
 		}
-		$wpdb->update( self::table(), array( 'bike_id' => $bike_id, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $p->id ) );
-		CC_Fleet_Install::log( 'part', $p->id, 'moved', ( $from ? CC_Fleet_Bikes::get( $from, 'cc_id' ) : 'spare' ) . ' → ' . ( $bike_id ? CC_Fleet_Bikes::get( $bike_id, 'cc_id' ) : 'spare' ) . ( ! empty( $ctx['note'] ) ? ' · ' . $ctx['note'] : '' ) );
-		if ( $bike_id ) {
-			self::sync_bike( $bike_id, $p->type );
-		}
-		// The bike it came from now has none: history, workshop job, workshop status.
-		if ( $from ) {
-			$changes = self::sync_bike( $from, $p->type );
-			$to      = $bike_id ? CC_Fleet_Bikes::get( $bike_id, 'cc_id' ) : 'the shelf';
-			$note    = sprintf( '%s %s moved to %s%s', $label, $p->code, $to, ! empty( $ctx['note'] ) ? ' · ' . sanitize_text_field( $ctx['note'] ) : '' );
-			CC_Fleet_Bikes::record_change( $from, $changes, array( 'date' => $date, 'type' => 'moved', 'by' => $ctx['by'] ?? '', 'note' => $note, 'workshop' => false ) );
-			if ( class_exists( 'CC_Fleet_Records' ) ) {
-				$job = CC_Fleet_Records::save( 'maintenance', array(
-					'bike_id' => $from, 'type' => 'repair', 'status' => 'scheduled', 'work_date' => $date,
-					'description' => sprintf( 'Needs %s: %s %s went to %s.', strtolower( $label ), $p->code, $p->name, $to ),
-				) );
-				if ( ! is_wp_error( $job ) ) {
-					CC_Fleet_Records::sync_bike_state( $job );
+		$name = function ( $b ) { return $b ? CC_Fleet_Bikes::get( $b, 'cc_id' ) : 'the shelf'; };
+		if ( 'wheelset' === $p->type ) {
+			$tyres = self::tyres_on( $p->id );
+			if ( $bike_id ) {
+				$cur = self::on_bike( $bike_id, 'wheelset' );
+				if ( $cur && (int) $cur->id !== (int) $p->id ) {
+					self::put( $cur, 0, 'Taken off ' . $name( $bike_id ) );
+				}
+				// Tyres left on the bike that aren't on the incoming wheels go to the shelf with their wheels.
+				$ty = self::on_bike( $bike_id, 'tyres' );
+				if ( $ty && ( ! $tyres || (int) $ty->id !== (int) $tyres->id ) ) {
+					self::put( $ty, 0, 'Taken off ' . $name( $bike_id ) . ( $cur ? ' with ' . $cur->code : '' ) );
 				}
 			}
-			if ( 'active' === CC_Fleet_Bikes::get( $from, 'state' ) ) {
-				CC_Fleet_Bikes::set( $from, 'state', 'workshop' );
+			self::put( $p, $bike_id, (string) ( $ctx['note'] ?? '' ) );
+			if ( $tyres ) {
+				self::put( $tyres, $bike_id, 'With ' . $p->code );
 			}
-			$lost[] = $from;
+		} else {
+			if ( $bike_id ) {
+				$cur = self::on_bike( $bike_id, 'tyres' );
+				if ( $cur && (int) $cur->id !== (int) $p->id ) {
+					self::put( $cur, 0, 'Taken off ' . $name( $bike_id ) );
+					self::mount( $cur->id, 0 );
+				}
+			}
+			$ws = $bike_id ? self::on_bike( $bike_id, 'wheelset' ) : null;
+			self::mount( $p->id, $ws ? $ws->id : 0 );
+			self::put( $p, $bike_id, (string) ( $ctx['note'] ?? '' ) );
 		}
-		return $lost;
+		$date = CC_Fleet_Import::date( $ctx['date'] ?? '' ) ?: CC_Fleet_Settings::today();
+		$what = 'wheelset' === $p->type ? self::pair_label( self::get( $p->id ) ) : $p->code . ' ' . $p->name;
+		foreach ( $bikes as $bk ) {
+			$changes = array_merge( self::sync_bike( $bk, 'wheelset' ), self::sync_bike( $bk, 'tyres' ) );
+			if ( $bk === $from ) {
+				$note = $what . ' moved to ' . $name( $bike_id );
+			} elseif ( empty( $ctx['quiet_target'] ) ) {
+				$note = $what . ' fitted' . ( $from ? ', from ' . $name( $from ) : ', from the shelf' );
+			} else {
+				$note = '';
+			}
+			if ( '' !== $note ) {
+				CC_Fleet_Bikes::record_change( $bk, $changes, array( 'date' => $date, 'type' => 'moved', 'by' => $ctx['by'] ?? '', 'note' => $note . ( ! empty( $ctx['note'] ) ? ' · ' . sanitize_text_field( $ctx['note'] ) : '' ), 'workshop' => false ) );
+			}
+			self::wheels_check( $bk, $before[ $bk ], $date );
+		}
+		return $from ? array( $from ) : array();
+	}
+
+	/**
+	 * Swap wheels (with their tyres) between two bikes in one go.
+	 * Typical: a rider needs CC-09, its wheels are damaged → swap with CC-11; CC-09 is ready,
+	 * CC-11 goes to the workshop with the damaged wheels.
+	 *
+	 * @return array|WP_Error [bike_id => 'workshop'|'active'|''] what happened to each bike's status.
+	 */
+	public static function swap( $bike_a, $bike_b, array $ctx = array() ) {
+		$bike_a = (int) $bike_a;
+		$bike_b = (int) $bike_b;
+		if ( ! $bike_a || ! $bike_b || $bike_a === $bike_b ) {
+			return new WP_Error( 'cc_part', 'Choose two different bikes.' );
+		}
+		$wa = self::on_bike( $bike_a, 'wheelset' );
+		$wb = self::on_bike( $bike_b, 'wheelset' );
+		if ( ! $wa && ! $wb ) {
+			return new WP_Error( 'cc_part', 'Neither bike has a wheelset to swap.' );
+		}
+		$before = array( $bike_a => self::snapshot( $bike_a ), $bike_b => self::snapshot( $bike_b ) );
+		// Tyres on a bike that aren't mounted on its wheels (older data) are mounted now, so they travel along.
+		foreach ( array( $bike_a => $wa, $bike_b => $wb ) as $bk => $ws ) {
+			$ty = self::on_bike( $bk, 'tyres' );
+			if ( $ws && $ty && ! self::tyres_on( $ws->id ) ) {
+				self::mount( $ty->id, $ws->id );
+			}
+		}
+		$ta  = $wa ? self::tyres_on( $wa->id ) : null;
+		$tb  = $wb ? self::tyres_on( $wb->id ) : null;
+		$ca  = CC_Fleet_Bikes::get( $bike_a, 'cc_id' );
+		$cb  = CC_Fleet_Bikes::get( $bike_b, 'cc_id' );
+		$why = 'Swapped ' . $ca . ' ⇄ ' . $cb;
+		foreach ( array( array( $wa, $ta, $bike_b ), array( $wb, $tb, $bike_a ) ) as $m ) {
+			if ( $m[0] ) {
+				self::put( $m[0], $m[2], $why );
+			}
+			if ( $m[1] ) {
+				self::put( $m[1], $m[2], $why );
+			}
+		}
+		$date = CC_Fleet_Import::date( $ctx['date'] ?? '' ) ?: CC_Fleet_Settings::today();
+		$out  = array();
+		self::say( sprintf( 'Wheels swapped: %s now has %s; %s now has %s.', $ca, self::pair_label( self::get( $wb->id ?? 0 ) ), $cb, self::pair_label( self::get( $wa->id ?? 0 ) ) ) );
+		foreach ( array( $bike_a => $cb, $bike_b => $ca ) as $bk => $other ) {
+			$changes = array_merge( self::sync_bike( $bk, 'wheelset' ), self::sync_bike( $bk, 'tyres' ) );
+			$got     = self::pair_label( self::on_bike( $bk, 'wheelset' ) );
+			CC_Fleet_Bikes::record_change( $bk, $changes, array( 'date' => $date, 'type' => 'moved', 'by' => $ctx['by'] ?? '', 'note' => 'Wheels & tyres swapped with ' . $other . ': now ' . $got . ( ! empty( $ctx['note'] ) ? ' · ' . sanitize_text_field( $ctx['note'] ) : '' ), 'workshop' => false ) );
+			$out[ $bk ] = self::wheels_check( $bk, $before[ $bk ], $date );
+		}
+		return $out;
+	}
+
+	/** Open (scheduled) workshop jobs this class made for a bike's wheels. */
+	private static function wheel_jobs( $bike_id ) {
+		if ( ! class_exists( 'CC_Fleet_Records' ) ) {
+			return array();
+		}
+		return array_values( array_filter( CC_Fleet_Records::query( 'maintenance', array( 'where' => array( 'bike_id' => $bike_id, 'status' => 'scheduled' ), 'limit' => 50 ) ), function ( $m ) {
+			$d = (string) $m->description;
+			return false !== strpos( $d, '[wheels]' ) || 0 === strpos( $d, 'Needs wheelset' ) || 0 === strpos( $d, 'Needs tyres' );
+		} ) );
+	}
+
+	/**
+	 * After a move: is this bike rideable as far as wheels go?
+	 * Problem (wheels or tyres gone, or damaged) → one open "[wheels]" job + "In the workshop".
+	 * Fine → close that job; if the wheels were the reason it was in the workshop, make it active.
+	 *
+	 * @param array $before snapshot() from before the move.
+	 * @return string 'workshop', 'active' or '' (status unchanged).
+	 */
+	public static function wheels_check( $bike_id, array $before, $date = '' ) {
+		$ws    = self::on_bike( $bike_id, 'wheelset' );
+		$ty    = self::on_bike( $bike_id, 'tyres' );
+		$probs = array();
+		if ( ! $ws && $before['ws'] ) {
+			$probs[] = 'needs a wheelset';
+		} elseif ( $ws && (int) $ws->damaged ) {
+			$probs[] = $ws->code . ' ' . $ws->name . ' damaged: ' . $ws->damage_note;
+		}
+		if ( ! $ty && $before['ty'] ) {
+			$probs[] = 'needs tyres';
+		} elseif ( $ty && (int) $ty->damaged ) {
+			$probs[] = $ty->code . ' ' . $ty->name . ' damaged: ' . $ty->damage_note;
+		}
+		$jobs  = self::wheel_jobs( $bike_id );
+		$state = CC_Fleet_Bikes::get( $bike_id, 'state' );
+		if ( $probs ) {
+			if ( ! class_exists( 'CC_Fleet_Records' ) ) {
+				return '';
+			}
+			$desc = 'Wheels: ' . implode( '; ', $probs ) . '. [wheels]';
+			if ( $jobs ) {
+				if ( $jobs[0]->description !== $desc ) {
+					CC_Fleet_Records::save( 'maintenance', array( 'description' => $desc ), $jobs[0]->id );
+				}
+			} else {
+				CC_Fleet_Records::save( 'maintenance', array( 'bike_id' => $bike_id, 'type' => 'repair', 'status' => 'scheduled', 'work_date' => $date ?: CC_Fleet_Settings::today(), 'description' => $desc ) );
+			}
+			if ( 'active' === $state ) {
+				CC_Fleet_Bikes::set( $bike_id, 'state', 'workshop' );
+				self::say( CC_Fleet_Bikes::get( $bike_id, 'cc_id' ) . ' is now “In the workshop”: ' . implode( '; ', $probs ) . '.' );
+				return 'workshop';
+			}
+			return '';
+		}
+		foreach ( $jobs as $j ) {
+			CC_Fleet_Records::save( 'maintenance', array( 'status' => 'completed', 'description' => $j->description . "\nSorted: good wheels fitted." ), $j->id );
+		}
+		if ( 'workshop' === $state && ( $jobs || $before['damaged'] ) ) {
+			$open = class_exists( 'CC_Fleet_Records' ) ? CC_Fleet_Records::query( 'maintenance', array( 'where' => array( 'bike_id' => $bike_id, 'status' => 'scheduled' ), 'to' => CC_Fleet_Settings::today(), 'limit' => 1 ) ) : array();
+			if ( ! $open ) {
+				CC_Fleet_Bikes::set( $bike_id, 'state', 'active' );
+				self::say( CC_Fleet_Bikes::get( $bike_id, 'cc_id' ) . ' has good wheels again and is active.' );
+				return 'active';
+			}
+		}
+		return '';
+	}
+
+	/** Upgrade: tyres already on a bike are mounted on that bike's wheelset. */
+	public static function mount_existing() {
+		foreach ( self::all( 'tyres' ) as $t ) {
+			if ( $t->bike_id && ! (int) $t->wheelset_id ) {
+				$ws = self::on_bike( $t->bike_id, 'wheelset' );
+				if ( $ws && ! self::tyres_on( $ws->id ) ) {
+					self::mount( $t->id, $ws->id );
+				}
+			}
+		}
 	}
 
 	/**
@@ -280,6 +481,7 @@ class CC_Fleet_Parts {
 				}
 			}
 		}
+		self::mount_existing();
 		CC_Fleet_Install::log( 'parts', 0, 'migrated', $made . ' parts created from the bikes' );
 		return $made;
 	}
@@ -293,17 +495,34 @@ class CC_Fleet_Parts {
 
 	/* ---------------- Bike editor ---------------- */
 
-	/** <select> for the bike editor. */
+	/** What happened to other bikes during this request, shown once as a notice. */
+	public static $messages = array();
+
+	private static function say( $msg ) {
+		self::$messages[] = $msg;
+	}
+
+	/** <select> for the bike editor. Wheelsets show their tyres; tyres follow the wheelset. */
 	public static function select( $bike_id, $type ) {
 		$cur  = self::on_bike( $bike_id, $type );
-		$html = sprintf( '<select name="cc_part[%s]" class="widefat cc-part-select" data-cc-from="%d">', esc_attr( $type ), $cur ? (int) $cur->id : 0 );
+		$html = sprintf( '<input type="hidden" name="cc_part_was[%s]" value="%d">', esc_attr( $type ), $cur ? (int) $cur->id : 0 );
+		$html .= sprintf( '<select name="cc_part[%s]" class="widefat cc-part-select" data-cc-type="%s" data-cc-from="%d">', esc_attr( $type ), esc_attr( $type ), $cur ? (int) $cur->id : 0 );
 		$html .= '<option value="0">— None —</option>';
 		foreach ( self::all( $type ) as $p ) {
-			$html .= sprintf( '<option value="%d" data-bike="%s"%s>%s</option>', (int) $p->id, esc_attr( $p->bike_id && (int) $p->bike_id !== (int) $bike_id ? CC_Fleet_Bikes::get( $p->bike_id, 'cc_id' ) : '' ), selected( $cur && (int) $cur->id === (int) $p->id, true, false ), esc_html( self::label( $p, (int) $p->bike_id !== (int) $bike_id ) ) );
+			$t = 'wheelset' === $type ? self::tyres_on( $p->id ) : null;
+			$html .= sprintf( '<option value="%d" data-bike="%s" data-tyres="%d"%s>%s</option>', (int) $p->id, esc_attr( $p->bike_id && (int) $p->bike_id !== (int) $bike_id ? CC_Fleet_Bikes::get( $p->bike_id, 'cc_id' ) : '' ), $t ? (int) $t->id : 0, selected( $cur && (int) $cur->id === (int) $p->id, true, false ), esc_html( self::label( $p, (int) $p->bike_id !== (int) $bike_id ) ) );
 		}
 		$html .= '</select>';
 		if ( $cur && (int) $cur->damaged ) {
 			$html .= '<span class="cc-part-damage">⚠ Damaged: ' . esc_html( $cur->damage_note ) . '</span>';
+		}
+		if ( 'wheelset' === $type ) {
+			$mine = $cur ? self::pair_label( $cur ) : '';
+			$html .= '<span class="cc-part-swap" hidden>';
+			$html .= sprintf( '<label><input type="radio" name="cc_part_swap" value="1" checked> <strong>Swap</strong>: <span class="cc-swap-bike"></span> gets this bike’s %s</label><br>', esc_html( $mine ) );
+			$html .= '<label><input type="radio" name="cc_part_swap" value="0"> <strong>Just take them</strong>: <span class="cc-swap-bike"></span> is left without wheels</label>';
+			$html .= '</span>';
+			$html .= '<small class="cc-muted cc-part-help">Tyres move with the wheels.</small>';
 		}
 		$html .= '<small class="cc-part-warn" hidden></small>';
 		$html .= sprintf( ' <a href="%s" class="cc-muted">Manage %s</a>', esc_url( admin_url( 'admin.php?page=cc-fleet-parts&type=' . $type ) ), esc_html( strtolower( self::TYPES[ $type ]['plural'] ) ) );
@@ -313,12 +532,48 @@ class CC_Fleet_Parts {
 	public static function editor_js() {
 		return <<<'JS'
 jQuery(function($){
+  var tyres=function(){ return $('.cc-part-select[data-cc-type="tyres"]'); };
+  var warn=function(sel){
+    var o=sel.find(':selected'), from=o.data('bike'), w=sel.siblings('.cc-part-warn'), sw=sel.siblings('.cc-part-swap');
+    var isWs=sel.data('cc-type')==='wheelset', hasOwn=+sel.data('cc-from')>0;
+    sw.find('.cc-swap-bike').text(from||'');
+    if(isWs && from && hasOwn){
+      sw.prop('hidden',false);
+      var take=sw.find('input[value="0"]').is(':checked');
+      w.text(take ? from+' goes to “In the workshop” until it gets wheels.' : 'Damaged wheels send their new bike to the workshop; good wheels make a bike ready again.').prop('hidden',false);
+    } else {
+      sw.prop('hidden',true);
+      if(from){ w.text('Moves from '+from+' — '+from+' goes to “In the workshop” until it gets a replacement.').prop('hidden',false); } else { w.prop('hidden',true); }
+    }
+  };
   $(document).on('change','.cc-part-select',function(){
-    var o=$(this).find(':selected'), from=o.data('bike'), w=$(this).siblings('.cc-part-warn');
-    if(from){ w.text('Moves from '+from+' — '+from+' goes to “In the workshop” until it gets a replacement.').prop('hidden',false); } else { w.prop('hidden',true); }
+    var sel=$(this); warn(sel);
+    if(sel.data('cc-type')==='wheelset'){
+      // The tyres on the chosen wheels come along.
+      var t=tyres(); if(t.length){ t.val(String(sel.find(':selected').data('tyres')||0)); warn(t); t.siblings('.cc-part-warn').prop('hidden',true); }
+    }
   });
+  $(document).on('change','input[name="cc_part_swap"]',function(){ warn($('.cc-part-select[data-cc-type="wheelset"]')); });
 });
 JS;
+	}
+
+	/** Bike editor: notice about the other bikes a move touched. */
+	public static function editor_notice() {
+		$key = 'cc_fleet_wheels_notice_' . get_current_user_id();
+		$n   = get_transient( $key );
+		if ( $n ) {
+			delete_transient( $key );
+			printf( '<div class="notice notice-info is-dismissible"><p>%s</p></div>', esc_html( implode( ' ', (array) $n ) ) );
+		}
+	}
+
+	/** Keep the messages for the next screen (after the editor's redirect). */
+	public static function keep_messages() {
+		if ( self::$messages ) {
+			set_transient( 'cc_fleet_wheels_notice_' . get_current_user_id(), self::$messages, 120 );
+			self::$messages = array();
+		}
 	}
 
 	/* ---------------- Admin page: Fleet Manager → Parts ---------------- */
@@ -328,6 +583,8 @@ JS;
 		if ( is_admin() ) {
 			add_action( 'admin_menu', array( __CLASS__, 'menu' ), 20 );
 			add_action( 'admin_post_cc_fleet_part_save', array( __CLASS__, 'handle_save' ) );
+			add_action( 'admin_post_cc_fleet_wheel_swap', array( __CLASS__, 'handle_swap' ) );
+			add_action( 'admin_notices', array( __CLASS__, 'editor_notice' ) );
 		}
 	}
 
@@ -361,6 +618,7 @@ JS;
 			printf( '<a class="nav-tab%s" href="%s">%s <span class="count">(%d)</span></a>', $k === $type ? ' nav-tab-active' : '', esc_url( self::url( array( 'type' => $k ) ) ), esc_html( $t['plural'] ), $count );
 		}
 		echo '</nav>';
+		self::swap_form();
 		printf( '<p class="subsubsub"><a href="%s"%s>In use &amp; spare</a> | <a href="%s"%s>Damaged</a> | <a href="%s"%s>Retired</a></p><br class="clear">',
 			esc_url( self::url( array( 'type' => $type ) ) ), 'active' === $show ? ' class="current"' : '',
 			esc_url( self::url( array( 'type' => $type, 'show' => 'damaged' ) ) ), 'damaged' === $show ? ' class="current"' : '',
@@ -375,18 +633,51 @@ JS;
 			return 'damaged' === $show ? (int) $p->damaged : true;
 		} );
 		$t = self::TYPES[ $type ];
-		echo '<table class="widefat striped cc-parts"><thead><tr><th style="width:80px">Code</th><th>' . esc_html( $t['label'] ) . '</th><th>' . esc_html( $t['size'] ) . '</th><th>' . esc_html( $t['detail'] ) . '</th><th>On bike</th><th>Condition</th></tr></thead><tbody>';
+		$with = 'wheelset' === $type ? 'Tyres on it' : 'On wheelset';
+		echo '<table class="widefat striped cc-parts"><thead><tr><th style="width:80px">Code</th><th>' . esc_html( $t['label'] ) . '</th><th>' . esc_html( $t['size'] ) . '</th><th>' . esc_html( $t['detail'] ) . '</th><th>' . esc_html( $with ) . '</th><th>On bike</th><th>Condition</th></tr></thead><tbody>';
 		if ( ! $rows ) {
-			echo '<tr><td colspan="6" class="cc-empty">Nothing here.</td></tr>';
+			echo '<tr><td colspan="7" class="cc-empty">Nothing here.</td></tr>';
 		}
 		foreach ( $rows as $p ) {
+			$mate = 'wheelset' === $type ? self::tyres_on( $p->id ) : ( (int) $p->wheelset_id ? self::get( $p->wheelset_id ) : null );
+			$mate = $mate ? sprintf( '<a href="%s">%s</a>%s', esc_url( self::url( array( 'edit' => $mate->id ) ) ), esc_html( $mate->code . ' ' . $mate->name ), (int) $mate->damaged ? ' <span class="cc-badge cc-badge--declined">Damaged</span>' : '' ) : '<span class="cc-muted">—</span>';
 			$bike = $p->bike_id ? sprintf( '<a href="%s">%s</a>', esc_url( get_edit_post_link( $p->bike_id ) ), esc_html( CC_Fleet_Bikes::label( $p->bike_id ) ) ) : '<span class="cc-badge">Spare</span>';
 			$cond = (int) $p->damaged ? '<span class="cc-badge cc-badge--declined">Damaged</span> ' . esc_html( $p->damage_note ) : '<span class="cc-muted">OK</span>';
-			printf( '<tr><td><strong><a href="%s">%s</a></strong></td><td><a href="%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>',
-				esc_url( self::url( array( 'edit' => $p->id ) ) ), esc_html( $p->code ), esc_url( self::url( array( 'edit' => $p->id ) ) ), esc_html( $p->name ), esc_html( $p->size ), esc_html( $p->detail ), $bike, $cond ); // phpcs:ignore
+			printf( '<tr><td><strong><a href="%s">%s</a></strong></td><td><a href="%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>',
+				esc_url( self::url( array( 'edit' => $p->id ) ) ), esc_html( $p->code ), esc_url( self::url( array( 'edit' => $p->id ) ) ), esc_html( $p->name ), esc_html( $p->size ), esc_html( $p->detail ), $mate, $bike, $cond ); // phpcs:ignore
 		}
 		echo '</tbody></table>';
-		echo '<p class="cc-muted">A part can be on one bike at a time. Move it here or in the bike editor (Spec &amp; parts → Wheels &amp; tyres); the bike it leaves goes to “In the workshop” with a job to fit a replacement.</p></div>';
+		echo '<p class="cc-muted">A part can be on one bike at a time, and tyres stay on their wheelset: move or swap the wheels and the tyres go along. A bike left without wheels, or given damaged ones, goes to “In the workshop” with a job; a bike that gets good wheels back is active again.</p></div>';
+	}
+
+	/** "Swap wheels" card: two bikes, one button. */
+	private static function swap_form() {
+		$bikes = array_filter( CC_Fleet_Bikes::all_ids(), function ( $b ) { return 'retired' !== CC_Fleet_Bikes::get( $b, 'state' ); } );
+		$opts  = '<option value="0">— Bike —</option>';
+		foreach ( $bikes as $b ) {
+			$ws    = self::on_bike( $b, 'wheelset' );
+			$opts .= sprintf( '<option value="%d">%s — %s</option>', (int) $b, esc_html( CC_Fleet_Bikes::label( $b ) ), esc_html( $ws ? self::pair_label( $ws ) . ( (int) $ws->damaged ? ' ⚠ damaged' : '' ) : 'no wheels' ) );
+		}
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="cc-card cc-swap" style="margin:16px 0;padding:12px 16px;max-width:980px">';
+		wp_nonce_field( 'cc_fleet_wheel_swap' );
+		echo '<input type="hidden" name="action" value="cc_fleet_wheel_swap">';
+		echo '<h2 style="margin:0 0 8px">Swap wheels between two bikes</h2>';
+		printf( '<p style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0"><select name="a" required>%1$s</select> <span aria-hidden="true">⇄</span> <select name="b" required>%1$s</select> <input type="text" name="note" placeholder="Why? e.g. CC-09 needed for Paige" style="min-width:220px"> <button class="button button-primary">Swap wheels &amp; tyres</button></p>', $opts ); // phpcs:ignore -- escaped above.
+		echo '<p class="description" style="margin:6px 0 0">Wheels and their tyres change places. Whichever bike ends up with damaged wheels goes to the workshop; a bike that gets good wheels back is ready again.</p>';
+		echo '</form>';
+	}
+
+	public static function handle_swap() {
+		if ( ! current_user_can( 'manage_cc_fleet' ) ) {
+			wp_die( 'Not allowed.', 403 );
+		}
+		check_admin_referer( 'cc_fleet_wheel_swap' );
+		$res = self::swap( absint( $_POST['a'] ?? 0 ), absint( $_POST['b'] ?? 0 ), array( 'note' => sanitize_text_field( wp_unslash( $_POST['note'] ?? '' ) ) ) );
+		$msg = is_wp_error( $res ) ? array( $res->get_error_message(), 'error' ) : array( implode( ' ', self::$messages ), 'success' );
+		self::$messages = array();
+		set_transient( 'cc_fleet_parts_notice_' . get_current_user_id(), $msg, 60 );
+		wp_safe_redirect( wp_get_referer() ?: self::url() );
+		exit;
 	}
 
 	private static function notice() {
@@ -416,7 +707,7 @@ JS;
 			$tag = $has && ( ! $p || (int) $has->id !== (int) $p->id ) ? ' (has ' . $has->code . ', which goes to spare)' : '';
 			printf( '<option value="%d"%s>%s%s</option>', (int) $b, selected( (int) ( $p->bike_id ?? 0 ), (int) $b, false ), esc_html( CC_Fleet_Bikes::label( $b ) ), esc_html( $tag ) );
 		}
-		echo '</select><p class="description">Moving it off a bike puts that bike “In the workshop” with a job to fit a replacement.</p></td></tr>';
+		echo '</select><p class="description">' . ( 'wheelset' === $type ? 'Its tyres come along. ' : 'Fitted on that bike’s wheelset. ' ) . 'A bike left without, or given damaged parts, goes “In the workshop” with a job. To swap two bikes’ wheels in one go, use “Swap wheels” on the list.</p></td></tr>';
 		printf( '<tr><th>Condition</th><td><label><input type="checkbox" name="damaged" value="1" id="cc-p-dmg"%s> Damaged</label><p><textarea name="damage_note" rows="3" class="large-text" placeholder="What is damaged? e.g. rear rim cracked at the valve, front hub bearings rough">%s</textarea></p><p class="description">Untick once it’s fixed; the note stays in the history below.</p></td></tr>', checked( (int) ( $p->damaged ?? 0 ), 1, false ), esc_textarea( $p->damage_note ?? '' ) );
 		printf( '<tr><th><label for="cc-p-status">Status</label></th><td><select id="cc-p-status" name="status"><option value="active"%s>In use / spare</option><option value="retired"%s>Retired (worn out, sold, binned)</option></select></td></tr>', selected( $p->status ?? 'active', 'active', false ), selected( $p->status ?? '', 'retired', false ) );
 		printf( '<tr><th><label for="cc-p-notes">Notes</label></th><td><textarea id="cc-p-notes" name="notes" rows="3" class="large-text">%s</textarea></td></tr>', esc_textarea( $p->notes ?? '' ) );
@@ -455,11 +746,10 @@ JS;
 		$p    = self::get( $res );
 		$bike = absint( $_POST['bike_id'] ?? 0 );
 		if ( 'retired' !== $p->status && (int) $p->bike_id !== $bike ) {
-			$lost = self::assign( $res, $bike );
-			$msg  = $bike ? 'Fitted to ' . CC_Fleet_Bikes::get( $bike, 'cc_id' ) . '.' : 'Moved to the shelf.';
-			if ( $lost ) {
-				$msg .= ' ' . CC_Fleet_Bikes::get( $lost[0], 'cc_id' ) . ' is now “In the workshop” with a job to fit a replacement.';
-			}
+			self::assign( $res, $bike );
+			$msg  = $bike ? 'Fitted to ' . CC_Fleet_Bikes::get( $bike, 'cc_id' ) . ( 'wheelset' === $p->type && self::tyres_on( $p->id ) ? ', with its tyres' : ( 'tyres' === $p->type && self::on_bike( $bike, 'wheelset' ) ? ', on ' . self::on_bike( $bike, 'wheelset' )->code : '' ) ) . '.' : 'Moved to the shelf.';
+			$msg .= self::$messages ? ' ' . implode( ' ', self::$messages ) : '';
+			self::$messages = array();
 		}
 		set_transient( $key, array( $msg, 'success' ), 60 );
 		wp_safe_redirect( self::url( array( 'edit' => $res ) ) );

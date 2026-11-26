@@ -576,12 +576,19 @@ JS;
 		// so the change is recorded like any other, then move the parts afterwards.
 		$parts = array();
 		if ( class_exists( 'CC_Fleet_Parts' ) && isset( $_POST['cc_part'] ) && is_array( $_POST['cc_part'] ) ) {
+			$was = isset( $_POST['cc_part_was'] ) && is_array( $_POST['cc_part_was'] ) ? array_map( 'absint', wp_unslash( $_POST['cc_part_was'] ) ) : array();
 			foreach ( CC_Fleet_Parts::TYPES as $ptype => $pdef ) {
 				if ( isset( $_POST['cc_part'][ $ptype ] ) ) {
-					$pid             = absint( $_POST['cc_part'][ $ptype ] );
-					$parts[ $ptype ] = $pid;
-					$in              = array_merge( $in, CC_Fleet_Parts::bike_values( $pid, $ptype ) );
+					$parts[ $ptype ] = absint( $_POST['cc_part'][ $ptype ] );
 				}
+			}
+			// Tyres travel with their wheels: new wheels and untouched tyres → the tyres on those wheels.
+			if ( isset( $parts['wheelset'], $parts['tyres'], $was['wheelset'], $was['tyres'] ) && $parts['wheelset'] !== $was['wheelset'] && $parts['tyres'] === $was['tyres'] ) {
+				$t               = $parts['wheelset'] ? CC_Fleet_Parts::tyres_on( $parts['wheelset'] ) : null;
+				$parts['tyres']  = $t ? (int) $t->id : 0;
+			}
+			foreach ( $parts as $ptype => $pid ) {
+				$in = array_merge( $in, CC_Fleet_Parts::bike_values( $pid, $ptype ) );
 			}
 		}
 		$tracked = self::tracked_fields();
@@ -601,18 +608,29 @@ JS;
 		}
 		$change = isset( $_POST['cc_change'] ) && is_array( $_POST['cc_change'] ) ? wp_unslash( $_POST['cc_change'] ) : array();
 		self::record_change( $post_id, $changes, $change );
+		// Status first: moving wheels below may change it (damaged wheels → workshop, good wheels → active).
+		self::set( $post_id, 'state', in_array( $in['state'] ?? '', array( 'active', 'workshop', 'soon', 'retired' ), true ) ? $in['state'] : 'active' );
+		$ctx = array( 'date' => $change['date'] ?? '', 'by' => $change['by'] ?? '', 'quiet_target' => true );
 		foreach ( $parts as $ptype => $pid ) {
 			$cur = CC_Fleet_Parts::on_bike( $post_id, $ptype );
 			if ( $pid && ( ! $cur || (int) $cur->id !== $pid ) ) {
-				CC_Fleet_Parts::assign( $pid, $post_id, array( 'date' => $change['date'] ?? '', 'by' => $change['by'] ?? '', 'note' => 'Fitted to ' . self::get( $post_id, 'cc_id' ) ) );
+				$p     = CC_Fleet_Parts::get( $pid );
+				$other = $p ? (int) $p->bike_id : 0;
+				if ( 'wheelset' === $ptype && $cur && $other && $other !== (int) $post_id && ! empty( $_POST['cc_part_swap'] ) ) {
+					CC_Fleet_Parts::swap( $post_id, $other, $ctx );
+				} else {
+					CC_Fleet_Parts::assign( $pid, $post_id, $ctx );
+				}
 			} elseif ( ! $pid && $cur ) {
 				CC_Fleet_Parts::assign( $cur->id, 0, array( 'note' => 'Taken off ' . self::get( $post_id, 'cc_id' ) ) );
 			}
 		}
+		if ( class_exists( 'CC_Fleet_Parts' ) ) {
+			CC_Fleet_Parts::keep_messages();
+		}
 		if ( class_exists( 'CC_Fleet_Care' ) && isset( $_POST['cc_care'] ) && is_array( $_POST['cc_care'] ) ) {
 			CC_Fleet_Care::save( $post_id, wp_unslash( $_POST['cc_care'] ) );
 		}
-		self::set( $post_id, 'state', in_array( $in['state'] ?? '', array( 'active', 'workshop', 'soon', 'retired' ), true ) ? $in['state'] : 'active' );
 		self::set( $post_id, 'show_on_site', empty( $in['show_on_site'] ) ? '0' : '1' );
 		self::set( $post_id, 'public_name', sanitize_text_field( $in['public_name'] ?? '' ) );
 		self::set( $post_id, 'public_blurb', sanitize_textarea_field( $in['public_blurb'] ?? '' ) );

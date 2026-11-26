@@ -56,6 +56,14 @@ Install an SMTP plugin (e.g. WP Mail SMTP) and send through a real mailbox
 - Fleet grids refresh their status pills from the API after load, so full-page caching is safe.
   Don't cache `/wp-json/cc/v1/*` (responses already send `no-store`).
 
+## 0.25.0: Wheels and tyres move together, one-step swap
+
+- Tyres sit on a wheelset and travel with it. Moving or swapping a wheelset takes its tyres along; changing only the tyres is still possible.
+- Bike editor: pick another bike's wheelset and choose **Swap** (that bike gets this bike's wheels and tyres) or **Just take them** (that bike is left without).
+- Fleet Manager → Wheels & tyres → **Swap wheels between two bikes**: two bikes, one button.
+- After every move each bike is checked: damaged or missing wheels/tyres → one "Wheels: …" workshop job and "In the workshop"; good wheels again → the job is closed and the bike is active.
+- Upgrade mounts the tyres already on each bike onto its wheelset.
+
 ## 0.21.1: Sender address
 
 - Settings → "Sender address": all bike emails (riders and crew) come from this address, e.g. bikes@community-connect.cc. Shop and WordPress emails keep the site default. Needs "Force From Email" off in WP Mail SMTP.

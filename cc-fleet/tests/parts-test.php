@@ -57,7 +57,8 @@ pt( 'New bike spec follows the part', 'Test Wheels B' === CC_Fleet_Bikes::get( $
 pt( 'Bike that lost its wheels goes to the workshop', 'workshop' === CC_Fleet_Bikes::get( $b, 'state' ) );
 pt( 'Its wheelset field is emptied', '' === (string) CC_Fleet_Bikes::get( $b, 'wheelset' ) );
 $job = CC_Fleet_Records::query( 'maintenance', array( 'where' => array( 'bike_id' => $b, 'status' => 'scheduled' ), 'limit' => 5 ) );
-pt( 'A scheduled job asks for a replacement', $job && false !== strpos( $job[0]->description, 'Needs wheelset' ) );
+pt( 'A scheduled job asks for a replacement', $job && false !== strpos( $job[0]->description, 'needs a wheelset' ) && false !== strpos( $job[0]->description, '[wheels]' ), $job ? $job[0]->description : 'no job' );
+pt( 'The bike that got damaged wheels goes to the workshop too', 'workshop' === CC_Fleet_Bikes::get( $a, 'state' ) );
 $hist = $wpdb->get_var( $wpdb->prepare( 'SELECT message FROM ' . CC_Fleet_Install::table( 'log' ) . " WHERE object_type='bike' AND object_id=%d AND action='spec' ORDER BY id DESC LIMIT 1", $b ) );
 pt( 'Both bikes get a history entry', $hist && false !== strpos( $hist, 'moved to ZZ-01' ) && $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . CC_Fleet_Install::table( 'log' ) . " WHERE object_type='bike' AND object_id=%d AND action='spec'", $a ) ) > 0 );
 pt( 'Part keeps its own history', (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . CC_Fleet_Install::table( 'log' ) . " WHERE object_type='part' AND object_id=%d AND action='moved'", $wb ) ) >= 2 );
@@ -75,6 +76,75 @@ pt( 'Unticking damage clears it', 0 === (int) CC_Fleet_Parts::get( $wb )->damage
 // Retiring takes it off the bike.
 CC_Fleet_Parts::save( array( 'status' => 'retired' ), $ta );
 pt( 'Retired tyres come off the bike', 0 === (int) CC_Fleet_Parts::get( $ta )->bike_id && '' === (string) CC_Fleet_Bikes::get( $a, 'tyres' ) );
+
+// Tyres travel with their wheels: the KS50 / KS54 case.
+$c  = $mk( 'ZZ-03', '50' );
+$d  = $mk( 'ZZ-04', '54' );
+$wc = CC_Fleet_Parts::save( array( 'type' => 'wheelset', 'name' => 'Test Wheels C', 'size' => '700c', 'detail' => 'XDR' ) );
+$tc = CC_Fleet_Parts::save( array( 'type' => 'tyres', 'name' => 'Test Tyres C', 'size' => '45' ) );
+$wd = CC_Fleet_Parts::save( array( 'type' => 'wheelset', 'name' => 'Test Wheels D', 'size' => '700c', 'detail' => 'XDR' ) );
+$td = CC_Fleet_Parts::save( array( 'type' => 'tyres', 'name' => 'Test Tyres D', 'size' => '40' ) );
+CC_Fleet_Parts::assign( $wc, $c ); CC_Fleet_Parts::assign( $tc, $c );
+CC_Fleet_Parts::assign( $wd, $d ); CC_Fleet_Parts::assign( $td, $d );
+pt( 'Tyres fitted to a bike sit on its wheelset', (int) $wc === (int) CC_Fleet_Parts::get( $tc )->wheelset_id && (int) $tc === (int) CC_Fleet_Parts::tyres_on( $wc )->id );
+pt( 'Wheelset label shows its tyres', false !== strpos( CC_Fleet_Parts::label( CC_Fleet_Parts::get( $wd ) ), 'Test Tyres D' ) );
+CC_Fleet_Parts::save( array( 'damaged' => 1, 'damage_note' => 'Rear rim cracked' ), $wc );
+CC_Fleet_Bikes::set( $c, 'state', 'workshop' );
+CC_Fleet_Parts::$messages = array();
+// Editor on ZZ-03: pick ZZ-04's wheels, "Swap" chosen, tyres untouched (as if JS were off).
+$_POST = array(
+	'cc_bike_nonce' => wp_create_nonce( 'cc_bike_save' ),
+	'cc'            => array( 'state' => 'workshop', 'show_on_site' => '1' ),
+	'cc_part'       => array( 'wheelset' => (string) $wd, 'tyres' => (string) $tc ),
+	'cc_part_was'   => array( 'wheelset' => (string) $wc, 'tyres' => (string) $tc ),
+	'cc_part_swap'  => '1',
+	'cc_change'     => array( 'date' => CC_Fleet_Settings::today(), 'type' => 'repair', 'note' => 'Needed for a rider', 'workshop' => '0' ),
+);
+CC_Fleet_Bikes::save( $c, get_post( $c ) );
+pt( 'Swap: ZZ-03 gets ZZ-04’s wheels and tyres', (int) $c === (int) CC_Fleet_Parts::get( $wd )->bike_id && (int) $c === (int) CC_Fleet_Parts::get( $td )->bike_id );
+pt( 'Swap: ZZ-04 gets ZZ-03’s wheels and tyres', (int) $d === (int) CC_Fleet_Parts::get( $wc )->bike_id && (int) $d === (int) CC_Fleet_Parts::get( $tc )->bike_id );
+pt( 'Spec fields follow on both bikes', 'Test Wheels D' === CC_Fleet_Bikes::get( $c, 'wheelset' ) && '40' === CC_Fleet_Bikes::get( $c, 'tyre_size' ) && 'Test Tyres C' === CC_Fleet_Bikes::get( $d, 'tyres' ) && '45' === CC_Fleet_Bikes::get( $d, 'tyre_size' ) );
+pt( 'Good wheels make ZZ-03 active again', 'active' === CC_Fleet_Bikes::get( $c, 'state' ) );
+pt( 'Damaged wheels send ZZ-04 to the workshop', 'workshop' === CC_Fleet_Bikes::get( $d, 'state' ) );
+$jd = CC_Fleet_Records::query( 'maintenance', array( 'where' => array( 'bike_id' => $d, 'status' => 'scheduled' ), 'limit' => 5 ) );
+pt( 'ZZ-04 gets one job naming the damage', 1 === count( $jd ) && false !== strpos( $jd[0]->description, 'Rear rim cracked' ), wp_json_encode( wp_list_pluck( $jd, 'description' ) ) );
+$hd = $wpdb->get_var( $wpdb->prepare( 'SELECT message FROM ' . CC_Fleet_Install::table( 'log' ) . " WHERE object_type='bike' AND object_id=%d AND action='spec' ORDER BY id DESC LIMIT 1", $d ) );
+pt( 'ZZ-04 history says it was swapped with ZZ-03', $hd && false !== strpos( $hd, 'swapped with ZZ-03' ) );
+$notice = get_transient( 'cc_fleet_wheels_notice_' . get_current_user_id() );
+pt( 'The editor gets a notice about ZZ-04', $notice && false !== strpos( implode( ' ', $notice ), 'ZZ-04 is now' ), wp_json_encode( $notice ) );
+delete_transient( 'cc_fleet_wheels_notice_' . get_current_user_id() );
+// Wheels repaired, swap back in one step (the list page's form).
+CC_Fleet_Parts::save( array( 'damaged' => 0 ), $wc );
+$r = CC_Fleet_Parts::swap( $d, $c );
+pt( 'Swap back: each bike has its own wheels and tyres again', (int) $d === (int) CC_Fleet_Parts::get( $wd )->bike_id && (int) $d === (int) CC_Fleet_Parts::get( $td )->bike_id && (int) $c === (int) CC_Fleet_Parts::get( $wc )->bike_id && (int) $c === (int) CC_Fleet_Parts::get( $tc )->bike_id );
+pt( 'The wheels job is closed and ZZ-04 is active', 'active' === CC_Fleet_Bikes::get( $d, 'state' ) && ! CC_Fleet_Records::query( 'maintenance', array( 'where' => array( 'bike_id' => $d, 'status' => 'scheduled' ), 'limit' => 5 ) ) );
+pt( 'Swapping a bike with itself is refused', is_wp_error( CC_Fleet_Parts::swap( $c, $c ) ) );
+CC_Fleet_Parts::$messages = array();
+// "Just take them": ZZ-04 takes ZZ-03's wheels; tyres come along; ZZ-03 is left with nothing.
+$_POST = array(
+	'cc_bike_nonce' => wp_create_nonce( 'cc_bike_save' ),
+	'cc'            => array( 'state' => 'active', 'show_on_site' => '1' ),
+	'cc_part'       => array( 'wheelset' => (string) $wc, 'tyres' => (string) $tc ),
+	'cc_part_was'   => array( 'wheelset' => (string) $wd, 'tyres' => (string) $td ),
+	'cc_part_swap'  => '0',
+	'cc_change'     => array( 'date' => CC_Fleet_Settings::today(), 'type' => 'repair', 'note' => '', 'workshop' => '0' ),
+);
+CC_Fleet_Bikes::save( $d, get_post( $d ) );
+pt( 'Take: wheels and their tyres move together', (int) $d === (int) CC_Fleet_Parts::get( $wc )->bike_id && (int) $d === (int) CC_Fleet_Parts::get( $tc )->bike_id );
+pt( 'Take: the old wheels go to the shelf with their tyres', 0 === (int) CC_Fleet_Parts::get( $wd )->bike_id && 0 === (int) CC_Fleet_Parts::get( $td )->bike_id && (int) $wd === (int) CC_Fleet_Parts::get( $td )->wheelset_id );
+pt( 'Take: ZZ-03 goes to the workshop needing wheels and tyres', 'workshop' === CC_Fleet_Bikes::get( $c, 'state' ) && '' === (string) CC_Fleet_Bikes::get( $c, 'tyres' ) );
+// Fitting the spare wheels from the shelf brings their tyres and finishes ZZ-03's job.
+CC_Fleet_Parts::assign( $wd, $c );
+pt( 'Spare wheels arrive with their tyres', (int) $c === (int) CC_Fleet_Parts::get( $td )->bike_id && 'Test Tyres D' === CC_Fleet_Bikes::get( $c, 'tyres' ) );
+pt( 'ZZ-03 is active again once it has wheels', 'active' === CC_Fleet_Bikes::get( $c, 'state' ) );
+// Upgrade: loose tyres on a bike get mounted.
+$wpdb->update( CC_Fleet_Parts::table(), array( 'wheelset_id' => 0 ), array( 'id' => $td ) );
+CC_Fleet_Parts::mount_existing();
+pt( 'Upgrade mounts tyres on their bike’s wheels', (int) $wd === (int) CC_Fleet_Parts::get( $td )->wheelset_id );
+foreach ( array( $c, $d ) as $bk ) {
+	foreach ( CC_Fleet_Records::query( 'maintenance', array( 'where' => array( 'bike_id' => $bk ), 'limit' => 50 ) ) as $m ) { CC_Fleet_Records::delete( 'maintenance', $m->id ); }
+	wp_delete_post( $bk, true );
+}
 
 // Drivetrain care.
 CC_Fleet_Bikes::set( $a, 'dt_checked', '' );
