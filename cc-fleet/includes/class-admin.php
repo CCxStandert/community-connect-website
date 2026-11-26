@@ -26,7 +26,7 @@ class CC_Fleet_Admin {
 		add_menu_page( 'Fleet Manager', 'Fleet Manager', self::CAP, 'cc-fleet', array( __CLASS__, 'page_dashboard' ), 'dashicons-admin-site-alt3', 3 );
 		add_submenu_page( 'cc-fleet', 'Dashboard', 'Dashboard', self::CAP, 'cc-fleet', array( __CLASS__, 'page_dashboard' ) );
 		add_submenu_page( 'cc-fleet', 'Calendar', 'Calendar', self::CAP, 'cc-fleet-calendar', array( __CLASS__, 'page_calendar' ) );
-		$pending = CC_Fleet_Loans::count( array( 'status' => 'requested' ) );
+		$pending = CC_Fleet_Loans::count( array( 'status' => array( 'requested', 'waiting' ) ) );
 		add_submenu_page( 'cc-fleet', 'Loans', 'Loans' . ( $pending ? ' <span class="awaiting-mod">' . (int) $pending . '</span>' : '' ), self::CAP, 'cc-fleet-loans', array( __CLASS__, 'page_loans' ) );
 		add_submenu_page( 'cc-fleet', 'Loan', '', self::CAP, 'cc-fleet-loan', array( __CLASS__, 'page_loan' ) );
 		add_submenu_page( 'cc-fleet', 'Riders', 'Riders', self::CAP, 'cc-fleet-riders', array( __CLASS__, 'page_riders' ) );
@@ -200,7 +200,8 @@ class CC_Fleet_Admin {
 				$states[ $s ]++;
 			}
 		}
-		$pending  = CC_Fleet_Loans::query( array( 'status' => 'requested', 'order' => 'ASC', 'orderby' => 'created_at', 'limit' => 50 ) );
+		// Waiting-list entries are requests too: the crew decides (another bike, other dates, or leave them waiting).
+		$pending  = CC_Fleet_Loans::query( array( 'status' => array( 'requested', 'waiting' ), 'order' => 'ASC', 'orderby' => 'created_at', 'limit' => 50 ) );
 		$overdue  = CC_Fleet_Loans::query( array( 'overdue' => true, 'limit' => 50 ) );
 		$upcoming = CC_Fleet_Loans::query( array( 'status' => 'approved', 'from' => $today, 'to' => CC_Fleet_Loans::add_days( $today, 14 ), 'order' => 'ASC', 'limit' => 50 ) );
 		$out      = CC_Fleet_Loans::query( array( 'status' => 'out', 'order' => 'ASC', 'orderby' => 'end_date', 'limit' => 50 ) );

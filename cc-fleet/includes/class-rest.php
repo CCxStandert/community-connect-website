@@ -278,7 +278,7 @@ class CC_Fleet_Rest {
 		$rider_id = CC_Fleet_Riders::upsert( array(
 			'name' => $name, 'email' => $email,
 			'phone' => $phone, 'instagram' => $insta,
-			'height_cm' => $height, 'weight_kg' => $weight ?: null, 'consent' => true,
+			'height_cm' => $height, 'weight_kg' => $weight ?: null, 'consent' => true, 'from_web' => true,
 		) );
 		if ( ! empty( $p['agree'] ) && class_exists( 'CC_Fleet_Me' ) ) {
 			CC_Fleet_Me::mark_agreed( $rider_id ); // Remember which agreement they accepted.

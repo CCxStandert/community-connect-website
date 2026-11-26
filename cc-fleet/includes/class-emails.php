@@ -213,11 +213,12 @@ class CC_Fleet_Emails {
 
 	public static function on_created( $loan_id ) {
 		$loan = CC_Fleet_Loans::get( $loan_id );
-		if ( ! $loan || 'web' !== $loan->source || 'waiting' === $loan->status ) {
+		if ( ! $loan || 'web' !== $loan->source ) {
 			return;
 		}
-		$rider = CC_Fleet_Riders::get( $loan->rider_id );
-		if ( $rider && $rider->email ) {
+		$waiting = 'waiting' === $loan->status; // The bike was booked: the rider gets the waiting-list email instead.
+		$rider   = CC_Fleet_Riders::get( $loan->rider_id );
+		if ( ! $waiting && $rider && $rider->email ) {
 			self::send( $rider->email, 'We got your bike request', self::msg_received( array(
 				'name' => self::first_name( $rider->name ), 'bike' => self::bike_name( $loan ), 'dates' => self::dates( $loan ), 'plan' => $loan->plan, 'pedals' => CC_Fleet_Loans::pedals_label( $loan ),
 				'whatsapp' => 'yes' === $rider->whatsapp ? '' : self::whatsapp_confirm_link( $loan->id ),
@@ -228,13 +229,14 @@ class CC_Fleet_Emails {
 			$free  = $loan->bike_id ? array() : array_map( array( 'CC_Fleet_Bikes', 'label' ), CC_Fleet_Loans::available_bikes( $loan->start_date, $loan->end_date, $loan->requested_size ) );
 			$clash = $loan->bike_id ? CC_Fleet_Loans::conflicts( $loan->bike_id, $loan->start_date, $loan->end_date, $loan->id, true ) : array();
 			$past  = $rider ? max( 0, CC_Fleet_Loans::count( array( 'rider_id' => $rider->id ) ) - 1 ) : 0;
-			self::send( $admin, 'New bike request: ' . ( $loan->bike_id ? CC_Fleet_Bikes::get( $loan->bike_id, 'cc_id' ) : 'size ' . $loan->requested_size ), self::msg_crew_request( array(
+			self::send( $admin, 'New bike request: ' . ( $loan->bike_id ? CC_Fleet_Bikes::get( $loan->bike_id, 'cc_id' ) : 'size ' . $loan->requested_size ) . ( $waiting ? ' (booked: on the waiting list)' : '' ), self::msg_crew_request( array(
 				'name' => $rider->name ?? 'Unknown', 'height' => $rider->height_cm ?? '', 'email' => $rider->email ?? '', 'phone' => CC_Fleet_Phone::pretty( $rider->phone ?? '' ), 'instagram' => $rider->instagram ?? '',
 				'wa' => CC_Fleet_Phone::wa_link( $rider->phone ?? '', 'Hi ' . self::first_name( $rider->name ?? '' ) . ', it’s Community Connect about your bike request.' ), 'wa_status' => $rider->whatsapp ?? '',
 				'bike' => self::crew_bike( $loan ), 'any' => ! $loan->bike_id, 'size' => $loan->requested_size, 'dates' => self::dates( $loan ), 'plan' => $loan->plan,
 				'history' => $past ? sprintf( _n( '%d loan before', '%d loans before', $past ), $past ) . ( ! empty( $rider->notes ) ? ' · has notes' : '' ) : 'First request',
 				'free' => $free, 'clashes' => count( $clash ), 'link' => admin_url( 'admin.php?page=cc-fleet-loan&id=' . $loan->id ),
-				'race' => ! empty( $loan->race ), 'event' => self::event_name( $loan ),
+				'race' => ! empty( $loan->race ), 'event' => self::event_name( $loan ), 'waiting' => $waiting,
+				'alts' => $waiting && $loan->bike_id ? array_map( array( 'CC_Fleet_Bikes', 'label' ), CC_Fleet_Loans::available_bikes( $loan->start_date, $loan->end_date, CC_Fleet_Bikes::get( $loan->bike_id, 'size' ) ) ) : array(),
 			) ), array( 'type' => 'admin_new_request', 'loan' => $loan ) );
 		}
 	}
@@ -925,7 +927,9 @@ class CC_Fleet_Emails {
 			$rows[] = array( 'Event', ( $f['event'] ?: 'A race we don’t list' ) . ' · racing terms accepted' );
 		}
 		$blocks = array( array( 'details', 'Request', $rows ) );
-		if ( $f['any'] ) {
+		if ( ! empty( $f['waiting'] ) ) {
+			$blocks[] = array( 'callout', array( $f['bike'] . ' is booked on these dates, so they’re on its waiting list and we told them so.', ! empty( $f['alts'] ) ? 'Free in the same size: ' . implode( ' and ', $f['alts'] ) . '. Move them to one of those and approve, or leave them waiting and the list offers the bike if it frees up.' : 'Nothing else in that size is free. Leave them waiting (the list offers the bike if it frees up), or move the dates with them.' ), 'pink' );
+		} elseif ( $f['any'] ) {
 			$blocks[] = array( 'callout', array( $f['free'] ? 'Free in size ' . $f['size'] . ': ' . implode( ' and ', $f['free'] ) . '. Pick one when you approve.' : 'Nothing in size ' . $f['size'] . ' is free for these dates.' ), 'cream' );
 		} elseif ( $f['clashes'] ) {
 			$blocks[] = array( 'callout', array( 'Overlaps ' . $f['clashes'] . ' other request or loan on this bike. Check before you approve.' ), 'pink' );

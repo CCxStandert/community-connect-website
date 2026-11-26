@@ -75,6 +75,27 @@ class CC_Fleet_Riders {
 			$clean['consent_at'] = $now;
 		}
 		$existing = ! empty( $data['id'] ) ? self::get( (int) $data['id'] ) : self::find_match( $clean );
+		// Website requests: the same email with a different first name is another person (partners, friends
+		// sharing an inbox). Keep them apart instead of overwriting the first rider's name and details.
+		if ( $existing && ! empty( $data['from_web'] ) && self::other_person( $existing->name, $clean['name'] ) ) {
+			// Maybe that second person already has their own record with this email.
+			foreach ( $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . self::table() . ' WHERE LOWER(email) = %s ORDER BY id ASC', strtolower( $clean['email'] ) ) ) as $same ) {
+				if ( ! self::other_person( $same->name, $clean['name'] ) ) {
+					$existing = $same;
+					break;
+				}
+			}
+		}
+		if ( $existing && ! empty( $data['from_web'] ) && self::other_person( $existing->name, $clean['name'] ) ) {
+			$clean['notes']      = sprintf( 'Shares an email address with %s (rider #%d). Check who is who before emailing.', $existing->name, $existing->id );
+			$clean['created_at'] = $now;
+			$clean['updated_at'] = $now;
+			$wpdb->insert( self::table(), $clean );
+			$new_id = (int) $wpdb->insert_id;
+			$note   = trim( (string) $existing->notes );
+			$wpdb->update( self::table(), array( 'notes' => trim( $note . "\n" . sprintf( 'Shares an email address with %s (rider #%d).', $clean['name'], $new_id ) ) ), array( 'id' => $existing->id ) );
+			return $new_id;
+		}
 		if ( $existing ) {
 			$update = array_filter( $clean, function ( $v ) { return '' !== $v && null !== $v; } );
 			$update['updated_at'] = $now;
@@ -85,6 +106,17 @@ class CC_Fleet_Riders {
 		$clean['updated_at'] = $now;
 		$wpdb->insert( self::table(), $clean );
 		return (int) $wpdb->insert_id;
+	}
+
+	/** Different first names (ignoring case and accents) = a different person. An empty old name is not. */
+	public static function other_person( $old, $new ) {
+		$first = function ( $n ) {
+			$n = strtolower( remove_accents( trim( (string) $n ) ) );
+			return preg_split( '/[\s.,]+/', $n )[0] ?? '';
+		};
+		$a = $first( $old );
+		$b = $first( $new );
+		return '' !== $a && '' !== $b && $a !== $b && 0 !== strpos( $a, $b ) && 0 !== strpos( $b, $a );
 	}
 
 	/** All riders for a dropdown: id => "Name · phone or email". */
