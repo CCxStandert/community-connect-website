@@ -28,6 +28,12 @@ class CC_Fleet_Updater {
 		add_filter( 'plugins_api', array( __CLASS__, 'details' ), 10, 3 );
 		add_action( 'upgrader_process_complete', array( __CLASS__, 'flush' ) );
 		if ( is_admin() ) {
+			// WordPress's own "Check again" (Dashboard → Updates) also asks GitHub right away.
+			add_action( 'load-update-core.php', function () {
+				if ( ! empty( $_GET['force-check'] ) && current_user_can( 'update_plugins' ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+					self::flush();
+				}
+			} );
 			add_action( 'admin_menu', array( __CLASS__, 'menu' ), 30 );
 			add_action( 'admin_post_cc_fleet_updates', array( __CLASS__, 'handle' ) );
 		}
@@ -48,7 +54,7 @@ class CC_Fleet_Updater {
 	}
 
 	/**
-	 * The latest release, reduced to what we need. Cached for 6 hours (errors for 30 minutes).
+	 * The latest release, reduced to what we need. Cached for an hour (errors for 30 minutes); "Check again" on Dashboard → Updates or "Save and check now" asks right away.
 	 *
 	 * @return array{tag:string,url:string,notes:string,published:string,assets:array}|array{error:string}
 	 */
@@ -89,7 +95,7 @@ class CC_Fleet_Updater {
 			'published' => (string) ( $j['published_at'] ?? '' ),
 			'assets'    => $assets,
 		);
-		set_site_transient( self::CACHE, $out, 6 * HOUR_IN_SECONDS );
+		set_site_transient( self::CACHE, $out, HOUR_IN_SECONDS );
 		return $out;
 	}
 
