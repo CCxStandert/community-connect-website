@@ -428,10 +428,10 @@ function cc_projects_public() {
 	return $n > 0;
 }
 
-// Menu and footer links to /projects/ disappear until a project is published.
+// Menu and footer links to /projects/ disappear until a project is published and the switch is on.
 add_filter( 'render_block', function ( $html, $block ) {
-	if ( cc_projects_public() || false === strpos( $html, '/projects/' ) ) {
-		return $html;
+	if ( ( cc_projects_public() && get_option( 'cc_projects_on_home', 0 ) ) || false === strpos( $html, '/projects/' ) ) {
+		return $html; // Shown only when a project is published and the switch on the Projects screen is on.
 	}
 	if ( 'core/navigation-link' === $block['blockName'] && '/projects/' === ( $block['attrs']['url'] ?? '' ) ) {
 		return '';
@@ -462,10 +462,10 @@ add_action( 'admin_notices', function () {
 	$on  = (bool) get_option( 'cc_projects_on_home', 0 );
 	$url = wp_nonce_url( admin_url( 'admin-post.php?action=cc_projects_home&on=' . ( $on ? 0 : 1 ) ), 'cc_projects_home' );
 	printf(
-		'<div class="notice notice-info"><p><strong>Landing page:</strong> the Projects section is %s. <a class="button" href="%s">%s</a></p></div>',
+		'<div class="notice notice-info"><p><strong>On the website:</strong> the Projects section on the landing page and the Projects links in the menu and footer are %s. <a class="button" href="%s">%s</a></p></div>',
 		$on ? 'shown' : 'hidden',
 		esc_url( $url ),
-		$on ? 'Hide it from the landing page' : 'Show it on the landing page'
+		$on ? 'Hide them' : 'Show them'
 	);
 } );
 
