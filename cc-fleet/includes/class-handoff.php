@@ -137,6 +137,13 @@ class CC_Fleet_Handoff {
 		if ( ! $loan || ( $before && $before->start_date === $loan->start_date && $before->end_date === $loan->end_date && (int) $before->bike_id === (int) $loan->bike_id ) ) {
 			return;
 		}
+		if ( in_array( $loan->status, array( 'returned', 'out' ), true ) && ( 'returned' === $loan->status || ! empty( $loan->handoff_from ) ) ) {
+			// The swap already happened (giver returned or receiver out): editing either loan afterwards keeps the record.
+			$g = ! empty( $loan->handoff_from ) ? CC_Fleet_Loans::get( (int) $loan->handoff_from ) : null;
+			if ( 'returned' === $loan->status || ( $g && 'returned' === $g->status ) ) {
+				return;
+			}
+		}
 		if ( ! empty( $loan->handoff_from ) && ! self::fits( CC_Fleet_Loans::get( (int) $loan->handoff_from ), $loan ) ) {
 			self::unlink( $loan, 'The dates or bike changed, so the two bookings no longer follow each other.' );
 		}

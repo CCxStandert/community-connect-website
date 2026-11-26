@@ -104,6 +104,9 @@ class CC_Fleet_Admin {
 			}
 			$html .= '</form> ';
 		}
+		if ( 'returned' === $loan->status ) {
+			$labels['out'] = 'Undo return'; // Reopens this loan; not the rider-to-rider "Handed over".
+		}
 		if ( 'held' === $loan->status ) {
 			$labels['approved']  = $loan->rider_id ? 'Give it to the winner' : '';
 			$labels['cancelled'] = 'Release the bike';

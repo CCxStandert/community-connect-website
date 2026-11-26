@@ -154,8 +154,17 @@ class CC_Fleet_Loans {
 			'SELECT * FROM ' . self::table() . " WHERE bike_id = %d AND id <> %d AND status IN ($in) AND start_date <= %s ORDER BY start_date",
 			$args
 		) );
+		// Rider-to-rider handoffs: the bike goes straight from one rider to the next, so there is no
+		// workshop day between them. The giver may end on the day the receiver starts.
+		$me   = $exclude_id ? self::get( (int) $exclude_id ) : null;
+		$pair = function ( $l ) use ( $me, $exclude_id ) {
+			return $me && ( ( ! empty( $me->handoff_from ) && (int) $me->handoff_from === (int) $l->id ) || ( ! empty( $l->handoff_from ) && (int) $l->handoff_from === (int) $exclude_id ) );
+		};
 		$out = array();
 		foreach ( $rows as $l ) {
+			if ( $pair( $l ) && ( self::effective_end( $l ) <= $start || $end <= $l->start_date ) && ! self::is_overdue( $l ) ) {
+				continue;
+			}
 			$l_start = $l->start_date;
 			$l_end   = self::add_days( self::effective_end( $l ), $buffer );
 			$o_start = max( $start, $l_start );
