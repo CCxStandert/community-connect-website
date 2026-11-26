@@ -245,7 +245,15 @@ body.cc-proj--story, .cc-proj--story .cc-proj-main { background: var(--paper, #F
 .cc-proj--story .cc-pbody > .alignfull figcaption { padding-inline: 16px; }
 .cc-proj--story .cc-pbody figcaption, .cc-proj--story .cc-pbody .wp-block-gallery figcaption.blocks-gallery-caption { position: static; margin-top: 10px; padding: 0; background: none; color: #141217; font: 500 11px/1.4 var(--plex); letter-spacing: .06em; text-transform: uppercase; text-align: left; }
 .cc-proj--story .cc-pbody .wp-block-gallery figure.wp-block-image figcaption { display: none; }
-.cc-proj--story .cc-pbody .wp-block-gallery.has-nested-images figure.wp-block-image img { aspect-ratio: auto; height: 100%; object-fit: cover; }
+.cc-proj--story .cc-pbody .wp-block-gallery.cc-just { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 12px; max-width: min(960px, calc(var(--R, 3) * min(72vh, 560px) + 12px + 32px)); }
+@media (min-width: 980px) { .cc-proj--story .cc-pbody .wp-block-gallery.cc-just { max-width: min(960px, calc(var(--R, 3) * min(72vh, 560px) + 12px + 80px)); } }
+@media (max-width: 599px) { .cc-proj--story .cc-pbody .wp-block-gallery.cc-just { max-width: none; } }
+.cc-proj--story .cc-pbody .wp-block-gallery.cc-just > figure.wp-block-image:not(#x) { flex: var(--r, 1) 1 0; width: auto !important; min-width: 0; margin: 0 !important; height: auto; }
+.cc-proj--story .cc-pbody .wp-block-gallery.cc-just > figure.wp-block-image:not(#x) img { width: 100% !important; height: auto !important; aspect-ratio: var(--r, 1.5); object-fit: cover; flex: none; }
+.cc-proj--story .cc-pbody .wp-block-gallery.cc-just > figcaption { flex-basis: 100%; }
+.cc-proj--story .cc-pbody .wp-block-gallery.cc-just { flex-wrap: wrap; }
+.cc-proj--story .cc-pbody .wp-block-gallery.cc-just > figure.wp-block-image:not(#x) { flex-basis: 0; }
+@media (max-width: 599px) { .cc-proj--story .cc-pbody .wp-block-gallery.cc-just > figure.wp-block-image:not(#x) { flex: 1 1 100%; } }
 .cc-proj--story .cc-pbody .wp-block-gallery { gap: 12px; }
 
 /* Voice: a line someone said, between two hairlines. */

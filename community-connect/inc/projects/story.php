@@ -628,6 +628,31 @@ add_shortcode( 'cc_story_tape', function ( $atts ) {
 		. ( $a['caption'] ? '<figcaption>' . esc_html( $a['caption'] ) . '</figcaption>' : '' ) . '</div></figure>';
 } );
 
+/* ---------- Photo pairs: justified rows ---------- */
+
+// In a story, a gallery row keeps every photo whole: same height, widths in proportion to each photo's
+// shape (a portrait next to a landscape no longer stretches the row or crops the other photo).
+add_filter( 'render_block', function ( $html, $block ) {
+	if ( 'core/gallery' !== ( $block['blockName'] ?? '' ) || ! is_singular( CC_PROJECT ) || 'story' !== cc_project_get( get_queried_object_id(), 'look' ) ) {
+		return $html;
+	}
+	$sum  = 0;
+	$html = preg_replace_callback( '~<figure class="wp-block-image([^"]*)"([^>]*)>(.*?)</figure>~s', function ( $m ) use ( &$sum ) {
+		if ( ! preg_match( '~wp-image-(\d+)~', $m[3], $id ) ) {
+			return $m[0];
+		}
+		$meta = wp_get_attachment_metadata( (int) $id[1] );
+		if ( empty( $meta['width'] ) || empty( $meta['height'] ) ) {
+			return $m[0];
+		}
+		$r    = round( $meta['width'] / $meta['height'], 4 );
+		$sum += $r;
+		return '<figure class="wp-block-image' . $m[1] . '"' . $m[2] . ' style="--r:' . $r . '">' . $m[3] . '</figure>';
+	}, $html );
+	// --R (sum of shapes) lets CSS cap the row height: a pair of portraits gets narrower, not taller.
+	return preg_replace( '~class="wp-block-gallery ([^"]*)"~', 'class="wp-block-gallery cc-just $1" style="--R:' . round( $sum ?: 3, 3 ) . '"', $html, 1 );
+}, 10, 2 );
+
 /* ---------- Editor styles: Voice quote ---------- */
 
 add_action( 'init', function () {
