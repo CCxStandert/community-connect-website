@@ -410,7 +410,7 @@ JS;
 	public static function box_spec( $post ) {
 		$groups = array( 'frame' => 'Frame', 'drivetrain' => 'Drivetrain & brakes', 'wheels' => 'Wheels & tyres', 'cockpit' => 'Cockpit & contact points', 'internal' => 'Internal (never shown publicly)' );
 		$types  = class_exists( 'CC_Fleet_Records' ) ? CC_Fleet_Records::MAINT_TYPES : array( 'upgrade' => 'Upgrade', 'repair' => 'Repair', 'service' => 'Service' );
-		echo '<div class="cc-record-change"><strong>Changing parts?</strong> Edit the fields below, then say when and what happened. Every changed field is saved to the bike’s history with this date.';
+		echo '<div class="cc-record-change"><strong>Changing parts?</strong> Edit the fields below, then say when and what happened. Every changed field is saved to the bike’s history with this date. A date in the future books the work: it shows under Workshop → Scheduled.';
 		echo '<div class="cc-record-change__row">';
 		printf( '<label>Date<br><input type="date" name="cc_change[date]" value="%s"></label>', esc_attr( CC_Fleet_Settings::today() ) );
 		echo '<label>What kind of work<br><select name="cc_change[type]">';
@@ -432,7 +432,9 @@ JS;
 				$long = in_array( $key, array( 'notes', 'frame_notes' ), true );
 				printf( '<p><label>%s%s<br>', esc_html( $f[0] ), $f[2] ? '' : ' <span class="cc-private" title="Internal">●</span>' );
 				$part_type = array( 'wheelset' => 'wheelset', 'tyres' => 'tyres' )[ $key ] ?? '';
-				$derived   = in_array( $key, array( 'wheel_size', 'freehub', 'tyre_size' ), true ) && class_exists( 'CC_Fleet_Parts' );
+				// From the fitted part when there is one; typed in by hand on a bike without that part.
+				$from      = 'tyre_size' === $key ? 'tyres' : 'wheelset';
+				$derived   = in_array( $key, array( 'wheel_size', 'freehub', 'tyre_size' ), true ) && class_exists( 'CC_Fleet_Parts' ) && CC_Fleet_Parts::on_bike( $post->ID, $from );
 				if ( $part_type && class_exists( 'CC_Fleet_Parts' ) ) {
 					echo CC_Fleet_Parts::select( $post->ID, $part_type ); // phpcs:ignore -- escaped inside.
 				} elseif ( $derived ) {
@@ -554,8 +556,10 @@ JS;
 		if ( $entry['workshop'] && class_exists( 'CC_Fleet_Records' ) ) {
 			$labels = self::fields();
 			$what   = array_map( function ( $ch ) use ( $labels ) { return ( $labels[ $ch[0] ][0] ?? $ch[0] ) . ': ' . ( '' === (string) $ch[1] ? '(empty)' : $ch[1] ) . ' → ' . $ch[2]; }, $changes );
+			// A date in the future is a booking: it shows under Workshop → Scheduled and becomes due on that day.
+			$future = $date > CC_Fleet_Settings::today();
 			CC_Fleet_Records::save( 'maintenance', array(
-				'bike_id' => $post_id, 'type' => $entry['type'], 'status' => 'completed', 'work_date' => $date, 'cost' => (string) $entry['cost'], 'technician' => $entry['by'],
+				'bike_id' => $post_id, 'type' => $entry['type'], 'status' => $future ? 'scheduled' : 'completed', 'work_date' => $date, 'cost' => (string) $entry['cost'], 'technician' => $entry['by'],
 				'description' => trim( $note . ( $what ? "\n" . implode( "\n", $what ) : '' ) . "\n[spec-change]" ),
 			) );
 			if ( $changes && ( '' === (string) self::get( $post_id, 'last_upgraded' ) || $date >= CC_Fleet_Import::date( (string) self::get( $post_id, 'last_upgraded' ) ) ) ) {
@@ -588,7 +592,12 @@ JS;
 				$parts['tyres']  = $t ? (int) $t->id : 0;
 			}
 			foreach ( $parts as $ptype => $pid ) {
-				$in = array_merge( $in, CC_Fleet_Parts::bike_values( $pid, $ptype ) );
+				// Only a changed choice rewrites the spec fields; an untouched "— None —" must not blank them.
+				if ( isset( $was[ $ptype ] ) && (int) $was[ $ptype ] === (int) $pid ) {
+					continue;
+				}
+				// Removing a part clears its name, but keeps wheel size, freehub and tyre size as they were.
+				$in = array_merge( $in, array_filter( CC_Fleet_Parts::bike_values( $pid, $ptype ), function ( $k ) use ( $pid, $ptype ) { return $pid || $k === $ptype; }, ARRAY_FILTER_USE_KEY ) );
 			}
 		}
 		$tracked = self::tracked_fields();
